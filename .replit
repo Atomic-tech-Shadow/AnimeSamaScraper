@@ -1,0 +1,123 @@
+modules = ["nodejs-20"]
+
+[nix]
+channel = "stable-24_05"
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Anime API Server"
+
+[[workflows.workflow]]
+name = "Anime API Server"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = """
+npm init -y && npm install axios cheerio cors && node -e \"
+const express = require('express');
+const path = require('path');
+const fs = require('fs');
+
+const app = express();
+const PORT = 5000;
+
+// Enable CORS
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type');
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(200);
+  } else {
+    next();
+  }
+});
+
+// Load API routes dynamically
+const apiDir = path.join(__dirname, 'api');
+
+// Route: /api/search
+app.get('/api/search', require('./api/search.js'));
+
+// Route: /api/trending  
+app.get('/api/trending', require('./api/trending.js'));
+
+// Route: /api/anime/:id
+app.get('/api/anime/:id', (req, res) => {
+  req.query.id = req.params.id;
+  require('./api/anime/[id].js')(req, res);
+});
+
+// Route: /api/seasons/:animeId
+app.get('/api/seasons/:animeId', (req, res) => {
+  req.query.animeId = req.params.animeId;
+  require('./api/seasons/[animeId].js')(req, res);
+});
+
+// Route: /api/episodes/:animeId
+app.get('/api/episodes/:animeId', (req, res) => {
+  req.query.animeId = req.params.animeId;
+  require('./api/episodes/[animeId].js')(req, res);
+});
+
+// Route: /api/seasons (index)
+app.get('/api/seasons', require('./api/seasons/index.js'));
+
+// Route: /api/episode/:episodeId
+app.get('/api/episode/:episodeId', (req, res) => {
+  req.query.episodeId = req.params.episodeId;
+  require('./api/episode/[episodeId].js')(req, res);
+});
+
+// Route: /api/episode/:animeId/:season/:ep
+app.get('/api/episode/:animeId/:season/:ep', (req, res) => {
+  req.query.animeId = req.params.animeId;
+  req.query.season = req.params.season;
+  req.query.ep = req.params.ep;
+  require('./api/episode/[animeId]/[season]/[ep].js')(req, res);
+});
+
+// Route: /api/embed
+app.get('/api/embed', require('./api/embed.js'));
+
+// Root route with API documentation
+app.get('/', (req, res) => {
+  res.json({
+    name: 'Anime-Sama API',
+    version: '1.0.0',
+    description: 'Real-time anime scraping API for anime-sama.fr',
+    endpoints: {
+      search: '/api/search?query=naruto',
+      trending: '/api/trending',
+      animeDetails: '/api/anime/:id',
+      seasons: '/api/seasons/:animeId',
+      episodes: '/api/episodes/:animeId?season=1&language=VOSTFR',
+      seasonsIndex: '/api/seasons?animeId=xxx&season=1&language=VF&server=eps1',
+      episodeSources: '/api/episode/:episodeId',
+      specificEpisode: '/api/episode/:animeId/:season/:episode',
+      embed: '/api/embed?url=https%3A%2F%2Fanime-sama.fr%2Fcatalogue%2F...'
+    }
+  });
+});
+
+app.listen(PORT, () => {
+  console.log('🚀 Anime-Sama API Server running on port ' + PORT);
+  console.log('📚 API Documentation: http://localhost:' + PORT);
+  console.log('🔍 Search endpoint: http://localhost:' + PORT + '/api/search?query=naruto');
+  console.log('📈 Trending endpoint: http://localhost:' + PORT + '/api/trending');
+});
+\""""
+waitForPort = 5000
+
+[[ports]]
+localPort = 5000
+externalPort = 80
