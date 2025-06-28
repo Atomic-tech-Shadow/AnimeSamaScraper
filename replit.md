@@ -100,6 +100,7 @@ This is a Node.js-based API that scrapes the anime-sama.fr website to provide an
 ✓ API ready for production deployment with real-time scraping capabilities
 ✓ Successfully migrated from Replit Agent to standard Replit environment
 ✓ Fixed Vercel deployment configuration - removed conflicting builds/functions properties
+✓ Resolved routing conflicts - renamed episode endpoint to avoid path collisions
 ✓ Project now runs cleanly in Replit with proper security practices
 
 ## User Preferences

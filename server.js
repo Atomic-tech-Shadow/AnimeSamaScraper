@@ -29,7 +29,7 @@ app.get('/', (req, res) => {
             seasons: '/api/seasons/:animeId',
             episodes: '/api/episodes/:animeId?season=1&language=VOSTFR',
             seasonsIndex: '/api/seasons?animeId=xxx&season=1&language=VF&server=eps1',
-            episodeSources: '/api/episode/:episodeId',
+            episodeSources: '/api/episode-by-id/:episodeId',
             specificEpisode: '/api/episode/:animeId/:season/:episode',
             embed: '/api/embed?url=https%3A%2F%2Fanime-sama.fr%2Fcatalogue%2F...'
         },
@@ -39,7 +39,7 @@ app.get('/', (req, res) => {
             getAnimeDetails: 'GET /api/anime/black-butler',
             getSeasons: 'GET /api/seasons/black-butler',
             getEpisodes: 'GET /api/episodes/black-butler?season=1&language=VOSTFR',
-            getEpisodeSources: 'GET /api/episode/black-butler-s1-e1',
+            getEpisodeSources: 'GET /api/episode-by-id/black-butler-s1-e1',
             embedPlayer: 'GET /api/embed?url=https%3A%2F%2Fanime-sama.fr%2Fcatalogue%2Fblack-butler'
         }
     });
@@ -61,9 +61,9 @@ app.get('/api/episodes/:animeId', (req, res) => {
     require('./api/episodes/[animeId].js')(req, res);
 });
 app.get('/api/seasons', require('./api/seasons/index.js'));
-app.get('/api/episode/:episodeId', (req, res) => {
+app.get('/api/episode-by-id/:episodeId', (req, res) => {
     req.query.episodeId = req.params.episodeId;
-    require('./api/episode/[episodeId].js')(req, res);
+    require('./api/episode-by-id.js')(req, res);
 });
 app.get('/api/episode/:animeId/:season/:ep', (req, res) => {
     req.query.animeId = req.params.animeId;
@@ -94,7 +94,7 @@ app.use((req, res) => {
             '/api/anime/:id',
             '/api/seasons/:animeId',
             '/api/episodes/:animeId',
-            '/api/episode/:episodeId',
+            '/api/episode-by-id/:episodeId',
             '/api/embed?url=anime_url'
         ]
     });
