@@ -780,29 +780,323 @@ async function getAnimeEpisodes(animeId, season = 1, language = 'VOSTFR') {
     }
 }
 
-// Get episode streaming sources
-async function getEpisodeSources(episodeId) {
-    const episodeUrl = `https://anime-sama.fr/episode/${episodeId}`;
-    const $ = await scrapeAnimesama(episodeUrl);
-    
-    const sources = [];
-    
-    // Look for video sources and streaming servers
-    $('.server-option, .video-server, .player-option').each((index, element) => {
-        const $el = $(element);
-        const serverName = $el.text().trim() || $el.attr('data-server');
-        const serverUrl = $el.attr('href') || $el.attr('data-url');
+// Get episode streaming sources from episode URL or anime-sama.fr streaming URL
+async function getEpisodeSources(episodeUrl) {
+    try {
+        // Handle different URL formats
+        let finalUrl = episodeUrl;
         
-        if (serverName && serverUrl) {
+        // If it's already a full anime-sama.fr URL, use it directly
+        if (!episodeUrl.includes('anime-sama.fr')) {
+            finalUrl = `https://anime-sama.fr${episodeUrl}`;
+        }
+        
+        console.log(`Extracting streaming sources from: ${finalUrl}`);
+        
+        // Check if this is a catalogue episode page URL like /catalogue/anime/saison1/vostfr/episode-1
+        if (finalUrl.includes('/catalogue/') && finalUrl.includes('/episode-')) {
+            return await extractFromEpisodePage(finalUrl);
+        }
+        
+        // Check if this is a catalogue season page URL like /catalogue/anime/saison1/vostfr/
+        if (finalUrl.includes('/catalogue/') && (finalUrl.includes('/vostfr') || finalUrl.includes('/vf'))) {
+            return await extractFromSeasonPage(finalUrl);
+        }
+        
+        // If it's a direct streaming URL, try to extract the actual video source
+        if (finalUrl.includes('http') && !finalUrl.includes('/catalogue/')) {
+            return await extractDirectStreamingSources(finalUrl);
+        }
+        
+        return [];
+        
+    } catch (error) {
+        console.error('Error getting episode sources:', error.message);
+        return [];
+    }
+}
+
+// Extract streaming sources from episode page URL
+async function extractFromEpisodePage(episodeUrl) {
+    try {
+        // Parse the episode URL to get season info
+        const urlParts = episodeUrl.split('/');
+        const animeId = urlParts[4]; // one-piece
+        const seasonPath = urlParts[5]; // saison1
+        const language = urlParts[6]; // vostfr
+        const episodePart = urlParts[7]; // episode-1
+        
+        if (!episodePart || !episodePart.includes('episode-')) {
+            throw new Error('Invalid episode URL format');
+        }
+        
+        const episodeNumber = parseInt(episodePart.replace('episode-', ''));
+        
+        // Get the season's episodes.js file
+        const seasonUrl = `https://anime-sama.fr/catalogue/${animeId}/${seasonPath}/${language}/`;
+        const episodesJsUrl = `${seasonUrl}episodes.js`;
+        
+        console.log(`Getting episodes.js from: ${episodesJsUrl}`);
+        
+        const response = await axios.get(episodesJsUrl, {
+            timeout: 8000,
+            headers: {
+                'User-Agent': getRandomUserAgent(),
+                'Accept': 'text/javascript, application/javascript, */*',
+                'Accept-Language': 'fr-FR,fr;q=0.9,en;q=0.8',
+                'Connection': 'keep-alive',
+                'Referer': seasonUrl
+            }
+        });
+        
+        const jsContent = response.data;
+        const sources = [];
+        
+        if (typeof jsContent === 'string' && jsContent.includes('var eps')) {
+            // Extract all episode server arrays (eps1, eps2, eps3, etc.)
+            const episodeArrayMatches = jsContent.match(/var eps(\d+) = \[([\s\S]*?)\];/g);
+            
+            if (episodeArrayMatches) {
+                episodeArrayMatches.forEach((match) => {
+                    const serverMatch = match.match(/var eps(\d+) = \[([\s\S]*?)\];/);
+                    if (serverMatch) {
+                        const serverNum = parseInt(serverMatch[1]);
+                        const urlsContent = serverMatch[2];
+                        
+                        // Extract URLs from the array
+                        const urls = urlsContent.match(/'([^']+)'/g);
+                        
+                        if (urls && urls[episodeNumber - 1]) {
+                            // Get the URL for the specific episode
+                            const episodeUrl = urls[episodeNumber - 1].replace(/'/g, '').trim();
+                            
+                            if (episodeUrl && episodeUrl.startsWith('http')) {
+                                // Determine server name from URL
+                                let serverName = `Server ${serverNum}`;
+                                if (episodeUrl.includes('sibnet.ru')) serverName = 'Sibnet';
+                                else if (episodeUrl.includes('sendvid.com')) serverName = 'SendVid';
+                                else if (episodeUrl.includes('streamtape.com')) serverName = 'Streamtape';
+                                else if (episodeUrl.includes('mixdrop.co')) serverName = 'Mixdrop';
+                                else if (episodeUrl.includes('upstream.to')) serverName = 'Upstream';
+                                else if (episodeUrl.includes('doodstream.com')) serverName = 'Doodstream';
+                                
+                                sources.push({
+                                    server: serverName,
+                                    url: episodeUrl,
+                                    quality: 'HD',
+                                    type: 'streaming',
+                                    episode: episodeNumber,
+                                    serverNumber: serverNum
+                                });
+                            }
+                        }
+                    }
+                });
+            }
+        }
+        
+        return sources;
+        
+    } catch (error) {
+        console.error('Error extracting from episode page:', error.message);
+        return [];
+    }
+}
+
+// Extract streaming sources from season page (returns first episode sources as example)
+async function extractFromSeasonPage(seasonUrl) {
+    try {
+        // Get the episodes.js file
+        const episodesJsUrl = `${seasonUrl}episodes.js`;
+        
+        console.log(`Getting episodes.js from: ${episodesJsUrl}`);
+        
+        const response = await axios.get(episodesJsUrl, {
+            timeout: 8000,
+            headers: {
+                'User-Agent': getRandomUserAgent(),
+                'Accept': 'text/javascript, application/javascript, */*',
+                'Accept-Language': 'fr-FR,fr;q=0.9,en;q=0.8',
+                'Connection': 'keep-alive',
+                'Referer': seasonUrl
+            }
+        });
+        
+        const jsContent = response.data;
+        const sources = [];
+        
+        if (typeof jsContent === 'string' && jsContent.includes('var eps')) {
+            // Extract all episode server arrays (eps1, eps2, eps3, etc.)
+            const episodeArrayMatches = jsContent.match(/var eps(\d+) = \[([\s\S]*?)\];/g);
+            
+            if (episodeArrayMatches) {
+                episodeArrayMatches.forEach((match) => {
+                    const serverMatch = match.match(/var eps(\d+) = \[([\s\S]*?)\];/);
+                    if (serverMatch) {
+                        const serverNum = parseInt(serverMatch[1]);
+                        const urlsContent = serverMatch[2];
+                        
+                        // Extract URLs from the array
+                        const urls = urlsContent.match(/'([^']+)'/g);
+                        
+                        if (urls && urls[0]) {
+                            // Get the first episode URL as example
+                            const firstEpisodeUrl = urls[0].replace(/'/g, '').trim();
+                            
+                            if (firstEpisodeUrl && firstEpisodeUrl.startsWith('http')) {
+                                // Determine server name from URL
+                                let serverName = `Server ${serverNum}`;
+                                if (firstEpisodeUrl.includes('sibnet.ru')) serverName = 'Sibnet';
+                                else if (firstEpisodeUrl.includes('sendvid.com')) serverName = 'SendVid';
+                                else if (firstEpisodeUrl.includes('streamtape.com')) serverName = 'Streamtape';
+                                else if (firstEpisodeUrl.includes('mixdrop.co')) serverName = 'Mixdrop';
+                                else if (firstEpisodeUrl.includes('upstream.to')) serverName = 'Upstream';
+                                else if (firstEpisodeUrl.includes('doodstream.com')) serverName = 'Doodstream';
+                                
+                                sources.push({
+                                    server: serverName,
+                                    url: firstEpisodeUrl,
+                                    quality: 'HD',
+                                    type: 'streaming',
+                                    episode: 1,
+                                    serverNumber: serverNum,
+                                    totalEpisodes: urls.length,
+                                    note: 'Example from first episode'
+                                });
+                            }
+                        }
+                    }
+                });
+            }
+        }
+        
+        return sources;
+        
+    } catch (error) {
+        console.error('Error extracting from season page:', error.message);
+        return [];
+    }
+}
+
+// Extract streaming sources from episode page
+async function extractEpisodeStreamingSources(episodeUrl) {
+    try {
+        const $ = await scrapeAnimesama(episodeUrl);
+        const sources = [];
+        
+        // Look for streaming server buttons/links
+        $('.streaming-server, .server-btn, .episode-server, [data-server]').each((index, element) => {
+            const $el = $(element);
+            const serverName = $el.text().trim() || $el.attr('data-server') || $el.attr('title');
+            const serverUrl = $el.attr('href') || $el.attr('data-url') || $el.attr('src');
+            
+            if (serverName && serverUrl) {
+                sources.push({
+                    server: serverName,
+                    url: serverUrl.startsWith('http') ? serverUrl : `https://anime-sama.fr${serverUrl}`,
+                    quality: $el.attr('data-quality') || 'HD',
+                    type: 'streaming'
+                });
+            }
+        });
+        
+        // Also look for direct video sources in script tags
+        $('script').each((index, element) => {
+            const scriptContent = $(element).html();
+            if (scriptContent && (scriptContent.includes('video') || scriptContent.includes('stream'))) {
+                // Extract URLs from JavaScript variables
+                const urlMatches = scriptContent.match(/https?:\/\/[^\s"']+\.(mp4|m3u8|webm)/gi);
+                if (urlMatches) {
+                    urlMatches.forEach(url => {
+                        sources.push({
+                            server: 'Direct',
+                            url: url,
+                            quality: 'HD',
+                            type: 'direct'
+                        });
+                    });
+                }
+            }
+        });
+        
+        return sources;
+        
+    } catch (error) {
+        console.error('Error extracting episode streaming sources:', error.message);
+        return [];
+    }
+}
+
+// Extract direct streaming sources from anime-sama.fr streaming URL
+async function extractDirectStreamingSources(streamingUrl) {
+    try {
+        const sources = [];
+        
+        // Common streaming domains used by anime-sama.fr
+        const streamingDomains = [
+            'sibnet.ru',
+            'sendvid.com', 
+            'streamtape.com',
+            'mixdrop.co',
+            'upstream.to',
+            'doodstream.com'
+        ];
+        
+        // Check if URL is from a known streaming provider
+        const isKnownProvider = streamingDomains.some(domain => streamingUrl.includes(domain));
+        
+        if (isKnownProvider) {
+            // Extract provider name from URL
+            const providerMatch = streamingUrl.match(/\/\/([\w.-]+)/);
+            const providerName = providerMatch ? providerMatch[1].replace('www.', '') : 'Unknown';
+            
             sources.push({
-                server: serverName,
-                url: serverUrl.startsWith('http') ? serverUrl : `https://anime-sama.fr${serverUrl}`,
-                quality: $el.attr('data-quality') || 'HD'
+                server: providerName,
+                url: streamingUrl,
+                quality: 'HD',
+                type: 'external'
+            });
+        } else {
+            // Try to scrape the page for actual video sources
+            const $ = await scrapeAnimesama(streamingUrl);
+            
+            // Look for video tags and source elements
+            $('video source, video').each((index, element) => {
+                const $el = $(element);
+                const videoUrl = $el.attr('src') || $el.attr('data-src');
+                
+                if (videoUrl) {
+                    sources.push({
+                        server: 'Direct Video',
+                        url: videoUrl.startsWith('http') ? videoUrl : `https:${videoUrl}`,
+                        quality: $el.attr('data-quality') || 'HD',
+                        type: 'direct'
+                    });
+                }
+            });
+            
+            // Look for iframe sources
+            $('iframe').each((index, element) => {
+                const $el = $(element);
+                const iframeUrl = $el.attr('src');
+                
+                if (iframeUrl && iframeUrl.includes('http')) {
+                    sources.push({
+                        server: 'Iframe Source',
+                        url: iframeUrl,
+                        quality: 'HD',
+                        type: 'iframe'
+                    });
+                }
             });
         }
-    });
-    
-    return sources;
+        
+        return sources;
+        
+    } catch (error) {
+        console.error('Error extracting direct streaming sources:', error.message);
+        return [];
+    }
 }
 
 module.exports = {

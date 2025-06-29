@@ -135,6 +135,10 @@ This is a Node.js-based API that scrapes the anime-sama.fr website to provide an
 ✓ Eliminated URL construction error that was creating 'saisonsaison11' instead of 'saison11'
 ✓ All season format variations now work correctly with authentic anime-sama.fr data
 ✓ Successfully migrated project from Replit Agent to standard Replit environment
+✓ JUNE 29, 2025: Enhanced embed endpoint to return streaming URLs only (no HTML pages)
+✓ Modified /api/embed to extract direct streaming sources from anime-sama.fr episodes.js files
+✓ Endpoint now returns JSON format with actual streaming URLs from Sibnet, Vidmoly, SendVid, etc.
+✓ Compatible with video players that need direct streaming URLs instead of HTML embeds
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
