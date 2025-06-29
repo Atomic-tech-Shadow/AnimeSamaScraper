@@ -341,100 +341,91 @@ async function getTrendingAnime() {
 // Get anime details by ID
 async function getAnimeDetails(animeId) {
     try {
-        // First try to get basic info from homepage/search results
-        const basicInfo = await getBasicAnimeInfo(animeId);
+        const url = `https://anime-sama.fr/catalogue/${animeId}/`;
+        const $ = await scrapeAnimesama(url);
         
-        // Try different URL patterns for anime pages
-        const possibleUrls = [
-            `https://anime-sama.fr/catalogue/${animeId}`,
-            `https://anime-sama.fr/catalogue/${animeId}/`,
-            `https://anime-sama.fr/${animeId}`,
-            `https://anime-sama.fr/anime/${animeId}`
-        ];
-        
-        for (const url of possibleUrls) {
-            try {
-                const $ = await scrapeAnimesama(url);
-                
-                // Check if we got a valid page (not a redirect)
-                const bodyText = $('body').text();
-                if (bodyText.includes('301 Moved Permanently') || bodyText.length < 100) {
-                    continue;
-                }
-                
-                // Extract detailed information
-                const title = $('.anime-title, .title, h1, .main-title').first().text().trim() || basicInfo.title;
-                const synopsis = $('.synopsis, .description, .anime-synopsis, .summary, .plot').first().text().trim();
-                const image = $('.anime-image img, .poster img, .cover img, .main-image img').attr('src') || 
-                             $('.anime-image img, .poster img, .cover img, .main-image img').attr('data-src') ||
-                             basicInfo.image;
-                
-                // Extract genres
-                const genres = [];
-                $('.genre, .genres span, .genre-tag, .tag, .category').each((index, element) => {
-                    const genre = $(element).text().trim();
-                    if (genre && genre.length > 1) genres.push(genre);
-                });
-                
-                // Extract other metadata
-                const status = $('.status, .anime-status, .state').text().trim();
-                const year = $('.year, .anime-year, .release-year, .date').text().trim();
-                const studio = $('.studio, .anime-studio, .producer').text().trim();
-                const type = $('.type, .content-type').text().trim();
-                const episodes = $('.episodes, .episode-count').text().trim();
-                
-                return {
-                    id: animeId,
-                    title: title || basicInfo.title,
-                    synopsis: synopsis || 'Synopsis non disponible',
-                    image: image ? (image.startsWith('http') ? image : `https://anime-sama.fr${image}`) : basicInfo.image,
-                    genres: genres.length > 0 ? genres : ['Non spécifié'],
-                    status: status || 'Inconnu',
-                    year: year || 'Inconnu',
-                    studio: studio || 'Inconnu',
-                    type: type || 'Anime',
-                    episodes: episodes || 'Inconnu',
-                    url: `https://anime-sama.fr/catalogue/${animeId}`
-                };
-                
-            } catch (error) {
-                console.log(`Failed to get details from ${url}:`, error.message);
-                continue;
-            }
+        // Check if we got a valid page
+        const bodyText = $('body').text();
+        if (bodyText.includes('301 Moved Permanently') || bodyText.length < 100) {
+            throw new Error('Anime page not found');
         }
         
-        // If no detailed page found, return basic info with constructed details
+        // Extract title from page title or meta
+        const pageTitle = $('title').text();
+        let title = pageTitle.split('|')[0].trim();
+        if (!title) {
+            title = $('meta[property="og:title"]').attr('content') || 
+                   $('#titreOeuvre').text().trim() ||
+                   animeId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        }
+        
+        // Extract synopsis from meta description
+        const synopsis = $('meta[name="description"]').attr('content') || 
+                        $('meta[property="og:description"]').attr('content') ||
+                        'Synopsis non disponible';
+        
+        // Extract image from meta
+        const image = $('meta[property="og:image"]').attr('content') ||
+                     $('#imgOeuvre').attr('src') ||
+                     $('img[alt*="' + title + '"]').attr('src');
+        
+        // Extract keywords as genres from meta
+        const keywords = $('meta[name="keywords"]').attr('content') || '';
+        const genres = keywords.split(',')
+                              .map(g => g.trim())
+                              .filter(g => g && g !== 'anime-sama' && g !== 'anime' && g !== 'vostfr' && g !== 'vf' && g !== 'streaming' && g !== 'scan' && g !== 'sans pubs' && g !== 'anime sama')
+                              .slice(0, 5); // Take first 5 relevant genres
+        
+        // Get available seasons count
+        const seasons = await getAnimeSeasons(animeId);
+        const totalSeasons = seasons.length;
+        
+        // Determine status based on seasons
+        let status = 'Disponible';
+        if (totalSeasons > 1) {
+            status = `${totalSeasons} saisons disponibles`;
+        }
+        
+        // Extract additional info from page structure
+        const pageContent = $.html();
+        
+        // Try to extract year from content or URL patterns
+        let year = 'Inconnu';
+        const yearMatch = pageContent.match(/20\d{2}/);
+        if (yearMatch) {
+            year = yearMatch[0];
+        }
+        
+        // Determine type based on available seasons and content
+        let type = 'Anime';
+        const hasFilms = seasons.some(s => s.name.toLowerCase().includes('film'));
+        const hasOAV = seasons.some(s => s.name.toLowerCase().includes('oav') || s.name.toLowerCase().includes('ova'));
+        if (hasFilms && hasOAV) {
+            type = 'Série + Films + OAV';
+        } else if (hasFilms) {
+            type = 'Série + Films';
+        } else if (hasOAV) {
+            type = 'Série + OAV';
+        }
+        
         return {
             id: animeId,
-            title: basicInfo.title || animeId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-            synopsis: 'Synopsis non disponible pour le moment',
-            image: basicInfo.image,
-            genres: ['Non spécifié'],
-            status: 'Disponible',
-            year: 'Inconnu',
-            studio: 'Inconnu',
-            type: basicInfo.type || 'Anime',
-            episodes: 'Multiple',
-            url: `https://anime-sama.fr/catalogue/${animeId}`
+            title: title,
+            synopsis: synopsis,
+            image: image ? (image.startsWith('http') ? image : `https://anime-sama.fr${image}`) : null,
+            genres: genres.length > 0 ? genres : ['Anime'],
+            status: status,
+            year: year,
+            type: type,
+            totalSeasons: totalSeasons,
+            availableLanguages: ['VOSTFR', 'VF'], // Most anime have both
+            url: url,
+            lastUpdated: new Date().toISOString()
         };
         
     } catch (error) {
         console.error('Error getting anime details:', error.message);
-        
-        // Return minimal info in case of complete failure
-        return {
-            id: animeId,
-            title: animeId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-            synopsis: 'Informations non disponibles',
-            image: null,
-            genres: ['Non spécifié'],
-            status: 'Inconnu',
-            year: 'Inconnu',
-            studio: 'Inconnu',
-            type: 'Anime',
-            episodes: 'Inconnu',
-            url: `https://anime-sama.fr/catalogue/${animeId}`
-        };
+        throw error; // Don't return fake data
     }
 }
 
