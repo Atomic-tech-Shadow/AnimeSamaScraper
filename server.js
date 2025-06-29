@@ -57,7 +57,6 @@ app.get('/api/seasons/:animeId', (req, res) => {
     require('./api/seasons/[animeId].js')(req, res);
 });
 app.get('/api/episodes/:animeId', (req, res) => {
-    req.query.animeId = req.params.animeId;
     require('./api/episodes/[animeId].js')(req, res);
 });
 // Route générale vient après
