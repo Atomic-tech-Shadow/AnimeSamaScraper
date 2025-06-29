@@ -17,13 +17,14 @@ module.exports = async (req, res) => {
     }
 
     try {
-        const { animeId } = req.query;
+        // Get animeId from params OR query (support both route patterns)
+        const animeId = req.params?.animeId || req.query?.animeId;
 
         // Validate anime ID
         if (!animeId || animeId.trim().length === 0) {
             return res.status(400).json({ 
                 error: 'Anime ID is required',
-                message: 'Please provide a valid anime ID'
+                message: 'Please provide a valid anime ID (use /api/seasons/:animeId)'
             });
         }
 

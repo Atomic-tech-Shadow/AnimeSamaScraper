@@ -52,14 +52,15 @@ app.get('/api/anime/:id', (req, res) => {
     req.query.id = req.params.id;
     require('./api/anime/[id].js')(req, res);
 });
+// Route spécifique avec paramètre doit venir AVANT la route générale
 app.get('/api/seasons/:animeId', (req, res) => {
-    req.query.animeId = req.params.animeId;
     require('./api/seasons/[animeId].js')(req, res);
 });
 app.get('/api/episodes/:animeId', (req, res) => {
     req.query.animeId = req.params.animeId;
     require('./api/episodes/[animeId].js')(req, res);
 });
+// Route générale vient après
 app.get('/api/seasons', require('./api/seasons/index.js'));
 app.get('/api/episode-by-id/:episodeId', (req, res) => {
     req.query.episodeId = req.params.episodeId;
