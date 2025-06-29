@@ -22,7 +22,7 @@ module.exports = async (req, res) => {
         
         const recentEpisodes = [];
         
-        // Find recent episodes in the "containerAjoutsAnimes" section
+        // Find recent episodes in the "containerAjoutsAnimes" section with improved parsing
         $('#containerAjoutsAnimes .relative').each((index, element) => {
             const $el = $(element);
             const $link = $el.find('a');
@@ -30,43 +30,67 @@ module.exports = async (req, res) => {
             
             if (!href || !href.includes('/catalogue/')) return;
             
-            // Extract anime info
+            // Extract anime info with better selectors
             const $img = $el.find('img');
-            const title = $el.find('h1').text().trim();
+            const title = $el.find('h1.text-gray-200').text().trim();
             const image = $img.attr('src');
+            const altImage = $img.attr('alt'); // Backup image URL
             
-            // Extract episode and season info from the URL and badges
+            // Extract anime ID from URL path
             const urlParts = href.split('/');
-            const animeId = urlParts.find((part, i) => urlParts[i-1] === 'catalogue');
+            const catalogueIndex = urlParts.indexOf('catalogue');
+            const animeId = catalogueIndex >= 0 ? urlParts[catalogueIndex + 1] : null;
+            
+            // Extract season and language from URL structure  
             const seasonMatch = href.match(/saison(\d+)/);
-            const episodeMatch = href.match(/episode-(\d+)/);
+            const languageFromUrl = href.includes('/vf/') ? 'VF' : 'VOSTFR';
             
-            // Extract language and episode info from badges
+            // Extract detailed badge information
             const badges = $el.find('button').map((i, btn) => $(btn).text().trim()).get();
-            const languageBadge = badges.find(badge => badge === 'VF' || badge === 'VOSTFR') || 'VOSTFR';
-            const episodeBadge = badges.find(badge => badge.includes('Episode'));
+            const languageBadge = badges.find(badge => badge === 'VF' || badge === 'VOSTFR') || languageFromUrl;
+            const episodeBadge = badges.find(badge => badge.includes('Episode') || badge.includes('Saison'));
             
-            // Parse episode information
+            // Enhanced episode parsing
             let seasonNumber = seasonMatch ? parseInt(seasonMatch[1]) : 1;
             let episodeNumber = null;
+            let isFinale = false;
             
             if (episodeBadge) {
-                const epMatch = episodeBadge.match(/Episode (\d+)/);
+                // Parse "Saison 2 Episode 10" or "Saison 1 Episode 13 [FIN]"
+                const epMatch = episodeBadge.match(/Saison (\d+) Episode (\d+)/);
+                const finMatch = episodeBadge.includes('[FIN]');
+                
                 if (epMatch) {
-                    episodeNumber = parseInt(epMatch[1]);
+                    seasonNumber = parseInt(epMatch[1]);
+                    episodeNumber = parseInt(epMatch[2]);
+                    isFinale = finMatch;
                 }
             }
             
-            if (title && animeId) {
+            // Generate proper image URL
+            let finalImage = null;
+            if (image && image.startsWith('http')) {
+                finalImage = image;
+            } else if (altImage && altImage.startsWith('http')) {
+                finalImage = altImage;
+            } else if (animeId) {
+                finalImage = `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${animeId}.jpg`;
+            }
+            
+            // Only add if we have essential data
+            if (title && animeId && seasonNumber && episodeNumber) {
                 recentEpisodes.push({
                     animeId: animeId,
                     animeTitle: title,
                     season: seasonNumber,
                     episode: episodeNumber,
                     language: languageBadge,
+                    isFinale: isFinale,
                     url: href,
-                    image: image ? (image.startsWith('http') ? image : `https://anime-sama.fr${image}`) : null,
-                    addedAt: new Date().toISOString() // Current timestamp as proxy
+                    image: finalImage,
+                    badgeInfo: episodeBadge, // Keep original badge text for reference
+                    addedAt: new Date().toISOString(),
+                    type: isFinale ? 'finale' : 'episode'
                 });
             }
         });
