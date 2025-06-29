@@ -629,7 +629,21 @@ async function getAnimeSeasons(animeId) {
 async function getAnimeEpisodes(animeId, season = 1, language = 'VOSTFR') {
     try {
         const languageCode = language.toLowerCase() === 'vf' ? 'vf' : 'vostfr';
-        const seasonUrl = `https://anime-sama.fr/catalogue/${animeId}/saison${season}/${languageCode}/`;
+        
+        // Handle season parameter - could be number or string like "saison1"
+        let seasonPath;
+        if (typeof season === 'string' && season.startsWith('saison')) {
+            // Already formatted like "saison1", "saison11", etc.
+            seasonPath = season;
+        } else if (typeof season === 'number' || /^\d+$/.test(season)) {
+            // Numeric season, format as "saison{number}"
+            seasonPath = `saison${season}`;
+        } else {
+            // Fallback for any other format
+            seasonPath = season.toString();
+        }
+        
+        const seasonUrl = `https://anime-sama.fr/catalogue/${animeId}/${seasonPath}/${languageCode}/`;
         
         // Try to get the episodes.js file for this specific anime/season
         const episodesJsUrl = `${seasonUrl}episodes.js`;

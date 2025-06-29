@@ -130,6 +130,11 @@ This is a Node.js-based API that scrapes the anime-sama.fr website to provide an
 ✓ Resolved frontend compatibility issue where animeData.data.seasons.map() was failing
 ✓ getAnimeDetails now correctly returns seasons array with full season metadata
 ✓ Tested with One Piece - confirmed 26 seasons returned including sagas, Kai versions, and films
+✓ JUNE 29, 2025: Fixed episodes API season parameter handling bug
+✓ Corrected getAnimeEpisodes function to properly handle both numeric (season=11) and string (season=saison11) formats
+✓ Eliminated URL construction error that was creating 'saisonsaison11' instead of 'saison11'
+✓ All season format variations now work correctly with authentic anime-sama.fr data
+✓ Successfully migrated project from Replit Agent to standard Replit environment
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
