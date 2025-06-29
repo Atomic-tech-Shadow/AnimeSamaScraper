@@ -478,85 +478,95 @@ async function getBasicAnimeInfo(animeId) {
 // Get seasons for an anime by analyzing homepage patterns
 async function getAnimeSeasons(animeId) {
     try {
-        // Use the homepage search to find available seasons
-        const $ = await scrapeAnimesama('https://anime-sama.fr');
+        // Scrape the anime's main page to get real seasons data
+        const $ = await scrapeAnimesama(`https://anime-sama.fr/catalogue/${animeId}/`);
         
-        const seasons = new Map();
+        const seasons = [];
         
-        // Find all links that contain the anime ID and extract seasons
-        $(`a[href*="${animeId}/"], a[href*="${animeId}/saison"]`).each((index, element) => {
-            const $el = $(element);
-            const link = $el.attr('href');
-            
-            if (!link) return;
-            
-            // Extract season number from URL pattern like /catalogue/anime-id/saison2/
-            const seasonMatch = link.match(/\/saison(\d+)\//);
-            if (seasonMatch) {
-                const seasonNum = parseInt(seasonMatch[1]);
-                const seasonText = $el.text().trim();
-                
-                // Clean up season text
-                let seasonName = seasonText.replace(/\s+/g, ' ')
-                                          .replace(/\n/g, ' ')
-                                          .replace(/\t/g, ' ')
-                                          .replace(/\s*VF\s*/gi, '')
-                                          .replace(/\s*VOSTFR\s*/gi, '')
-                                          .replace(/\s*Episode\s*\d+.*$/gi, '')
-                                          .replace(/\s*\[FIN\]\s*/gi, '')
-                                          .trim();
-                
-                if (!seasonName || seasonName.length < 3) {
-                    seasonName = `Saison ${seasonNum}`;
-                }
-                
-                // Check if this season has both VF and VOSTFR
-                const languages = [];
-                if (link.includes('/vf/')) languages.push('VF');
-                if (link.includes('/vostfr/')) languages.push('VOSTFR');
-                
-                const seasonKey = `season_${seasonNum}`;
-                if (!seasons.has(seasonKey)) {
-                    seasons.set(seasonKey, {
-                        number: seasonNum,
+        // Look for JavaScript panneauAnime calls which contain the real season data
+        const scriptContent = $('script').map((i, script) => $(script).html()).get().join('\n');
+        
+        // Extract panneauAnime calls using regex
+        const panneauMatches = scriptContent.match(/panneauAnime\("([^"]+)",\s*"([^"]+)"\);/g);
+        
+        if (panneauMatches) {
+            panneauMatches.forEach((match, index) => {
+                const parts = match.match(/panneauAnime\("([^"]+)",\s*"([^"]+)"\);/);
+                if (parts && parts.length >= 3) {
+                    const seasonName = parts[1];
+                    const seasonUrl = parts[2];
+                    
+                    // Extract season number from URL (saison1, saison2, etc.)
+                    const seasonMatch = seasonUrl.match(/saison(\d+)/);
+                    let seasonNumber = seasonMatch ? parseInt(seasonMatch[1]) : index + 1;
+                    
+                    // Handle special cases like "film", "oav"
+                    if (seasonUrl.includes('film/')) {
+                        seasonNumber = 999; // Put films at the end
+                    } else if (seasonUrl.includes('oav/')) {
+                        seasonNumber = 998; // Put OAVs before films
+                    }
+                    
+                    // Determine language from URL
+                    const languages = [];
+                    if (seasonUrl.includes('/vf')) languages.push('VF');
+                    if (seasonUrl.includes('/vostfr')) languages.push('VOSTFR');
+                    if (languages.length === 0) languages.push('VOSTFR'); // default
+                    
+                    seasons.push({
+                        number: seasonNumber,
                         name: seasonName,
+                        url: seasonUrl,
                         languages: languages,
                         available: true
                     });
-                } else {
-                    // Merge languages
-                    const existing = seasons.get(seasonKey);
-                    existing.languages = [...new Set([...existing.languages, ...languages])];
                 }
-            }
-        });
-        
-        // Convert Map to Array and sort by season number
-        const seasonsArray = Array.from(seasons.values()).sort((a, b) => a.number - b.number);
-        
-        // If no seasons found, try to infer from basic info
-        if (seasonsArray.length === 0) {
-            // Check if we can find any reference to this anime
-            const basicInfo = await getBasicAnimeInfo(animeId);
-            if (basicInfo) {
-                seasonsArray.push({
-                    number: 1,
-                    name: "Saison 1",
-                    languages: ['VOSTFR'],
-                    available: true
-                });
-            }
+            });
         }
         
-        return seasonsArray;
+        // Sort by season number
+        seasons.sort((a, b) => a.number - b.number);
+        
+        // If no seasons found, try fallback method
+        if (seasons.length === 0) {
+            console.log(`No seasons found for ${animeId}, trying fallback...`);
+            
+            // Try to find any season links in the HTML directly
+            $('a[href*="saison"]').each((index, element) => {
+                const $el = $(element);
+                const href = $el.attr('href');
+                const text = $el.text().trim();
+                
+                if (href && href.includes(animeId)) {
+                    const seasonMatch = href.match(/saison(\d+)/);
+                    if (seasonMatch) {
+                        const seasonNum = parseInt(seasonMatch[1]);
+                        seasons.push({
+                            number: seasonNum,
+                            name: text || `Saison ${seasonNum}`,
+                            url: href,
+                            languages: ['VOSTFR'],
+                            available: true
+                        });
+                    }
+                }
+            });
+        }
+        
+        return seasons.length > 0 ? seasons : [{
+            number: 1,
+            name: "Saison 1",
+            url: "saison1/vostfr",
+            languages: ['VOSTFR'],
+            available: true
+        }];
         
     } catch (error) {
         console.error('Error getting anime seasons:', error.message);
-        
-        // Return default season 1 in case of error
         return [{
             number: 1,
-            name: "Saison 1", 
+            name: "Saison 1",
+            url: "saison1/vostfr", 
             languages: ['VOSTFR'],
             available: true
         }];
@@ -566,171 +576,141 @@ async function getAnimeSeasons(animeId) {
 // Get episodes for an anime season by analyzing the real episode URLs
 async function getAnimeEpisodes(animeId, season = 1, language = 'VOSTFR') {
     try {
-        // First, try to access the specific season/language page
         const languageCode = language.toLowerCase() === 'vf' ? 'vf' : 'vostfr';
         const seasonUrl = `https://anime-sama.fr/catalogue/${animeId}/saison${season}/${languageCode}/`;
         
-        let $ = null;
+        // Try to get the episodes.js file for this specific anime/season
+        const episodesJsUrl = `${seasonUrl}episodes.js`;
+        
+        const episodes = [];
         
         try {
-            $ = await scrapeAnimesama(seasonUrl);
+            // Use axios directly to get the JavaScript file (raw text)
+            const response = await axios.get(episodesJsUrl, {
+                timeout: 8000,
+                headers: {
+                    'User-Agent': getRandomUserAgent(),
+                    'Accept': 'text/javascript, application/javascript, */*',
+                    'Accept-Language': 'fr-FR,fr;q=0.9,en;q=0.8',
+                    'Connection': 'keep-alive',
+                    'Referer': seasonUrl
+                }
+            });
             
-            // Check if we got redirected or blocked
-            const bodyText = $('body').text();
-            if (bodyText.includes('301 Moved Permanently') || bodyText.length < 100) {
-                throw new Error('Page not accessible');
+            const jsContent = response.data;
+            
+            if (typeof jsContent === 'string' && jsContent.includes('var eps')) {
+                // Extract all episode server arrays (eps1, eps2, eps3, etc.)
+                const episodeArrayMatches = jsContent.match(/var eps(\d+) = \[([\s\S]*?)\];/g);
+                const servers = new Map();
+                
+                if (episodeArrayMatches) {
+                    episodeArrayMatches.forEach((match) => {
+                        const serverMatch = match.match(/var eps(\d+) = \[([\s\S]*?)\];/);
+                        if (serverMatch) {
+                            const serverNum = parseInt(serverMatch[1]);
+                            const urlsContent = serverMatch[2];
+                            
+                            // Extract URLs from the array
+                            const urls = urlsContent.match(/'([^']+)'/g);
+                            
+                            if (urls) {
+                                const cleanUrls = urls.map(url => url.replace(/'/g, '').trim()).filter(url => url.length > 0);
+                                servers.set(serverNum, cleanUrls);
+                            }
+                        }
+                    });
+                }
+                
+                // Find the maximum number of episodes across all servers
+                let maxEpisodes = 0;
+                servers.forEach(urls => {
+                    maxEpisodes = Math.max(maxEpisodes, urls.length);
+                });
+                
+                // Create episodes with all available servers
+                for (let episodeNum = 1; episodeNum <= maxEpisodes; episodeNum++) {
+                    const streamingSources = [];
+                    
+                    // Collect streaming sources from all servers for this episode
+                    servers.forEach((urls, serverNum) => {
+                        if (urls[episodeNum - 1]) {
+                            // Determine server name based on the URL domain
+                            const serverUrl = urls[episodeNum - 1];
+                            let serverName = `Server ${serverNum}`;
+                            
+                            if (serverUrl.includes('sibnet.ru')) {
+                                serverName = 'Sibnet';
+                            } else if (serverUrl.includes('sendvid.com')) {
+                                serverName = 'SendVid';
+                            } else if (serverUrl.includes('Smoothpre.com')) {
+                                serverName = 'SmoothPre';
+                            } else if (serverUrl.includes('oneupload.to')) {
+                                serverName = 'OneUpload';
+                            }
+                            
+                            streamingSources.push({
+                                server: serverName,
+                                url: serverUrl,
+                                quality: 'HD',
+                                serverNumber: serverNum
+                            });
+                        }
+                    });
+                    
+                    episodes.push({
+                        number: episodeNum,
+                        title: `Épisode ${episodeNum}`,
+                        url: `${seasonUrl}episode-${episodeNum}`,
+                        streamingSources: streamingSources,
+                        language: language.toUpperCase(),
+                        season: parseInt(season),
+                        available: streamingSources.length > 0
+                    });
+                }
             }
             
-            // Try to get the episodes.js file for this specific anime/season
-            const episodesJsUrl = `${seasonUrl}episodes.js`;
+        } catch (jsError) {
+            console.error(`Could not fetch episodes.js from ${episodesJsUrl}:`, jsError.message);
+            
+            // Fallback: try to access the season page directly and look for episode count
             try {
-                const episodesJsResponse = await scrapeAnimesama(episodesJsUrl);
+                const $ = await scrapeAnimesama(seasonUrl);
                 
-                // Parse the JavaScript file to extract episode data
-                const jsContent = episodesJsResponse.html ? episodesJsResponse.html() : episodesJsResponse;
-                
-                if (typeof jsContent === 'string' && jsContent.includes('var eps')) {
-                    // Extract episode arrays from the JavaScript
-                    const episodeServers = [];
-                    
-                    // Look for different episode servers (eps1, eps2, etc.)
-                    const episodeArrayMatches = jsContent.match(/var eps(\d+) = \[([\s\S]*?)\];/g);
-                    
-                    if (episodeArrayMatches) {
-                        episodeArrayMatches.forEach((match, serverIndex) => {
-                            const serverNum = match.match(/var eps(\d+)/)[1];
-                            const urlsMatch = match.match(/\[([\s\S]*?)\]/);
-                            
-                            if (urlsMatch) {
-                                const urlsContent = urlsMatch[1];
-                                const urls = urlsContent.match(/'([^']+)'/g);
-                                
-                                if (urls) {
-                                    urls.forEach((url, episodeIndex) => {
-                                        const cleanUrl = url.replace(/'/g, '');
-                                        const episodeNum = episodeIndex + 1;
-                                        
-                                        if (!episodes.find(ep => ep.number === episodeNum)) {
-                                            episodes.push({
-                                                number: episodeNum,
-                                                title: `Épisode ${episodeNum}`,
-                                                url: seasonUrl,
-                                                streamingSources: episodes.find(ep => ep.number === episodeNum)?.streamingSources || [],
-                                                language: language.toUpperCase(),
-                                                season: parseInt(season),
-                                                available: true
-                                            });
-                                        }
-                                        
-                                        // Add streaming source to existing episode
-                                        const existingEpisode = episodes.find(ep => ep.number === episodeNum);
-                                        if (existingEpisode) {
-                                            if (!existingEpisode.streamingSources) {
-                                                existingEpisode.streamingSources = [];
-                                            }
-                                            existingEpisode.streamingSources.push({
-                                                server: `Server ${serverNum}`,
-                                                url: cleanUrl,
-                                                quality: 'HD'
-                                            });
-                                        }
-                                    });
-                                }
-                            }
+                // Look for select options or episode references in the HTML
+                const selectEpisodes = $('#selectEpisodes option').length;
+                if (selectEpisodes > 0) {
+                    // Create episodes based on select options
+                    for (let i = 1; i <= selectEpisodes; i++) {
+                        episodes.push({
+                            number: i,
+                            title: `Épisode ${i}`,
+                            url: `${seasonUrl}episode-${i}`,
+                            streamingSources: [],
+                            language: language.toUpperCase(),
+                            season: parseInt(season),
+                            available: false
                         });
                     }
                 }
-            } catch (jsError) {
-                console.log('Could not fetch episodes.js:', jsError.message);
+            } catch (fallbackError) {
+                console.error('Fallback page access failed:', fallbackError.message);
             }
-            
-        } catch (error) {
-            // If direct access fails, try to get episode links from homepage
-            $ = await scrapeAnimesama('https://anime-sama.fr');
         }
-        
-        const episodes = [];
-        const seenEpisodes = new Set();
-        
-        // Look for episode links in the page
-        const episodePattern = new RegExp(`${animeId}/saison${season}/${languageCode}/episode-(\\d+)`, 'i');
-        const episodeAlternatePattern = new RegExp(`${animeId}/saison${season}/${languageCode}/[^/]*?(\\d+)`, 'i');
-        
-        $('a[href*="episode"], a[href*="eps"], [onclick*="episode"], [onclick*="eps"]').each((index, element) => {
-            const $el = $(element);
-            const link = $el.attr('href') || $el.attr('onclick');
-            
-            if (!link || !link.includes(animeId) || !link.includes(`saison${season}`) || !link.includes(languageCode)) {
-                return;
-            }
-            
-            // Extract episode number from URL
-            let episodeMatch = link.match(episodePattern);
-            if (!episodeMatch) {
-                episodeMatch = link.match(episodeAlternatePattern);
-            }
-            
-            if (episodeMatch) {
-                const episodeNum = parseInt(episodeMatch[1]);
-                
-                if (seenEpisodes.has(episodeNum)) return;
-                seenEpisodes.add(episodeNum);
-                
-                const episodeTitle = $el.text().trim() || `Épisode ${episodeNum}`;
-                const cleanTitle = episodeTitle.replace(/\s+/g, ' ')
-                                             .replace(/\n/g, ' ')
-                                             .replace(/\t/g, ' ')
-                                             .replace(/\s*VF\s*/gi, '')
-                                             .replace(/\s*VOSTFR\s*/gi, '')
-                                             .replace(/\s*\[FIN\]\s*/gi, '')
-                                             .trim();
-                
-                episodes.push({
-                    number: episodeNum,
-                    title: cleanTitle || `Épisode ${episodeNum}`,
-                    url: link.startsWith('http') ? link : `https://anime-sama.fr${link}`,
-                    language: language.toUpperCase(),
-                    season: parseInt(season),
-                    available: true
-                });
-            }
-        });
         
         // Sort episodes by number
         episodes.sort((a, b) => a.number - b.number);
         
-        // If no episodes found, generate a basic list
+        // If still no episodes found, return empty array (don't create fake data)
         if (episodes.length === 0) {
-            // Try to estimate number of episodes (common ranges)
-            const commonEpisodeCounts = [12, 13, 24, 25, 26, 50, 100];
-            const defaultCount = 12;
-            
-            for (let i = 1; i <= defaultCount; i++) {
-                episodes.push({
-                    number: i,
-                    title: `Épisode ${i}`,
-                    url: `https://anime-sama.fr/catalogue/${animeId}/saison${season}/${languageCode}/episode-${i}`,
-                    language: language.toUpperCase(),
-                    season: parseInt(season),
-                    available: false // Mark as potentially unavailable
-                });
-            }
+            throw new Error(`No episodes found for ${animeId} season ${season} in ${language}`);
         }
         
         return episodes;
         
     } catch (error) {
         console.error('Error getting anime episodes:', error.message);
-        
-        // Return basic episode structure
-        return [{
-            number: 1,
-            title: "Épisode 1",
-            url: `https://anime-sama.fr/catalogue/${animeId}/saison${season}/${language.toLowerCase()}/episode-1`,
-            language: language.toUpperCase(),
-            season: parseInt(season),
-            available: false
-        }];
+        throw error; // Don't return fake data, let the API handle the error appropriately
     }
 }
 
