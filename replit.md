@@ -126,6 +126,10 @@ This is a Node.js-based API that scrapes the anime-sama.fr website to provide an
 ✓ Upgraded getRecentEpisodes to extract precise episode data from containerAjoutsAnimes with finale detection
 ✓ Added authentic data like alternative titles, progress info, correspondence manga-anime, episode types
 ✓ All endpoints now provide maximum authentic metadata from actual site structure parsing
+✓ JUNE 29, 2025: Fixed critical API bug - added missing 'seasons' field to anime details endpoint
+✓ Resolved frontend compatibility issue where animeData.data.seasons.map() was failing
+✓ getAnimeDetails now correctly returns seasons array with full season metadata
+✓ Tested with One Piece - confirmed 26 seasons returned including sagas, Kai versions, and films
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.

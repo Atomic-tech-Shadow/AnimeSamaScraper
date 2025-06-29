@@ -454,7 +454,7 @@ async function getAnimeDetails(animeId) {
             }
         }
         
-        return {
+        const result = {
             id: animeId,
             title: title,
             alternativeTitles: alternativeTitles || null,
@@ -466,6 +466,7 @@ async function getAnimeDetails(animeId) {
             correspondence: correspondence || null,
             year: year,
             type: type,
+            seasons: seasons, // Ajout du champ seasons manquant
             totalSeasons: totalSeasons,
             availableLanguages: availableLanguages,
             hasFilms: hasFilms,
@@ -474,6 +475,8 @@ async function getAnimeDetails(animeId) {
             url: url,
             lastUpdated: new Date().toISOString()
         };
+        
+        return result;
         
     } catch (error) {
         console.error('Error getting anime details:', error.message);
