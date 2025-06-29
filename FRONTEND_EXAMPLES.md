@@ -6,7 +6,7 @@
 ```jsx
 import { useState, useEffect } from 'react';
 
-const API_BASE_URL = 'http://localhost:5000';
+const API_BASE_URL = 'https://anime-sama-scraper.vercel.app';
 
 // Hook personnalisé pour l'API Anime-Sama
 export const useAnimeSama = () => {
@@ -432,7 +432,7 @@ export default RecentEpisodes;
 <script setup>
 import { ref, watch, onMounted } from 'vue';
 
-const API_BASE_URL = 'http://localhost:5000';
+const API_BASE_URL = 'https://anime-sama-scraper.vercel.app';
 
 // États réactifs
 const searchQuery = ref('');

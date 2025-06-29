@@ -4,7 +4,7 @@
 
 L'API Anime-Sama est une API de scraping en temps réel qui extrait des données authentiques depuis anime-sama.fr. Elle fournit des informations complètes sur les animes, épisodes, saisons et sources de streaming.
 
-**URL de base**: `http://localhost:5000`
+**URL de base**: `https://anime-sama-scraper.vercel.app`
 
 ## 🚀 Endpoints Disponibles
 
@@ -35,7 +35,7 @@ GET /api/search?query={terme}
 
 **Exemple**:
 ```bash
-curl "http://localhost:5000/api/search?query=demon%20slayer"
+curl "https://anime-sama-scraper.vercel.app/api/search?query=demon%20slayer"
 ```
 
 **Réponse**:
@@ -64,7 +64,7 @@ GET /api/trending
 
 **Exemple**:
 ```bash
-curl "http://localhost:5000/api/trending"
+curl "https://anime-sama-scraper.vercel.app/api/trending"
 ```
 
 **Réponse**:
@@ -92,7 +92,7 @@ GET /api/recent
 
 **Exemple**:
 ```bash
-curl "http://localhost:5000/api/recent"
+curl "https://anime-sama-scraper.vercel.app/api/recent"
 ```
 
 **Réponse**:
@@ -125,7 +125,7 @@ GET /api/anime/{id}
 
 **Exemple**:
 ```bash
-curl "http://localhost:5000/api/anime/demon-slayer"
+curl "https://anime-sama-scraper.vercel.app/api/anime/demon-slayer"
 ```
 
 **Réponse**:
@@ -159,7 +159,7 @@ GET /api/seasons/{animeId}
 
 **Exemple**:
 ```bash
-curl "http://localhost:5000/api/seasons/demon-slayer"
+curl "https://anime-sama-scraper.vercel.app/api/seasons/demon-slayer"
 ```
 
 **Réponse**:
@@ -199,7 +199,7 @@ GET /api/episodes/{animeId}?season={numero}&language={langue}
 
 **Exemple**:
 ```bash
-curl "http://localhost:5000/api/episodes/demon-slayer?season=1&language=VOSTFR"
+curl "https://anime-sama-scraper.vercel.app/api/episodes/demon-slayer?season=1&language=VOSTFR"
 ```
 
 **Réponse**:
@@ -244,7 +244,7 @@ GET /api/embed?url={urlEpisode}
 
 **Exemple**:
 ```bash
-curl "http://localhost:5000/api/embed?url=https%3A%2F%2Fanime-sama.fr%2Fcatalogue%2Fdemon-slayer%2Fsaison1%2Fvostfr%2Fepisode-1"
+curl "https://anime-sama-scraper.vercel.app/api/embed?url=https%3A%2F%2Fanime-sama.fr%2Fcatalogue%2Fdemon-slayer%2Fsaison1%2Fvostfr%2Fepisode-1"
 ```
 
 **Réponse**: HTML complet d'un lecteur vidéo intégrable
@@ -255,7 +255,7 @@ curl "http://localhost:5000/api/embed?url=https%3A%2F%2Fanime-sama.fr%2Fcatalogu
 
 ```javascript
 // Configuration de l'API
-const API_BASE_URL = 'http://localhost:5000';
+const API_BASE_URL = 'https://anime-sama-scraper.vercel.app';
 
 // Classe utilitaire pour l'API
 class AnimeSamaAPI {
@@ -555,14 +555,14 @@ try {
 // Configuration pour différents environnements
 const config = {
   development: {
-    API_BASE_URL: 'http://localhost:5000'
+    API_BASE_URL: 'https://anime-sama-scraper.vercel.app'
   },
   production: {
-    API_BASE_URL: 'https://your-domain.com'
+    API_BASE_URL: 'https://anime-sama-scraper.vercel.app'
   }
 };
 
-const API_BASE_URL = config[process.env.NODE_ENV || 'development'].API_BASE_URL;
+const API_BASE_URL = config[process.env.NODE_ENV || 'production'].API_BASE_URL;
 ```
 
 ### CORS et Sécurité
