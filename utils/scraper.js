@@ -614,9 +614,13 @@ async function getAnimeSeasons(animeId) {
         const animeSection = fullHtml.split('<!-- ANIME -->')[1]?.split('<!-- MANGA -->')[0];
         const mangaSection = fullHtml.split('<!-- MANGA -->')[1];
         
-        // Process ANIME section
+        // Process ANIME section (filter out commented content)
         if (animeSection) {
-            const panneauMatches = animeSection.match(/panneauAnime\("([^"]+)",\s*"([^"]+)"\);/g);
+            // Remove commented blocks /* ... */ and single-line comments // to avoid extracting inactive content
+            let cleanAnimeSection = animeSection.replace(/\/\*[\s\S]*?\*\//g, '');
+            // Remove single-line comments starting with //
+            cleanAnimeSection = cleanAnimeSection.replace(/\/\/.*$/gm, '');
+            const panneauMatches = cleanAnimeSection.match(/panneauAnime\("([^"]+)",\s*"([^"]+)"\);/g);
             
             if (panneauMatches) {
                 panneauMatches.forEach((match, index) => {
@@ -677,7 +681,11 @@ async function getAnimeSeasons(animeId) {
         
         // Process MANGA section (Scans) - uses panneauScan instead of panneauAnime
         if (mangaSection) {
-            const mangaPanneauMatches = mangaSection.match(/panneauScan\("([^"]+)",\s*"([^"]+)"\);/g);
+            // Remove commented blocks /* ... */ and single-line comments // to avoid extracting inactive content
+            let cleanMangaSection = mangaSection.replace(/\/\*[\s\S]*?\*\//g, '');
+            // Remove single-line comments starting with //
+            cleanMangaSection = cleanMangaSection.replace(/\/\/.*$/gm, '');
+            const mangaPanneauMatches = cleanMangaSection.match(/panneauScan\("([^"]+)",\s*"([^"]+)"\);/g);
             
             if (mangaPanneauMatches) {
                 mangaPanneauMatches.forEach((match, index) => {
@@ -783,14 +791,8 @@ async function getAnimeSeasons(animeId) {
         
     } catch (error) {
         console.error('Error getting anime seasons:', error.message);
-        return [{
-            number: 1,
-            name: "Saison 1",
-            url: "saison1/vostfr", 
-            languages: ['VOSTFR'],
-            available: true,
-            contentType: 'anime'
-        }];
+        // Return empty array - no fake data generation
+        return [];
     }
 }
 
