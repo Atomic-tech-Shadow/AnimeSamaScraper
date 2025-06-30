@@ -103,15 +103,7 @@ function randomDelay(min = 500, max = 1500) {
     });
 }
 
-// Helper function to check if an anime is popular/current (VF usually available)
-function isPopularAnime(animeId) {
-    const popularAnime = [
-        'dandadan', 'blue-box', 'naruto', 'one-piece', 'dragon-ball', 
-        'attack-on-titan', 'demon-slayer', 'jujutsu-kaisen', 'spy-family',
-        'chainsaw-man', 'tokyo-ghoul', 'death-note', 'my-hero-academia'
-    ];
-    return popularAnime.some(popular => animeId.includes(popular) || popular.includes(animeId));
-}
+// Helper function removed - no anime-specific configurations
 
 // Main scraping function
 async function scrapeAnimesama(url, options = {}) {
@@ -674,14 +666,10 @@ async function getAnimeSeasons(animeId) {
         
         // Process ANIME section
         if (animeSection) {
-            // For popular anime like Dandadan, include commented VF versions that actually exist
+            // Process section without anime-specific configurations
             let processedSection = animeSection;
-            if (isPopularAnime(animeId)) {
-                // Uncomment VF versions for popular anime (they usually exist)
-                processedSection = processedSection.replace(/\/\/panneauAnime\("([^"]*VF[^"]*)",\s*"([^"]+)"\);/g, 'panneauAnime("$1", "$2");');
-            }
             
-            // Remove other commented blocks and single-line comments
+            // Remove commented blocks and single-line comments (but preserve authentic data)
             processedSection = processedSection.replace(/\/\*[\s\S]*?\*\//g, '');
             processedSection = processedSection.replace(/\/\/.*$/gm, '');
             
@@ -1060,10 +1048,10 @@ async function extractFromEpisodePage(episodeUrl) {
     try {
         // Parse the episode URL to get season info
         const urlParts = episodeUrl.split('/');
-        const animeId = urlParts[4]; // one-piece
-        const seasonPath = urlParts[5]; // saison1
-        const language = urlParts[6]; // vostfr
-        const episodePart = urlParts[7]; // episode-1
+        const animeId = urlParts[4]; // anime ID
+        const seasonPath = urlParts[5]; // season folder
+        const language = urlParts[6]; // language
+        const episodePart = urlParts[7]; // episode file
         
         if (!episodePart || !episodePart.includes('episode-')) {
             throw new Error('Invalid episode URL format');
