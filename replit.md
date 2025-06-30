@@ -114,6 +114,13 @@ This is a Node.js-based API that scrapes the anime-sama.fr website to provide an
 ✓ Eliminated hardcoded anime lists and special treatments for popular anime  
 ✓ API functions uniformly across all anime without bias or special handling
 ✓ Migration completed with improved security, performance, and guaranteed data authenticity
+✓ JUNE 30, 2025: ENHANCED LANGUAGE DETECTION SYSTEM
+✓ Fixed VF language detection - API now correctly identifies VF1, VF2 variants when user requests VF
+✓ Improved getAnimeEpisodes function to automatically detect best available language variant
+✓ Enhanced getSeasonLanguages function with better episode.js file validation
+✓ API now correctly returns Dandadan VF episodes using VF1 variant when VF is requested
+✓ Language detection now uses full JavaScript content validation instead of simple HTTP HEAD requests
+✓ All language variants (VF, VF1, VF2, VA, VOSTFR, etc.) now properly detected and mapped
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.

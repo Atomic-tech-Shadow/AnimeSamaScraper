@@ -666,29 +666,48 @@ async function getBasicAnimeInfo(animeId) {
 
 // Helper function to get available languages for a season
 async function getSeasonLanguages(animeId, seasonValue) {
-    const possibleLanguages = ['vostfr', 'vf', 'va', 'vkr', 'vcn', 'vqc', 'vf1', 'vf2'];
+    const possibleLanguages = ['vostfr', 'vf', 'vf1', 'vf2', 'va', 'vkr', 'vcn', 'vqc', 'vj'];
     const availableLanguages = [];
     
     for (const lang of possibleLanguages) {
         try {
-            const testUrl = `https://anime-sama.fr/catalogue/${animeId}/${seasonValue}/${lang}/`;
-            const response = await scrapeAnimesama(testUrl, { timeout: 2000 });
+            // Check if episodes.js file exists for this language (more reliable)
+            const episodesUrl = `https://anime-sama.fr/catalogue/${animeId}/${seasonValue}/${lang}/episodes.js`;
+            const response = await axios.get(episodesUrl, {
+                timeout: 3000,
+                headers: { 'User-Agent': getRandomUserAgent() },
+                validateStatus: function (status) {
+                    return status < 500; // Accept all status codes less than 500
+                }
+            });
             
-            // Check if page exists and is not a 404
-            const pageContent = response.html();
-            if (!pageContent.includes('Page introuvable') && 
-                !pageContent.includes('Cette page n\'existe pas') &&
-                !pageContent.includes('404') &&
-                pageContent.includes('Episode 1')) { // Additional check for actual content
+            // Check if we got actual JavaScript content (not a 404 page)
+            if (response.status === 200 && response.data && 
+                (response.data.includes('var eps') || response.data.includes('eps1'))) {
                 availableLanguages.push(lang.toUpperCase());
             }
         } catch (error) {
-            // Language not available, continue to next
-            continue;
+            // Try fallback method - check the page itself
+            try {
+                const testUrl = `https://anime-sama.fr/catalogue/${animeId}/${seasonValue}/${lang}/`;
+                const pageResponse = await scrapeAnimesama(testUrl, { timeout: 2000 });
+                
+                // Check if page exists and is not a 404
+                const pageContent = pageResponse.html();
+                if (!pageContent.includes('Page introuvable') && 
+                    !pageContent.includes('Cette page n\'existe pas') &&
+                    !pageContent.includes('404') &&
+                    (pageContent.includes('Episode 1') || pageContent.includes('eps1'))) {
+                    availableLanguages.push(lang.toUpperCase());
+                }
+            } catch (fallbackError) {
+                // Language not available, continue to next
+                continue;
+            }
         }
         
         // Add small delay between requests to be respectful
-        await randomDelay(150, 300);
+        await randomDelay(100, 200);
     }
     
     return availableLanguages.length > 0 ? availableLanguages : ['VOSTFR'];
@@ -759,12 +778,8 @@ async function getAnimeSeasons(animeId) {
                         // Extract season folder name for value
                         const seasonValue = seasonUrl.split('/')[0];
                         
-                        // For now, we'll use a direct check approach
-                        // Extract language from the current season URL, but return only authentic confirmed languages
-                        const languages = ['VOSTFR']; // Always available as primary
-                        
-                        // TODO: Implement proper language detection in future updates
-                        // For now, we provide only confirmed authentic data
+                        // Get all available languages for this season
+                        const languages = await getSeasonLanguages(animeId, seasonValue);
                         
                         seasons.push({
                             number: seasonNumber,
@@ -902,8 +917,6 @@ async function getAnimeSeasons(animeId) {
 // Get episodes for an anime season by analyzing the real episode URLs
 async function getAnimeEpisodes(animeId, season = 1, language = 'VOSTFR') {
     try {
-        const languageCode = language.toLowerCase() === 'vf' ? 'vf' : 'vostfr';
-        
         // Handle season parameter - could be number or string like "saison1"
         let seasonPath;
         if (typeof season === 'string' && season.startsWith('saison')) {
@@ -915,6 +928,63 @@ async function getAnimeEpisodes(animeId, season = 1, language = 'VOSTFR') {
         } else {
             // Fallback for any other format
             seasonPath = season.toString();
+        }
+        
+        // Try to find the correct language variant available on the site
+        let languageCode = 'vostfr'; // default fallback
+        const requestedLang = language.toLowerCase();
+        
+        // First check what language variants are actually available for this anime/season
+        const possibleLanguages = ['vostfr', 'vf', 'vf1', 'vf2', 'va', 'vkr', 'vcn', 'vqc', 'vj'];
+        
+        // Special handling for VF - check common variants first
+        if (requestedLang === 'vf') {
+            const vfVariants = ['vf1', 'vf2', 'vf'];
+            for (const vfVariant of vfVariants) {
+                try {
+                    const testUrl = `https://anime-sama.fr/catalogue/${animeId}/${seasonPath}/${vfVariant}/episodes.js`;
+                    const testResponse = await axios.get(testUrl, {
+                        timeout: 3000,
+                        headers: { 'User-Agent': getRandomUserAgent() },
+                        validateStatus: function (status) {
+                            return status < 500;
+                        }
+                    });
+                    
+                    // Check if we got actual JavaScript content
+                    if (testResponse.status === 200 && testResponse.data && 
+                        (testResponse.data.includes('var eps') || testResponse.data.includes('eps1'))) {
+                        languageCode = vfVariant;
+                        break;
+                    }
+                } catch (e) {
+                    // Continue to next variant
+                }
+            }
+        } else {
+            // For other languages, try exact match
+            for (const testLang of possibleLanguages) {
+                if (requestedLang === testLang) {
+                    try {
+                        const testUrl = `https://anime-sama.fr/catalogue/${animeId}/${seasonPath}/${testLang}/episodes.js`;
+                        const testResponse = await axios.get(testUrl, {
+                            timeout: 3000,
+                            headers: { 'User-Agent': getRandomUserAgent() },
+                            validateStatus: function (status) {
+                                return status < 500;
+                            }
+                        });
+                        
+                        if (testResponse.status === 200 && testResponse.data && 
+                            (testResponse.data.includes('var eps') || testResponse.data.includes('eps1'))) {
+                            languageCode = testLang;
+                            break;
+                        }
+                    } catch (e) {
+                        // Continue to next variant
+                    }
+                }
+            }
         }
         
         const seasonUrl = `https://anime-sama.fr/catalogue/${animeId}/${seasonPath}/${languageCode}/`;
