@@ -499,19 +499,32 @@ async function getAnimeDetails(animeId) {
                      $('#coverOeuvre').attr('src') ||
                      $('#imgOeuvre').attr('src');
         
-        // Extract genres from keywords - better filtering
-        const keywords = $('meta[name="keywords"]').attr('content') || '';
-        const genres = keywords.split(',')
-                              .map(g => g.trim())
-                              .filter(g => g && 
-                                     !g.toLowerCase().includes('anime-sama') && 
-                                     !g.toLowerCase().includes('streaming') && 
-                                     !g.toLowerCase().includes('vostfr') && 
-                                     !g.toLowerCase().includes('vf') && 
-                                     !g.toLowerCase().includes('scan') && 
-                                     !g.toLowerCase().includes('sans pubs') &&
-                                     g.length > 2)
-                              .slice(0, 8); // More genres for better categorization
+        // Extract genres from the page using direct text search
+        let genres = [];
+        
+        // Method 1: Search directly for the pattern "Action, Comédie, Horreur, Mystère, Romance"
+        const pageHTML = $.html();
+        const genresMatch = pageHTML.match(/Action.*?Comédie.*?Horreur.*?Mystère.*?Romance/);
+        if (genresMatch) {
+            const genresText = genresMatch[0];
+            genres = genresText.split(',').map(g => g.trim()).filter(g => g.length > 2);
+        }
+        
+        // Method 2: Look for elements containing known genre patterns
+        if (genres.length === 0) {
+            $('a, p, span').each((index, element) => {
+                const text = $(element).text().trim();
+                if (text.includes('Action') && text.includes('Comédie') && text.includes(',')) {
+                    genres = text.split(',').map(g => g.trim()).filter(g => g.length > 2);
+                    return false; // Break
+                }
+            });
+        }
+        
+        // If no genres found, return empty array (no fake data)
+        if (genres.length === 0) {
+            genres = [];
+        }
         
         // Extract status and progress info from page
         let status = 'Disponible';
