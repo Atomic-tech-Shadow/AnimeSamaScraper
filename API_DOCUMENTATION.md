@@ -12,19 +12,25 @@ Aucune authentification requise. L'API est publique et gratuite.
 
 ## Système de Langues
 
-L'API supporte toutes les langues disponibles sur anime-sama.fr :
+L'API supporte toutes les langues disponibles sur anime-sama.fr avec **détection automatique intelligente** :
 
 | Code | Nom | Description |
 |------|-----|-------------|
 | `vostfr` | VOSTFR | Version Originale Sous-Titrée Française |
-| `vf` | VF | Version Française |
+| `vf` | VF | Version Française (détecte automatiquement VF1, VF2 si disponible) |
+| `vf1` | VF1 | Version Française 1 (ADN) |
+| `vf2` | VF2 | Version Française 2 (Netflix) |
 | `va` | VA | Version Anglaise |
 | `vkr` | VKR | Version Coréenne |
 | `vcn` | VCN | Version Chinoise |
 | `vqc` | VQC | Version Québécoise |
-| `vf1` | VF1 | Version Française 1 (ADN) |
-| `vf2` | VF2 | Version Française 2 (Netflix) |
 | `vj` | VJ | Version Japonaise Sous-Titrée Française |
+
+### Détection Automatique VF
+Quand vous demandez `language=vf`, l'API détecte automatiquement la meilleure variante disponible :
+- Dandadan : utilise automatiquement `vf1` 
+- Autres anime : utilise `vf`, `vf1` ou `vf2` selon disponibilité
+- Garantit toujours des données authentiques du site
 
 ## Endpoints
 
@@ -151,33 +157,53 @@ fetch('http://localhost:5000/api/seasons/dandadan')
 - `season` (string, optionnel) : Numéro de saison (défaut: 1)
 - `language` (string, optionnel) : Code de langue (défaut: vostfr)
 
-**Exemple de requête :**
+**Exemples de requêtes :**
+
+**Version française (détection automatique) :**
 ```javascript
-fetch('http://localhost:5000/api/episodes/dandadan?season=saison1&language=vostfr')
+fetch('http://localhost:5000/api/episodes/dandadan?season=1&language=vf')
+// L'API détecte automatiquement VF1 pour Dandadan
 ```
 
-**Réponse :**
+**Version sous-titrée :**
+```javascript
+fetch('http://localhost:5000/api/episodes/dandadan?season=1&language=vostfr')
+```
+
+**Variante française spécifique :**
+```javascript
+fetch('http://localhost:5000/api/episodes/dandadan?season=1&language=vf1')
+```
+
+**Réponse (VF automatiquement détecté) :**
 ```json
 {
   "success": true,
   "animeId": "dandadan",
-  "season": "saison1",
-  "language": "VOSTFR",
+  "season": 1,
+  "language": "vf",
+  "detectedLanguage": "vf1",
   "count": 12,
   "episodes": [
     {
       "number": 1,
       "title": "Épisode 1",
-      "url": "https://anime-sama.fr/catalogue/dandadan/saison1/vostfr/episode-1",
+      "url": "https://anime-sama.fr/catalogue/dandadan/saison1/vf1/episode-1",
       "streamingSources": [
         {
           "server": "Sibnet",
           "url": "https://video.sibnet.ru/shell.php?videoid=5702327",
           "quality": "HD",
           "serverNumber": 1
+        },
+        {
+          "server": "SendVid",
+          "url": "https://sendvid.com/embed/6kntwzl3",
+          "quality": "HD",
+          "serverNumber": 4
         }
       ],
-      "language": "VOSTFR",
+      "language": "VF",
       "season": 1,
       "available": true
     }
@@ -469,6 +495,53 @@ Toutes les réponses d'erreur suivent ce format :
 - `400` : Requête invalide
 - `404` : Ressource non trouvée
 - `500` : Erreur serveur
+
+## Nouvelles Fonctionnalités (Juin 2025)
+
+### 🎯 Détection Automatique des Langages VF
+
+L'API intègre désormais un système intelligent de détection automatique pour les versions françaises :
+
+**Fonctionnement :**
+- Quand vous demandez `language=vf`, l'API teste automatiquement `vf1`, `vf2`, puis `vf`
+- Pour Dandadan : détecte automatiquement `vf1` au lieu de retourner une erreur
+- Valide le contenu JavaScript réel des épisodes (pas seulement l'existence des pages)
+- Retourne le langage exact utilisé dans la réponse (`detectedLanguage`)
+
+**Exemple :**
+```javascript
+// Vous demandez VF générique
+fetch('/api/episodes/dandadan?language=vf')
+
+// L'API détecte automatiquement VF1 et retourne :
+{
+  "language": "vf",           // Votre demande
+  "detectedLanguage": "vf1",  // Ce qui a été trouvé
+  "episodes": [...] // Épisodes authentiques VF1
+}
+```
+
+### 🔒 Garantie d'Authenticité des Données
+
+**Validation en temps réel :**
+- Chaque épisode est vérifié directement sur anime-sama.fr
+- Validation du contenu JavaScript `episodes.js` 
+- Aucune donnée inventée ou mise en cache
+- Sources de streaming extraites en temps réel
+
+**Système anti-échec :**
+- Tests multiples pour chaque langage demandé
+- Fallback intelligent sur les variantes disponibles
+- Validation du contenu (présence de `var eps1`, etc.)
+- Gestion gracieuse des erreurs sans données factices
+
+### 📊 Amélioration de la Performance
+
+**Optimisations de requêtes :**
+- Détection par validation de contenu JavaScript
+- Timeouts configurés (3 secondes max par test)
+- Agents utilisateur rotatifs pour éviter la détection
+- Délais respectueux entre requêtes
 
 ## Limites et considérations
 

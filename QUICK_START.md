@@ -1,35 +1,44 @@
-# Quick Start - API Anime-Sama
+# Démarrage Rapide - Anime-Sama API
 
-## 🚀 Test Rapide de l'API
+## 🚀 Serveur Local
 
-### URL de Production
+### URL de Développement
 ```
-https://anime-sama-scraper.vercel.app
+http://localhost:5000
+```
+
+### ✨ Nouvelle Fonctionnalité : Détection Automatique VF
+
+L'API détecte maintenant automatiquement les variantes VF (VF1, VF2) quand vous demandez "vf" :
+
+```bash
+# L'API trouve automatiquement VF1 pour Dandadan
+curl "http://localhost:5000/api/episodes/dandadan?season=1&language=vf"
 ```
 
 ### Tests Rapides avec cURL
 
 ```bash
-# 1. Tester l'API (documentation)
-curl "https://anime-sama-scraper.vercel.app/"
+# 1. Documentation de l'API
+curl "http://localhost:5000/"
 
-# 2. Rechercher un anime
-curl "https://anime-sama-scraper.vercel.app/api/search?query=demon%20slayer"
+# 2. Recherche d'anime
+curl "http://localhost:5000/api/search?query=dandadan"
 
-# 3. Voir les tendances
-curl "https://anime-sama-scraper.vercel.app/api/trending"
+# 3. Épisodes VF avec détection automatique
+curl "http://localhost:5000/api/episodes/dandadan?season=1&language=vf"
 
-# 4. Épisodes récents  
-curl "https://anime-sama-scraper.vercel.app/api/recent"
+# 4. Épisodes VOSTFR
+curl "http://localhost:5000/api/episodes/dandadan?season=1&language=vostfr"
 
-# 5. Détails d'un anime
-curl "https://anime-sama-scraper.vercel.app/api/anime/demon-slayer"
+# 5. Saisons disponibles
+curl "http://localhost:5000/api/seasons/dandadan"
 
-# 6. Saisons disponibles
-curl "https://anime-sama-scraper.vercel.app/api/seasons/demon-slayer"
+# 6. Anime en tendance
+curl "http://localhost:5000/api/trending"
 
-# 7. Épisodes d'une saison
-curl "https://anime-sama-scraper.vercel.app/api/episodes/demon-slayer?season=1&language=VOSTFR"
+# 7. Épisodes récents
+curl "http://localhost:5000/api/recent"
 ```
 
 ## 💻 Intégration JavaScript Simple
@@ -52,7 +61,7 @@ curl "https://anime-sama-scraper.vercel.app/api/episodes/demon-slayer?season=1&l
     <div id="results"></div>
 
     <script>
-        const API_URL = 'https://anime-sama-scraper.vercel.app';
+        const API_URL = 'http://localhost:5000';
         
         async function searchAnime() {
             const query = document.getElementById('search').value;
@@ -130,13 +139,61 @@ Type: ${anime.type}
 </html>
 ```
 
+## 🎯 Exemple : Détection Automatique VF
+
+### Test pratique avec Dandadan
+```javascript
+// Fonction pour tester la détection automatique VF
+async function testVFDetection() {
+    try {
+        const response = await fetch('http://localhost:5000/api/episodes/dandadan?season=1&language=vf');
+        const data = await response.json();
+        
+        if (data.success) {
+            console.log('✅ Détection VF réussie !');
+            console.log(`Demandé: ${data.language}`);        // "vf"
+            console.log(`Détecté: ${data.detectedLanguage}`); // "vf1"
+            console.log(`Épisodes: ${data.count}`);           // 12
+            console.log(`Premier épisode: ${data.episodes[0].url}`);
+            
+            // Vérifier que l'URL contient bien "vf1"
+            const containsVF1 = data.episodes[0].url.includes('vf1');
+            console.log(`URL authentique VF1: ${containsVF1 ? '✅' : '❌'}`);
+        } else {
+            console.log('❌ Échec de la détection');
+        }
+    } catch (error) {
+        console.error('Erreur:', error);
+    }
+}
+
+// Exécuter le test
+testVFDetection();
+```
+
+### Comparaison avant/après
+
+**Avant (juin 2025) :**
+```javascript
+// Retournait une erreur 404
+fetch('/api/episodes/dandadan?language=vf')
+// ❌ Erreur: No episodes found for dandadan season 1 in vf
+```
+
+**Maintenant :**
+```javascript
+// Détecte automatiquement VF1
+fetch('/api/episodes/dandadan?language=vf')
+// ✅ Retourne 12 épisodes authentiques en VF1
+```
+
 ## ⚛️ Intégration React Rapide
 
 ### Composant Simple
 ```jsx
 import React, { useState, useEffect } from 'react';
 
-const API_URL = 'https://anime-sama-scraper.vercel.app';
+const API_URL = 'http://localhost:5000';
 
 function AnimeApp() {
     const [trending, setTrending] = useState([]);
