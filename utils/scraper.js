@@ -601,88 +601,176 @@ async function getBasicAnimeInfo(animeId) {
     }
 }
 
-// Get seasons for an anime by analyzing homepage patterns
+// Enhanced seasons extraction with ANIME, MANGA, and all content types
 async function getAnimeSeasons(animeId) {
     try {
         // Scrape the anime's main page to get real seasons data
         const $ = await scrapeAnimesama(`https://anime-sama.fr/catalogue/${animeId}/`);
         
         const seasons = [];
-        
-        // Extract only from ANIME section, not MANGA section
         const fullHtml = $.html();
-        const animeSection = fullHtml.split('<!-- ANIME -->')[1]?.split('<!-- MANGA -->')[0];
         
-        if (!animeSection) {
-            throw new Error('No anime section found on page');
+        // Extract both ANIME and MANGA sections
+        const animeSection = fullHtml.split('<!-- ANIME -->')[1]?.split('<!-- MANGA -->')[0];
+        const mangaSection = fullHtml.split('<!-- MANGA -->')[1];
+        
+        // Process ANIME section
+        if (animeSection) {
+            const panneauMatches = animeSection.match(/panneauAnime\("([^"]+)",\s*"([^"]+)"\);/g);
+            
+            if (panneauMatches) {
+                panneauMatches.forEach((match, index) => {
+                    const parts = match.match(/panneauAnime\("([^"]+)",\s*"([^"]+)"\);/);
+                    if (parts && parts.length >= 3) {
+                        const seasonName = parts[1];
+                        const seasonUrl = parts[2];
+                        
+                        // Better season number extraction
+                        let seasonNumber = index + 1;
+                        let seasonType = 'Saison';
+                        
+                        // Analyze season name and URL for type and number
+                        if (seasonName.toLowerCase().includes('film')) {
+                            seasonType = 'Film';
+                            seasonNumber = 1000 + index; // Group films together
+                        } else if (seasonName.toLowerCase().includes('oav') || seasonName.toLowerCase().includes('ova')) {
+                            seasonType = 'OAV';
+                            seasonNumber = 990 + index; // Group OAVs together
+                        } else if (seasonName.toLowerCase().includes('épisode') && seasonName.toLowerCase().includes('train')) {
+                            seasonType = 'Spécial';
+                            seasonNumber = 980 + index; // Special episodes
+                        } else if (seasonName.toLowerCase().includes('hors série') || seasonName.toLowerCase().includes('hs')) {
+                            seasonType = 'Hors-Série';
+                            seasonNumber = 970 + index;
+                        } else {
+                            // Regular season - extract number
+                            const seasonMatch = seasonName.match(/saison\s*(\d+)|(\d+)/i);
+                            if (seasonMatch) {
+                                seasonNumber = parseInt(seasonMatch[1] || seasonMatch[2]);
+                            }
+                        }
+                        
+                        // Determine available languages
+                        const languages = [];
+                        if (seasonUrl.includes('/vf')) languages.push('VF');
+                        if (seasonUrl.includes('/vostfr')) languages.push('VOSTFR');
+                        if (languages.length === 0) languages.push('VOSTFR'); // default
+                        
+                        // Extract season folder name for value
+                        const seasonValue = seasonUrl.split('/')[0];
+                        
+                        seasons.push({
+                            number: seasonNumber,
+                            name: seasonName,
+                            value: seasonValue, // saison1, film, etc.
+                            type: seasonType,
+                            url: seasonUrl,
+                            fullUrl: `https://anime-sama.fr/catalogue/${animeId}/${seasonUrl}`,
+                            languages: languages,
+                            available: true,
+                            contentType: 'anime'
+                        });
+                    }
+                });
+            }
         }
         
-        // Extract panneauAnime calls from anime section only
-        const panneauMatches = animeSection.match(/panneauAnime\("([^"]+)",\s*"([^"]+)"\);/g);
-        
-        if (panneauMatches) {
-            panneauMatches.forEach((match, index) => {
-                const parts = match.match(/panneauAnime\("([^"]+)",\s*"([^"]+)"\);/);
-                if (parts && parts.length >= 3) {
-                    const seasonName = parts[1];
-                    const seasonUrl = parts[2];
-                    
-                    // Better season number extraction
-                    let seasonNumber = index + 1;
-                    let seasonType = 'Saison';
-                    
-                    // Analyze season name and URL for type and number
-                    if (seasonName.toLowerCase().includes('film')) {
-                        seasonType = 'Film';
-                        seasonNumber = 990 + index; // Group films together
-                    } else if (seasonName.toLowerCase().includes('oav') || seasonName.toLowerCase().includes('ova')) {
-                        seasonType = 'OAV';
-                        seasonNumber = 980 + index; // Group OAVs together
-                    } else if (seasonName.toLowerCase().includes('épisode') && seasonName.toLowerCase().includes('train')) {
-                        seasonType = 'Spécial';
-                        seasonNumber = 970 + index; // Special episodes
-                    } else if (seasonName.toLowerCase().includes('hors série') || seasonName.toLowerCase().includes('hs')) {
-                        seasonType = 'Hors-Série';
-                        seasonNumber = 960 + index;
-                    } else {
-                        // Regular season - extract number
-                        const seasonMatch = seasonName.match(/saison\s*(\d+)|(\d+)/i);
-                        if (seasonMatch) {
-                            seasonNumber = parseInt(seasonMatch[1] || seasonMatch[2]);
+        // Process MANGA section (Scans) - uses panneauScan instead of panneauAnime
+        if (mangaSection) {
+            const mangaPanneauMatches = mangaSection.match(/panneauScan\("([^"]+)",\s*"([^"]+)"\);/g);
+            
+            if (mangaPanneauMatches) {
+                mangaPanneauMatches.forEach((match, index) => {
+                    const parts = match.match(/panneauScan\("([^"]+)",\s*"([^"]+)"\);/);
+                    if (parts && parts.length >= 3) {
+                        const scanName = parts[1];
+                        const scanUrl = parts[2];
+                        
+                        // Scans have specific numbering
+                        let scanNumber = 2000 + index; // Group all scans at the end
+                        let scanType = 'Scan';
+                        
+                        // Determine scan type
+                        if (scanName.toLowerCase().includes('scan')) {
+                            scanType = 'Scan';
+                        } else if (scanName.toLowerCase().includes('novel') || scanName.toLowerCase().includes('light novel')) {
+                            scanType = 'Light Novel';
+                        } else if (scanName.toLowerCase().includes('manga')) {
+                            scanType = 'Manga';
+                        } else if (scanName.toLowerCase().includes('webtoon')) {
+                            scanType = 'Webtoon';
                         }
+                        
+                        // Determine available languages for scans
+                        const languages = [];
+                        if (scanUrl.includes('/vf')) languages.push('VF');
+                        if (scanUrl.includes('/vostfr')) languages.push('VOSTFR');
+                        if (scanUrl.includes('/fr')) languages.push('VF');
+                        if (languages.length === 0) languages.push('VF'); // Scans are usually in French
+                        
+                        // Extract scan folder name for value
+                        const scanValue = scanUrl.split('/')[0];
+                        
+                        seasons.push({
+                            number: scanNumber,
+                            name: scanName,
+                            value: scanValue, // scan, light-novel, etc.
+                            type: scanType,
+                            url: scanUrl,
+                            fullUrl: `https://anime-sama.fr/catalogue/${animeId}/${scanUrl}`,
+                            languages: languages,
+                            available: true,
+                            contentType: 'manga'
+                        });
                     }
-                    
-                    // Determine available languages
-                    const languages = [];
-                    if (seasonUrl.includes('/vf')) languages.push('VF');
-                    if (seasonUrl.includes('/vostfr')) languages.push('VOSTFR');
-                    if (languages.length === 0) languages.push('VOSTFR'); // default
-                    
-                    // Extract season folder name for value
-                    const seasonValue = seasonUrl.split('/')[0];
-                    
+                });
+            }
+        }
+        
+        // Also check for direct HTML links as fallback
+        $('a[href*="' + animeId + '"]').each((index, element) => {
+            const $el = $(element);
+            const href = $el.attr('href');
+            const text = $el.text().trim();
+            
+            // Check for scan links that might not be in panneauAnime calls
+            if (href && (href.includes('/scan/') || text.toLowerCase().includes('scan'))) {
+                const scanUrl = href.replace(`https://anime-sama.fr/catalogue/${animeId}/`, '');
+                
+                if (!seasons.find(s => s.url === scanUrl)) {
                     seasons.push({
-                        number: seasonNumber,
-                        name: seasonName,
-                        value: seasonValue, // saison1, film, etc.
-                        type: seasonType,
-                        url: seasonUrl,
-                        fullUrl: `https://anime-sama.fr/catalogue/${animeId}/${seasonUrl}`,
-                        languages: languages,
-                        available: true
+                        number: 2100 + index,
+                        name: text || 'Scans',
+                        value: 'scan',
+                        type: 'Scan',
+                        url: scanUrl,
+                        fullUrl: href,
+                        languages: ['VF'],
+                        available: true,
+                        contentType: 'manga'
                     });
                 }
-            });
-        }
+            }
+        });
         
-        // Sort seasons: regular seasons first, then specials, then films
+        // Sort seasons: regular seasons first, then specials, then films, then scans
         seasons.sort((a, b) => {
-            // Regular seasons (1-99) come first
+            // Regular anime seasons (1-99) come first
             if (a.number < 100 && b.number < 100) return a.number - b.number;
             if (a.number < 100) return -1;
             if (b.number < 100) return 1;
             
-            // For special content (>100), sort by original order
+            // Special content (100-999) comes next
+            if (a.number < 1000 && b.number < 1000) return a.number - b.number;
+            if (a.number < 1000) return -1;
+            if (b.number < 1000) return 1;
+            
+            // Films (1000-1999) then OAVs (990-999)
+            if (a.number < 2000 && b.number < 2000) return a.number - b.number;
+            if (a.number < 2000) return -1;
+            if (b.number < 2000) return 1;
+            
+            // Scans (2000+) come last
             return a.number - b.number;
         });
         
@@ -700,7 +788,8 @@ async function getAnimeSeasons(animeId) {
             name: "Saison 1",
             url: "saison1/vostfr", 
             languages: ['VOSTFR'],
-            available: true
+            available: true,
+            contentType: 'anime'
         }];
     }
 }
