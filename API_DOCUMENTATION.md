@@ -1,173 +1,128 @@
-# API Anime-Sama - Documentation Complète
+# Anime-Sama API Documentation
 
-## 📖 Vue d'ensemble
+## Vue d'ensemble
 
-L'API Anime-Sama est une API de scraping en temps réel qui extrait des données authentiques depuis anime-sama.fr. Elle fournit des informations complètes sur les animes, épisodes, saisons et sources de streaming.
+Cette API permet d'accéder aux données d'anime-sama.fr en temps réel, incluant la recherche, les détails d'anime, les épisodes, et le support multilingue complet.
 
-**URL de base**: `https://anime-sama-scraper.vercel.app`
+**URL de base :** `http://localhost:5000` (développement)
 
-## 🚀 Endpoints Disponibles
+## Authentification
 
-### 1. Documentation de l'API
+Aucune authentification requise. L'API est publique et gratuite.
+
+## Système de Langues
+
+L'API supporte toutes les langues disponibles sur anime-sama.fr :
+
+| Code | Nom | Description |
+|------|-----|-------------|
+| `vostfr` | VOSTFR | Version Originale Sous-Titrée Française |
+| `vf` | VF | Version Française |
+| `va` | VA | Version Anglaise |
+| `vkr` | VKR | Version Coréenne |
+| `vcn` | VCN | Version Chinoise |
+| `vqc` | VQC | Version Québécoise |
+| `vf1` | VF1 | Version Française 1 (ADN) |
+| `vf2` | VF2 | Version Française 2 (Netflix) |
+| `vj` | VJ | Version Japonaise Sous-Titrée Française |
+
+## Endpoints
+
+### 1. Recherche d'anime
+
+**Endpoint :** `GET /api/search`
+
+**Paramètres :**
+- `query` (string, requis) : Terme de recherche
+
+**Exemple de requête :**
+```javascript
+fetch('http://localhost:5000/api/search?query=dandadan')
 ```
-GET /
-```
 
-**Description**: Page d'accueil avec la documentation de l'API
-
-**Réponse**:
-```json
-{
-  "name": "Anime-Sama API",
-  "version": "1.0.0",
-  "description": "Real-time anime scraping API for anime-sama.fr",
-  "endpoints": { ... }
-}
-```
-
-### 2. Recherche d'Animes
-```
-GET /api/search?query={terme}
-```
-
-**Paramètres**:
-- `query` (requis): Terme de recherche (ex: "naruto", "demon slayer")
-
-**Exemple**:
-```bash
-curl "https://anime-sama-scraper.vercel.app/api/search?query=demon%20slayer"
-```
-
-**Réponse**:
+**Réponse :**
 ```json
 {
   "success": true,
-  "query": "demon slayer",
+  "query": "dandadan",
   "count": 1,
   "results": [
     {
-      "id": "demon-slayer",
-      "title": "Demon Slayer",
-      "image": "https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/demon-slayer.jpg",
-      "url": "https://anime-sama.fr/catalogue/demon-slayer/"
+      "id": "dandadan",
+      "title": "Dandadan",
+      "image": "https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/dandadan0.jpg",
+      "url": "https://anime-sama.fr/catalogue/dandadan/"
     }
   ]
 }
 ```
 
-### 3. Animes Tendances
-```
-GET /api/trending
-```
+### 2. Détails d'un anime
 
-**Description**: Retourne les animes populaires du moment
+**Endpoint :** `GET /api/anime/:id`
 
-**Exemple**:
-```bash
-curl "https://anime-sama-scraper.vercel.app/api/trending"
-```
+**Paramètres :**
+- `id` (string, requis) : ID de l'anime
 
-**Réponse**:
-```json
-{
-  "success": true,
-  "count": 20,
-  "trending": [
-    {
-      "id": "black-butler",
-      "title": "Black Butler",
-      "image": "https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/black-butler.jpg",
-      "url": "https://anime-sama.fr/catalogue/black-butler/"
-    }
-  ]
-}
+**Exemple de requête :**
+```javascript
+fetch('http://localhost:5000/api/anime/dandadan')
 ```
 
-### 4. Épisodes Récents
-```
-GET /api/recent
-```
-
-**Description**: Liste des derniers épisodes ajoutés sur le site
-
-**Exemple**:
-```bash
-curl "https://anime-sama-scraper.vercel.app/api/recent"
-```
-
-**Réponse**:
-```json
-{
-  "success": true,
-  "count": 30,
-  "recentEpisodes": [
-    {
-      "animeId": "la-sorciere-invincible-tueuse-de-slime-depuis-300-ans",
-      "animeTitle": "La Sorcière invincible tueuse de Slime depuis 300 ans",
-      "season": 2,
-      "episode": 10,
-      "language": "VF",
-      "url": "https://anime-sama.fr/catalogue/la-sorciere-invincible-tueuse-de-slime-depuis-300-ans/saison2/vf/",
-      "image": "https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/la-sorciere-invincible-tueuse-de-slime-depuis-300-ans.jpg",
-      "addedAt": "2025-06-29T00:32:08.785Z"
-    }
-  ]
-}
-```
-
-### 5. Détails d'un Anime
-```
-GET /api/anime/{id}
-```
-
-**Paramètres**:
-- `id` (requis): Identifiant unique de l'anime (ex: "demon-slayer")
-
-**Exemple**:
-```bash
-curl "https://anime-sama-scraper.vercel.app/api/anime/demon-slayer"
-```
-
-**Réponse**:
+**Réponse :**
 ```json
 {
   "success": true,
   "data": {
-    "id": "demon-slayer",
-    "title": "Demon Slayer",
-    "synopsis": "Depuis les temps anciens, il existe des rumeurs concernant des démons mangeurs d'hommes...",
-    "image": "https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/demon-slayer.jpg",
-    "genres": ["Demon Slayer", "Kimetsu no Yaiba", "KNY", "streaming vostfr", "streaming vf"],
-    "status": "7 saisons disponibles",
-    "year": "2000",
-    "type": "Série + Films",
-    "totalSeasons": 7,
+    "id": "dandadan",
+    "title": "Dandadan",
+    "alternativeTitles": "Dan Da Dan",
+    "synopsis": "Momo Ayase et Ken Takakura sont tous deux lycéens...",
+    "image": "https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/dandadan0.jpg",
+    "genres": ["Action", "Supernatural", "Comedy"],
+    "status": "15 saisons disponibles",
+    "correspondence": "Saison 1 Episode 12 -> Chapitre 34",
+    "year": "2024",
+    "type": "Série + Films + OAV",
+    "seasons": [
+      {
+        "number": 1,
+        "name": "Saison 1",
+        "value": "saison1",
+        "type": "Saison",
+        "url": "saison1/vostfr",
+        "fullUrl": "https://anime-sama.fr/catalogue/dandadan/saison1/vostfr",
+        "languages": ["VOSTFR"],
+        "available": true
+      }
+    ],
+    "totalSeasons": 15,
     "availableLanguages": ["VOSTFR", "VF"],
-    "url": "https://anime-sama.fr/catalogue/demon-slayer/",
-    "lastUpdated": "2025-06-29T00:32:32.982Z"
+    "hasFilms": true,
+    "hasOAV": true,
+    "url": "https://anime-sama.fr/catalogue/dandadan/"
   }
 }
 ```
 
-### 6. Saisons d'un Anime
-```
-GET /api/seasons/{animeId}
+### 3. Saisons d'un anime
+
+**Endpoint :** `GET /api/seasons/:animeId`
+
+**Paramètres :**
+- `animeId` (string, requis) : ID de l'anime
+
+**Exemple de requête :**
+```javascript
+fetch('http://localhost:5000/api/seasons/dandadan')
 ```
 
-**Paramètres**:
-- `animeId` (requis): Identifiant de l'anime
-
-**Exemple**:
-```bash
-curl "https://anime-sama-scraper.vercel.app/api/seasons/demon-slayer"
-```
-
-**Réponse**:
+**Réponse :**
 ```json
 {
   "success": true,
-  "animeId": "demon-slayer",
-  "count": 7,
+  "animeId": "dandadan",
+  "count": 15,
   "seasons": [
     {
       "number": 1,
@@ -177,403 +132,355 @@ curl "https://anime-sama-scraper.vercel.app/api/seasons/demon-slayer"
       "available": true
     },
     {
-      "number": 2,
-      "name": "Saison 2",
-      "value": "2",
-      "languages": ["VOSTFR"],
+      "number": 1,
+      "name": "Saison 1 (Avec VF ADN)",
+      "value": "1",
+      "languages": ["VF"],
       "available": true
     }
   ]
 }
 ```
 
-### 7. Épisodes d'une Saison
-```
-GET /api/episodes/{animeId}?season={numero}&language={langue}
+### 4. Épisodes d'une saison
+
+**Endpoint :** `GET /api/episodes/:animeId`
+
+**Paramètres :**
+- `animeId` (string, requis) : ID de l'anime
+- `season` (string, optionnel) : Numéro de saison (défaut: 1)
+- `language` (string, optionnel) : Code de langue (défaut: vostfr)
+
+**Exemple de requête :**
+```javascript
+fetch('http://localhost:5000/api/episodes/dandadan?season=saison1&language=vostfr')
 ```
 
-**Paramètres**:
-- `animeId` (requis): Identifiant de l'anime
-- `season` (optionnel): Numéro de saison (défaut: 1)
-- `language` (optionnel): Langue (VOSTFR/VF, défaut: VOSTFR)
-
-**Exemple**:
-```bash
-curl "https://anime-sama-scraper.vercel.app/api/episodes/demon-slayer?season=1&language=VOSTFR"
-```
-
-**Réponse**:
+**Réponse :**
 ```json
 {
   "success": true,
-  "animeId": "demon-slayer",
-  "season": 1,
+  "animeId": "dandadan",
+  "season": "saison1",
   "language": "VOSTFR",
-  "count": 26,
+  "count": 12,
   "episodes": [
     {
       "number": 1,
       "title": "Épisode 1",
-      "url": "https://anime-sama.fr/catalogue/demon-slayer/saison1/vostfr/episode-1",
+      "url": "https://anime-sama.fr/catalogue/dandadan/saison1/vostfr/episode-1",
       "streamingSources": [
         {
           "server": "Sibnet",
-          "url": "https://video.sibnet.ru/shell.php?videoid=4668120",
+          "url": "https://video.sibnet.ru/shell.php?videoid=5702327",
           "quality": "HD",
-          "serverNumber": 3
-        },
-        {
-          "server": "OneUpload",
-          "url": "https://oneupload.to/embed-iatz8lo6d0bg.html",
-          "quality": "HD",
-          "serverNumber": 4
+          "serverNumber": 1
         }
-      ]
+      ],
+      "language": "VOSTFR",
+      "season": 1,
+      "available": true
     }
   ]
 }
 ```
 
-### 8. Lecteur Intégré (Embed)
+### 5. Sources de streaming pour un épisode
+
+**Endpoint :** `GET /api/embed`
+
+**Paramètres :**
+- `url` (string, requis) : URL de l'épisode
+
+**Exemple de requête :**
+```javascript
+fetch('http://localhost:5000/api/embed?url=https://anime-sama.fr/catalogue/dandadan/saison1/vf1/episode-1')
 ```
-GET /api/embed?url={urlEpisode}
+
+**Réponse :**
+```json
+{
+  "success": true,
+  "url": "https://anime-sama.fr/catalogue/dandadan/saison1/vf1/episode-1",
+  "sources": [
+    {
+      "server": "Sibnet",
+      "url": "https://video.sibnet.ru/shell.php?videoid=5702327",
+      "quality": "HD",
+      "type": "streaming",
+      "episode": 1,
+      "serverNumber": 1
+    },
+    {
+      "server": "SendVid",
+      "url": "https://sendvid.com/embed/6kntwzl3",
+      "quality": "HD",
+      "type": "streaming",
+      "episode": 1,
+      "serverNumber": 4
+    }
+  ],
+  "count": 5
+}
 ```
 
-**Paramètres**:
-- `url` (requis): URL encodée de l'épisode à intégrer
+### 6. Anime en tendance
 
-**Exemple**:
-```bash
-curl "https://anime-sama-scraper.vercel.app/api/embed?url=https%3A%2F%2Fanime-sama.fr%2Fcatalogue%2Fdemon-slayer%2Fsaison1%2Fvostfr%2Fepisode-1"
+**Endpoint :** `GET /api/trending`
+
+**Exemple de requête :**
+```javascript
+fetch('http://localhost:5000/api/trending')
 ```
 
-**Réponse**: HTML complet d'un lecteur vidéo intégrable
+**Réponse :**
+```json
+{
+  "success": true,
+  "count": 20,
+  "trending": [
+    {
+      "id": "dandadan",
+      "title": "Dandadan",
+      "image": "https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/dandadan0.jpg",
+      "url": "https://anime-sama.fr/catalogue/dandadan/",
+      "type": "anime"
+    }
+  ]
+}
+```
 
-## 🛠️ Intégration Frontend
+### 7. Épisodes récents
 
-### Configuration JavaScript de Base
+**Endpoint :** `GET /api/recent`
+
+**Exemple de requête :**
+```javascript
+fetch('http://localhost:5000/api/recent')
+```
+
+**Réponse :**
+```json
+{
+  "success": true,
+  "count": 30,
+  "recent": [
+    {
+      "animeId": "dandadan",
+      "animeTitle": "Dandadan",
+      "season": 2,
+      "episode": null,
+      "language": "VOSTFR",
+      "languageInfo": {
+        "code": "vostfr",
+        "name": "VOSTFR",
+        "fullName": "Version Originale Sous-Titrée Française",
+        "flag": "jp"
+      },
+      "contentType": "anime",
+      "releaseTime": "18h30",
+      "releaseDay": "Jeudi",
+      "isFinale": false,
+      "isPostponed": false,
+      "image": "https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/dandadan.jpg",
+      "url": "https://anime-sama.fr/catalogue/dandadan/saison2/vostfr/",
+      "isNew": true
+    }
+  ]
+}
+```
+
+## Configuration du changement de langue
+
+### Pour React Native
+
+#### 1. Composant sélecteur de langue
 
 ```javascript
-// Configuration de l'API
-const API_BASE_URL = 'https://anime-sama-scraper.vercel.app';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, Modal, FlatList } from 'react-native';
 
-// Classe utilitaire pour l'API
-class AnimeSamaAPI {
-  constructor(baseUrl = API_BASE_URL) {
-    this.baseUrl = baseUrl;
+const LANGUAGES = [
+  { code: 'vostfr', name: 'VOSTFR', flag: '🇯🇵' },
+  { code: 'vf', name: 'VF', flag: '🇫🇷' },
+  { code: 'vf1', name: 'VF ADN', flag: '🇫🇷' },
+  { code: 'vf2', name: 'VF Netflix', flag: '🇫🇷' },
+  { code: 'va', name: 'VA', flag: '🇺🇸' },
+  { code: 'vkr', name: 'VKR', flag: '🇰🇷' },
+  { code: 'vcn', name: 'VCN', flag: '🇨🇳' },
+  { code: 'vqc', name: 'VQC', flag: '🇨🇦' }
+];
+
+const LanguageSelector = ({ selectedLanguage, onLanguageChange, availableLanguages }) => {
+  const [modalVisible, setModalVisible] = useState(false);
+  
+  const filteredLanguages = LANGUAGES.filter(lang => 
+    availableLanguages.includes(lang.code.toUpperCase())
+  );
+
+  return (
+    <View>
+      <TouchableOpacity 
+        onPress={() => setModalVisible(true)}
+        style={styles.languageButton}
+      >
+        <Text>{selectedLanguage} 🔽</Text>
+      </TouchableOpacity>
+
+      <Modal visible={modalVisible} transparent animationType="slide">
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <FlatList
+              data={filteredLanguages}
+              keyExtractor={(item) => item.code}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.languageOption}
+                  onPress={() => {
+                    onLanguageChange(item.code);
+                    setModalVisible(false);
+                  }}
+                >
+                  <Text>{item.flag} {item.name}</Text>
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+        </View>
+      </Modal>
+    </View>
+  );
+};
+```
+
+#### 2. Service API avec gestion des langues
+
+```javascript
+class AnimeAPI {
+  constructor(baseURL = 'http://localhost:5000') {
+    this.baseURL = baseURL;
   }
 
-  async request(endpoint, params = {}) {
-    const url = new URL(`${this.baseUrl}${endpoint}`);
-    Object.keys(params).forEach(key => 
-      url.searchParams.append(key, params[key])
+  async searchAnime(query) {
+    const response = await fetch(`${this.baseURL}/api/search?query=${encodeURIComponent(query)}`);
+    return response.json();
+  }
+
+  async getAnimeDetails(animeId) {
+    const response = await fetch(`${this.baseURL}/api/anime/${animeId}`);
+    return response.json();
+  }
+
+  async getEpisodes(animeId, season = 'saison1', language = 'vostfr') {
+    const response = await fetch(
+      `${this.baseURL}/api/episodes/${animeId}?season=${season}&language=${language}`
     );
-
-    try {
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-      return await response.json();
-    } catch (error) {
-      console.error('API Request failed:', error);
-      throw error;
-    }
+    return response.json();
   }
 
-  // Méthodes pour chaque endpoint
-  async search(query) {
-    return this.request('/api/search', { query });
+  async getStreamingSources(episodeUrl) {
+    const response = await fetch(
+      `${this.baseURL}/api/embed?url=${encodeURIComponent(episodeUrl)}`
+    );
+    return response.json();
   }
 
   async getTrending() {
-    return this.request('/api/trending');
+    const response = await fetch(`${this.baseURL}/api/trending`);
+    return response.json();
   }
 
   async getRecent() {
-    return this.request('/api/recent');
-  }
-
-  async getAnimeDetails(id) {
-    return this.request(`/api/anime/${id}`);
-  }
-
-  async getSeasons(animeId) {
-    return this.request(`/api/seasons/${animeId}`);
-  }
-
-  async getEpisodes(animeId, season = 1, language = 'VOSTFR') {
-    return this.request(`/api/episodes/${animeId}`, { season, language });
-  }
-
-  getEmbedUrl(episodeUrl) {
-    return `${this.baseUrl}/api/embed?url=${encodeURIComponent(episodeUrl)}`;
+    const response = await fetch(`${this.baseURL}/api/recent`);
+    return response.json();
   }
 }
 
-// Instance globale
-const api = new AnimeSamaAPI();
+export default new AnimeAPI();
 ```
 
-### Exemples d'Utilisation Frontend
-
-#### 1. Recherche d'Animes
-```javascript
-async function searchAnimes(query) {
-  try {
-    const result = await api.search(query);
-    const animesList = document.getElementById('animes-list');
-    
-    animesList.innerHTML = result.results.map(anime => `
-      <div class="anime-card" onclick="showAnimeDetails('${anime.id}')">
-        <img src="${anime.image}" alt="${anime.title}">
-        <h3>${anime.title}</h3>
-      </div>
-    `).join('');
-  } catch (error) {
-    console.error('Erreur de recherche:', error);
-  }
-}
-
-// Utilisation
-searchAnimes('demon slayer');
-```
-
-#### 2. Affichage des Animes Tendances
-```javascript
-async function loadTrendingAnimes() {
-  try {
-    const result = await api.getTrending();
-    const container = document.getElementById('trending-container');
-    
-    container.innerHTML = `
-      <h2>Animes Tendances (${result.count})</h2>
-      <div class="trending-grid">
-        ${result.trending.map(anime => `
-          <div class="trending-item">
-            <img src="${anime.image}" alt="${anime.title}">
-            <p>${anime.title}</p>
-          </div>
-        `).join('')}
-      </div>
-    `;
-  } catch (error) {
-    console.error('Erreur trending:', error);
-  }
-}
-```
-
-#### 3. Détails d'un Anime avec Saisons
-```javascript
-async function showAnimeDetails(animeId) {
-  try {
-    const [details, seasons] = await Promise.all([
-      api.getAnimeDetails(animeId),
-      api.getSeasons(animeId)
-    ]);
-
-    const container = document.getElementById('anime-details');
-    container.innerHTML = `
-      <div class="anime-header">
-        <img src="${details.data.image}" alt="${details.data.title}">
-        <div class="anime-info">
-          <h1>${details.data.title}</h1>
-          <p class="synopsis">${details.data.synopsis}</p>
-          <div class="meta">
-            <span>Genres: ${details.data.genres.join(', ')}</span>
-            <span>Statut: ${details.data.status}</span>
-            <span>Type: ${details.data.type}</span>
-          </div>
-        </div>
-      </div>
-      
-      <div class="seasons">
-        <h3>Saisons Disponibles (${seasons.count})</h3>
-        ${seasons.seasons.map(season => `
-          <button onclick="loadEpisodes('${animeId}', ${season.number})">
-            ${season.name} (${season.languages.join(', ')})
-          </button>
-        `).join('')}
-      </div>
-    `;
-  } catch (error) {
-    console.error('Erreur détails anime:', error);
-  }
-}
-```
-
-#### 4. Liste des Épisodes avec Lecteur
-```javascript
-async function loadEpisodes(animeId, season, language = 'VOSTFR') {
-  try {
-    const result = await api.getEpisodes(animeId, season, language);
-    const container = document.getElementById('episodes-list');
-    
-    container.innerHTML = `
-      <h3>Saison ${season} - ${language} (${result.count} épisodes)</h3>
-      <div class="episodes-grid">
-        ${result.episodes.map(episode => `
-          <div class="episode-card">
-            <h4>${episode.title}</h4>
-            <div class="servers">
-              ${episode.streamingSources.map(source => `
-                <button onclick="playEpisode('${source.url}')">
-                  ${source.server} (${source.quality})
-                </button>
-              `).join('')}
-            </div>
-            <button onclick="openEmbed('${episode.url}')">
-              Lecteur Intégré
-            </button>
-          </div>
-        `).join('')}
-      </div>
-    `;
-  } catch (error) {
-    console.error('Erreur épisodes:', error);
-  }
-}
-
-function openEmbed(episodeUrl) {
-  const embedUrl = api.getEmbedUrl(episodeUrl);
-  window.open(embedUrl, '_blank', 'width=800,height=600');
-}
-```
-
-#### 5. Épisodes Récents (Page d'Accueil)
-```javascript
-async function loadRecentEpisodes() {
-  try {
-    const result = await api.getRecent();
-    const container = document.getElementById('recent-episodes');
-    
-    container.innerHTML = `
-      <h2>Derniers Épisodes (${result.count})</h2>
-      <div class="recent-grid">
-        ${result.recentEpisodes.slice(0, 12).map(episode => `
-          <div class="recent-episode">
-            <img src="${episode.image}" alt="${episode.animeTitle}">
-            <div class="episode-info">
-              <h4>${episode.animeTitle}</h4>
-              <p>S${episode.season}E${episode.episode} (${episode.language})</p>
-              <small>${new Date(episode.addedAt).toLocaleDateString()}</small>
-            </div>
-          </div>
-        `).join('')}
-      </div>
-    `;
-  } catch (error) {
-    console.error('Erreur épisodes récents:', error);
-  }
-}
-```
-
-### CSS de Base pour l'Interface
-
-```css
-/* Styles de base pour l'interface anime */
-.anime-card, .trending-item, .episode-card, .recent-episode {
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 16px;
-  margin: 8px;
-  cursor: pointer;
-  transition: transform 0.2s;
-}
-
-.anime-card:hover, .trending-item:hover {
-  transform: scale(1.05);
-}
-
-.anime-header {
-  display: flex;
-  gap: 20px;
-  margin-bottom: 20px;
-}
-
-.anime-header img {
-  width: 200px;
-  height: 280px;
-  object-fit: cover;
-  border-radius: 8px;
-}
-
-.synopsis {
-  max-height: 150px;
-  overflow-y: auto;
-  margin: 16px 0;
-}
-
-.trending-grid, .episodes-grid, .recent-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 16px;
-}
-
-.servers button {
-  margin: 4px;
-  padding: 8px 12px;
-  background: #007bff;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-```
-
-## ⚠️ Gestion d'Erreurs
+#### 3. Hook pour la gestion des langues
 
 ```javascript
-// Gestionnaire d'erreurs global
-function handleApiError(error, context = '') {
-  console.error(`Erreur API ${context}:`, error);
-  
-  const errorContainer = document.getElementById('error-messages');
-  if (errorContainer) {
-    errorContainer.innerHTML = `
-      <div class="error-alert">
-        ❌ Erreur ${context}: ${error.message}
-        <button onclick="this.parentElement.remove()">✕</button>
-      </div>
-    `;
-  }
-}
+import { useState, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Utilisation avec try/catch
-try {
-  const result = await api.search('naruto');
-  // Traitement du résultat
-} catch (error) {
-  handleApiError(error, 'lors de la recherche');
-}
-```
+export const useLanguageManager = () => {
+  const [selectedLanguage, setSelectedLanguage] = useState('vostfr');
 
-## 🚀 Déploiement et Configuration
+  useEffect(() => {
+    loadSavedLanguage();
+  }, []);
 
-### Variables d'Environnement
-```javascript
-// Configuration pour différents environnements
-const config = {
-  development: {
-    API_BASE_URL: 'https://anime-sama-scraper.vercel.app'
-  },
-  production: {
-    API_BASE_URL: 'https://anime-sama-scraper.vercel.app'
-  }
+  const loadSavedLanguage = async () => {
+    try {
+      const saved = await AsyncStorage.getItem('preferred_language');
+      if (saved) setSelectedLanguage(saved);
+    } catch (error) {
+      console.error('Error loading language preference:', error);
+    }
+  };
+
+  const changeLanguage = async (languageCode) => {
+    try {
+      setSelectedLanguage(languageCode);
+      await AsyncStorage.setItem('preferred_language', languageCode);
+    } catch (error) {
+      console.error('Error saving language preference:', error);
+    }
+  };
+
+  return {
+    selectedLanguage,
+    changeLanguage
+  };
 };
-
-const API_BASE_URL = config[process.env.NODE_ENV || 'production'].API_BASE_URL;
 ```
 
-### CORS et Sécurité
-L'API est configurée avec CORS ouvert pour le développement. En production, configurez les origines autorisées.
+## Serveurs de streaming supportés
 
-## 📝 Notes Importantes
+L'API extrait les URLs authentiques de ces serveurs :
 
-1. **Données Authentiques**: Toutes les données proviennent directement d'anime-sama.fr
-2. **Rate Limiting**: L'API inclut des délais pour éviter la surcharge du serveur source
-3. **Cache**: Considérez l'implémentation d'un cache côté client pour les requêtes fréquentes
-4. **Erreurs**: Toujours implémenter une gestion d'erreurs robuste
-5. **Performance**: Utilisez la pagination pour les grandes listes
+- **Sibnet** : `sibnet.ru`
+- **SendVid** : `sendvid.com`
+- **Vidmoly** : `vidmoly.to`
+- **SmoothPre** : `smoothpre.com`
+- **OneUpload** : `oneupload.to`
+- **DoodStream** : `doodstream.com`
+- **StreamTape** : `streamtape.com`
+- **Upstream** : `upstream.to`
+- **EmbedGram** : `embedgram.com`
 
-Cette documentation vous permet d'intégrer facilement l'API Anime-Sama dans votre frontend !
+## Gestion d'erreurs
+
+Toutes les réponses d'erreur suivent ce format :
+
+```json
+{
+  "success": false,
+  "error": "Description de l'erreur",
+  "message": "Message détaillé pour l'utilisateur"
+}
+```
+
+## Codes d'état HTTP
+
+- `200` : Succès
+- `400` : Requête invalide
+- `404` : Ressource non trouvée
+- `500` : Erreur serveur
+
+## Limites et considérations
+
+- **Délai anti-bot** : L'API intègre des délais aléatoires pour éviter la détection
+- **Timeout** : 8 secondes par requête
+- **Données en temps réel** : Toutes les données proviennent directement d'anime-sama.fr
+- **Pas de cache** : Les données sont toujours fraîches mais les requêtes peuvent être plus lentes
+
+## Support
+
+Pour toute question ou problème, vérifiez que :
+1. L'URL de base est correcte
+2. Les paramètres sont bien encodés
+3. L'anime existe sur anime-sama.fr
+4. La langue demandée est disponible pour cet anime
