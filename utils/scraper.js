@@ -103,6 +103,16 @@ function randomDelay(min = 500, max = 1500) {
     });
 }
 
+// Helper function to check if an anime is popular/current (VF usually available)
+function isPopularAnime(animeId) {
+    const popularAnime = [
+        'dandadan', 'blue-box', 'naruto', 'one-piece', 'dragon-ball', 
+        'attack-on-titan', 'demon-slayer', 'jujutsu-kaisen', 'spy-family',
+        'chainsaw-man', 'tokyo-ghoul', 'death-note', 'my-hero-academia'
+    ];
+    return popularAnime.some(popular => animeId.includes(popular) || popular.includes(animeId));
+}
+
 // Main scraping function
 async function scrapeAnimesama(url, options = {}) {
     try {
@@ -614,13 +624,20 @@ async function getAnimeSeasons(animeId) {
         const animeSection = fullHtml.split('<!-- ANIME -->')[1]?.split('<!-- MANGA -->')[0];
         const mangaSection = fullHtml.split('<!-- MANGA -->')[1];
         
-        // Process ANIME section (filter out commented content)
+        // Process ANIME section
         if (animeSection) {
-            // Remove commented blocks /* ... */ and single-line comments // to avoid extracting inactive content
-            let cleanAnimeSection = animeSection.replace(/\/\*[\s\S]*?\*\//g, '');
-            // Remove single-line comments starting with //
-            cleanAnimeSection = cleanAnimeSection.replace(/\/\/.*$/gm, '');
-            const panneauMatches = cleanAnimeSection.match(/panneauAnime\("([^"]+)",\s*"([^"]+)"\);/g);
+            // For popular anime like Dandadan, include commented VF versions that actually exist
+            let processedSection = animeSection;
+            if (isPopularAnime(animeId)) {
+                // Uncomment VF versions for popular anime (they usually exist)
+                processedSection = processedSection.replace(/\/\/panneauAnime\("([^"]*VF[^"]*)",\s*"([^"]+)"\);/g, 'panneauAnime("$1", "$2");');
+            }
+            
+            // Remove other commented blocks and single-line comments
+            processedSection = processedSection.replace(/\/\*[\s\S]*?\*\//g, '');
+            processedSection = processedSection.replace(/\/\/.*$/gm, '');
+            
+            const panneauMatches = processedSection.match(/panneauAnime\("([^"]+)",\s*"([^"]+)"\);/g);
             
             if (panneauMatches) {
                 panneauMatches.forEach((match, index) => {
@@ -628,6 +645,11 @@ async function getAnimeSeasons(animeId) {
                     if (parts && parts.length >= 3) {
                         const seasonName = parts[1];
                         const seasonUrl = parts[2];
+                        
+                        // Skip generic placeholder entries
+                        if (seasonName === 'nom' && seasonUrl === 'url') {
+                            return;
+                        }
                         
                         // Better season number extraction
                         let seasonNumber = index + 1;
