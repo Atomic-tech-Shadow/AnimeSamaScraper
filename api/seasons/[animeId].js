@@ -1,4 +1,4 @@
-const { getAnimeSeasons } = require('../../utils/scraper');
+const { getAnimeDetails } = require('../../utils/scraper');
 
 module.exports = async (req, res) => {
     // Enable CORS
@@ -28,22 +28,32 @@ module.exports = async (req, res) => {
             });
         }
 
-        // Get anime seasons
-        const seasons = await getAnimeSeasons(animeId.trim());
+        // Get full anime details to extract seasons with complete metadata
+        const animeDetails = await getAnimeDetails(animeId.trim());
 
-        // Format seasons for API response
-        const formattedSeasons = seasons.map(season => ({
+        // Format seasons for API response with enhanced metadata
+        const formattedSeasons = animeDetails.seasons.map(season => ({
             number: season.number,
             name: season.name,
-            value: season.number.toString(),
+            value: season.value || season.number.toString(),
+            type: season.type,
             languages: season.languages || ['VOSTFR'],
-            available: season.available !== false
+            available: season.available !== false,
+            contentType: season.contentType,
+            url: season.url,
+            fullUrl: season.fullUrl
         }));
 
-        // Return seasons
+        // Return seasons with additional anime metadata
         res.status(200).json({
             success: true,
             animeId: animeId.trim(),
+            title: animeDetails.title,
+            synopsis: animeDetails.synopsis,
+            image: animeDetails.image,
+            genres: animeDetails.genres,
+            status: animeDetails.status,
+            year: animeDetails.year,
             count: formattedSeasons.length,
             seasons: formattedSeasons
         });
