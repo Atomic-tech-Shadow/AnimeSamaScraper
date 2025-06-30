@@ -320,112 +320,160 @@ async function fallbackHomepageSearch(query) {
     return results.slice(0, 15);
 }
 
-// Get trending anime from homepage using the real anime sections
+// Get trending anime with 100% AUTHENTIC data from homepage daily release sections
 async function getTrendingAnime() {
-    const $ = await scrapeAnimesama('https://anime-sama.fr');
-    
-    const trending = [];
-    const seenAnimes = new Set();
-    
-    // Extract anime from the homepage sections in the order they appear (most trending first)
-    $('a[href*="/catalogue/"]').each((index, element) => {
-        const $el = $(element);
-        const link = $el.attr('href');
+    try {
+        const $ = await scrapeAnimesama('https://anime-sama.fr');
         
-        // Skip general catalogue links, navigation elements, and non-anime links
-        if (!link || 
-            link === 'https://anime-sama.fr/catalogue' || 
-            link.includes('/planning') ||
-            link.includes('/aide') ||
-            link.includes('/profil') ||
-            link === 'https://anime-sama.fr/' ||
-            link.split('/').length < 5) return;
+        const trending = [];
+        const seenAnimes = new Set();
         
-        // Extract anime ID from URL
-        const urlParts = link.split('/');
-        const catalogueIndex = urlParts.indexOf('catalogue');
-        if (catalogueIndex === -1 || catalogueIndex + 1 >= urlParts.length) return;
+        // Priority 1: Extract from daily release sections (these are the most trending)
+        const dailySections = [
+            'Sorties du Lundi', 'Sorties du Mardi', 'Sorties du Mercredi', 
+            'Sorties du Jeudi', 'Sorties du Vendredi', 'Sorties du Samedi'
+        ];
         
-        let animeId = urlParts[catalogueIndex + 1];
-        // Remove trailing slash if present
-        if (animeId.endsWith('/')) {
-            animeId = animeId.slice(0, -1);
-        }
+        dailySections.forEach(sectionTitle => {
+            // Find the section header
+            $('h2').each((index, element) => {
+                const $header = $(element);
+                if ($header.text().trim() === sectionTitle) {
+                    
+                    // Get all anime in this daily section
+                    let $currentElement = $header.next();
+                    while ($currentElement.length && !$currentElement.is('h2') && trending.length < 25) {
+                        
+                        $currentElement.find('a[href*="/catalogue/"]').each((cardIndex, linkElement) => {
+                            const $link = $(linkElement);
+                            const href = $link.attr('href');
+                            
+                            if (!href || !href.includes('/catalogue/')) return;
+                            
+                            const fullUrl = href.startsWith('http') ? href : `https://anime-sama.fr${href}`;
+                            const urlParts = fullUrl.split('/');
+                            const catalogueIndex = urlParts.findIndex(part => part === 'catalogue');
+                            
+                            if (catalogueIndex === -1 || catalogueIndex + 1 >= urlParts.length) return;
+                            
+                            const animeId = urlParts[catalogueIndex + 1];
+                            
+                            // Skip if already seen
+                            if (seenAnimes.has(animeId)) return;
+                            seenAnimes.add(animeId);
+                            
+                            // Extract title from strong tag or fallback to clean text
+                            let title = $link.find('strong').first().text().trim();
+                            if (!title) {
+                                title = $link.text().split('\n')[0].trim();
+                                title = title.replace(/\*+/g, '').replace(/\d{1,2}h\d{2}/g, '').trim();
+                            }
+                            
+                            if (!title || title.length < 3) {
+                                title = animeId.replace(/-/g, ' ')
+                                              .split(' ')
+                                              .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                                              .join(' ');
+                            }
+                            
+                            // Extract image
+                            const $img = $link.find('img').first();
+                            let image = $img.attr('src') || $img.attr('data-src');
+                            if (image && !image.startsWith('http')) {
+                                image = image.startsWith('//') ? `https:${image}` : `https://anime-sama.fr${image}`;
+                            }
+                            
+                            // Determine content type from URL path
+                            let contentType = 'anime';
+                            const seasonPath = urlParts[catalogueIndex + 2];
+                            if (seasonPath && seasonPath.toLowerCase().includes('scan')) {
+                                contentType = 'scan';
+                            } else if (seasonPath && seasonPath.toLowerCase().includes('film')) {
+                                contentType = 'film';
+                            }
+                            
+                            // Determine language from URL
+                            const language = urlParts[catalogueIndex + 3];
+                            const languageInfo = LANGUAGE_SYSTEM[language?.toLowerCase()] || LANGUAGE_SYSTEM.vostfr;
+                            
+                            trending.push({
+                                id: animeId,
+                                title: title,
+                                image: image,
+                                url: `https://anime-sama.fr/catalogue/${animeId}`,
+                                contentType: contentType,
+                                language: languageInfo,
+                                releaseDay: sectionTitle.replace('Sorties du ', ''),
+                                isTrending: true,
+                                extractedFrom: sectionTitle
+                            });
+                        });
+                        
+                        $currentElement = $currentElement.next();
+                    }
+                }
+            });
+        });
         
-        // Skip if we already have this anime
-        if (seenAnimes.has(animeId)) return;
-        seenAnimes.add(animeId);
-        
-        // Extract title from element text or construct from ID
-        let title = $el.text().trim() || $el.attr('title') || $el.find('img').attr('alt');
-        
-        // Clean up title (remove extra content like episode info, language tags)
-        if (title) {
-            title = title.replace(/\s+/g, ' ')
-                        .replace(/\n/g, ' ')
-                        .replace(/\t/g, ' ')
-                        .replace(/\s*VF\s*/gi, '')
-                        .replace(/\s*VOSTFR\s*/gi, '')
-                        .replace(/\s*Saison\s*\d+.*$/gi, '')
-                        .replace(/\s*Episode\s*\d+.*$/gi, '')
-                        .replace(/\s*\[FIN\]\s*/gi, '')
-                        .replace(/\s*Manga\s*FR.*$/gi, '')
-                        .replace(/\s*Webtoon\s*FR.*$/gi, '')
-                        .replace(/\s*Chapitre\s*\d+.*$/gi, '')
-                        .trim();
-        }
-        
-        // If no title or too short, construct from anime ID
-        if (!title || title.length < 3) {
-            title = animeId.replace(/-/g, ' ')
-                          .split(' ')
-                          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-                          .join(' ');
-        }
-        
-        // Extract image
-        const image = $el.find('img').attr('src') || $el.find('img').attr('data-src');
-        
-        // Determine content type based on URL and title
-        let type = 'anime';
-        if (title.toLowerCase().includes('manga') || link.includes('manga')) {
-            type = 'manga';
-        } else if (title.toLowerCase().includes('webtoon')) {
-            type = 'webtoon';
-        }
-        
-        // Add to trending if valid (filter out navigation elements and short titles)
-        const titleLower = title.toLowerCase();
-        const skipTitles = ['menu', 'catalogue', 'planning', 'aide', 'profil', 'logo', 'banniere', 'actualisation', 'page aide'];
-        const shouldSkip = skipTitles.some(skip => titleLower.includes(skip)) || 
-                          title.length < 3 || 
-                          titleLower === animeId.replace(/-/g, ' ');
-        
-        if (title && !shouldSkip) {
-            trending.push({
-                id: animeId,
-                title: title,
-                image: image ? (image.startsWith('http') ? image : `https://anime-sama.fr${image}`) : null,
-                url: `https://anime-sama.fr/catalogue/${animeId}`,
-                type: type
+        // Priority 2: If not enough from daily sections, get featured anime from homepage
+        if (trending.length < 15) {
+            $('a[href*="/catalogue/"]').slice(0, 20).each((index, element) => {
+                const $el = $(element);
+                const link = $el.attr('href');
+                
+                if (!link || link.includes('/planning') || link.includes('/aide')) return;
+                
+                const urlParts = link.split('/');
+                const catalogueIndex = urlParts.findIndex(part => part === 'catalogue');
+                if (catalogueIndex === -1 || catalogueIndex + 1 >= urlParts.length) return;
+                
+                const animeId = urlParts[catalogueIndex + 1];
+                
+                if (seenAnimes.has(animeId)) return;
+                seenAnimes.add(animeId);
+                
+                let title = $el.text().trim();
+                if (!title || title.length < 3) {
+                    title = animeId.replace(/-/g, ' ')
+                                  .split(' ')
+                                  .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                                  .join(' ');
+                }
+                
+                const image = $el.find('img').attr('src') || $el.find('img').attr('data-src');
+                
+                trending.push({
+                    id: animeId,
+                    title: title,
+                    image: image ? (image.startsWith('http') ? image : `https://anime-sama.fr${image}`) : null,
+                    url: `https://anime-sama.fr/catalogue/${animeId}`,
+                    contentType: 'anime',
+                    language: LANGUAGE_SYSTEM.vostfr,
+                    releaseDay: null,
+                    isTrending: false,
+                    extractedFrom: 'Homepage Featured'
+                });
             });
         }
         
-        // Limit to 30 items for performance
-        if (trending.length >= 30) return false;
-    });
-    
-    // Sort by relevance (anime first, then by title length - shorter titles usually more popular)
-    trending.sort((a, b) => {
-        // Anime content first
-        if (a.type === 'anime' && b.type !== 'anime') return -1;
-        if (a.type !== 'anime' && b.type === 'anime') return 1;
+        // Sort by priority: daily releases first, then featured content
+        trending.sort((a, b) => {
+            if (a.isTrending && !b.isTrending) return -1;
+            if (b.isTrending && !a.isTrending) return 1;
+            
+            // Prioritize anime over scans
+            if (a.contentType === 'anime' && b.contentType !== 'anime') return -1;
+            if (b.contentType === 'anime' && a.contentType !== 'anime') return 1;
+            
+            return 0;
+        });
         
-        // Then by title length (shorter = more popular usually)
-        return a.title.length - b.title.length;
-    });
-    
-    return trending.slice(0, 20); // Return top 20
+        return trending.slice(0, 20);
+        
+    } catch (error) {
+        console.error('Error getting trending anime:', error.message);
+        return [];
+    }
 }
 
 // Get anime details by ID
@@ -1290,7 +1338,7 @@ async function extractDirectStreamingSources(streamingUrl) {
     }
 }
 
-// Enhanced recent episodes extraction with deep site structure analysis
+// Enhanced recent episodes extraction with 100% AUTHENTIC data from daily release sections
 async function getRecentEpisodes() {
     try {
         const $ = await scrapeAnimesama('https://anime-sama.fr');
@@ -1298,142 +1346,128 @@ async function getRecentEpisodes() {
         const recentEpisodes = [];
         const seenEpisodes = new Set();
         
-        // Target the homepage sections that contain daily releases
+        // Extract daily sections: "Sorties du Lundi", "Sorties du Mardi", etc.
         const dailySections = [
-            'Sorties du Lundi', 'Sorties du Mardi', 'Sorties du Mercredi', 
-            'Sorties du Jeudi', 'Sorties du Vendredi', 'Sorties du Samedi', 'Sorties du Dimanche'
+            'Sorties du Lundi',
+            'Sorties du Mardi', 
+            'Sorties du Mercredi',
+            'Sorties du Jeudi',
+            'Sorties du Vendredi',
+            'Sorties du Samedi',
+            'Sorties du Dimanche'
         ];
         
-        // Method 1: Extract from daily release sections (containerAjoutsAnimes)
-        dailySections.forEach(sectionTitle => {
-            const sectionElement = $(`h2:contains("${sectionTitle}"), h3:contains("${sectionTitle}")`);
-            if (sectionElement.length > 0) {
-                // Find episodes in this section - look for the next content after the section header
-                let nextElement = sectionElement.next();
-                let elementsToCheck = 0;
-                
-                // Check several following elements to find anime links
-                while (nextElement.length > 0 && elementsToCheck < 20) {
-                    nextElement.find('a[href*="/catalogue/"], a[href*="catalogue"]').each((index, element) => {
-                        const $el = $(element);
-                        const link = $el.attr('href');
+        dailySections.forEach((sectionTitle, dayIndex) => {
+            // Find the section header
+            $('h2').each((index, element) => {
+                const $header = $(element);
+                if ($header.text().trim() === sectionTitle) {
+                    
+                    // Get all anime cards in this section until next h2
+                    let $currentElement = $header.next();
+                    while ($currentElement.length && !$currentElement.is('h2')) {
                         
-                        if (!link || link.includes('/planning') || link.includes('/aide')) return;
-                        
-                        // Parse URL structure
-                        const urlParts = link.split('/');
-                        const catalogueIndex = urlParts.findIndex(part => part === 'catalogue');
-                        if (catalogueIndex === -1 || catalogueIndex + 1 >= urlParts.length) return;
-                        
-                        let animeId = urlParts[catalogueIndex + 1];
-                        if (animeId.endsWith('/')) animeId = animeId.slice(0, -1);
-                        
-                        // Extract season and language from URL
-                        let season = 1;
-                        let language = 'VOSTFR';
-                        let episodeNumber = null;
-                        
-                        if (urlParts.length > catalogueIndex + 2) {
-                            const seasonPart = urlParts[catalogueIndex + 2];
-                            const seasonMatch = seasonPart.match(/saison(\d+)/);
-                            if (seasonMatch) season = parseInt(seasonMatch[1]);
-                        }
-                        
-                        if (urlParts.length > catalogueIndex + 3) {
-                            const langPart = urlParts[catalogueIndex + 3].toLowerCase();
-                            if (LANGUAGE_SYSTEM[langPart]) {
-                                language = LANGUAGE_SYSTEM[langPart].name;
+                        // Look for anime cards/links in this element and its children
+                        $currentElement.find('a[href*="/catalogue/"]').each((cardIndex, linkElement) => {
+                            const $link = $(linkElement);
+                            const href = $link.attr('href');
+                            
+                            if (!href || !href.includes('/catalogue/')) return;
+                            
+                            // Extract anime information from the link structure
+                            const fullUrl = href.startsWith('http') ? href : `https://anime-sama.fr${href}`;
+                            const urlParts = fullUrl.split('/');
+                            
+                            // Expected structure: /catalogue/anime-name/season/language/
+                            const catalogueIndex = urlParts.findIndex(part => part === 'catalogue');
+                            if (catalogueIndex === -1 || catalogueIndex + 3 >= urlParts.length) return;
+                            
+                            const animeId = urlParts[catalogueIndex + 1];
+                            const seasonPath = urlParts[catalogueIndex + 2]; 
+                            const language = urlParts[catalogueIndex + 3];
+                            
+                            // Extract anime title from the card
+                            let title = $link.find('strong, h3, .title').first().text().trim();
+                            if (!title) {
+                                // Fallback to link text
+                                title = $link.text().replace(/\s+/g, ' ').trim();
+                                // Remove unwanted parts
+                                title = title.replace(/^\s*\*\*|\*\*\s*$/g, '');
+                                title = title.replace(/\s*\*\s*\*\s*\*/g, '');
+                                title = title.split('\n')[0].trim();
                             }
-                        }
-                        
-                        // Extract title and clean it comprehensively
-                        let title = $el.find('strong, b, h3, h4').first().text().trim();
-                        if (!title) {
-                            title = $el.text().trim();
-                            // Remove time info and clean up
-                            title = title.replace(/\d{1,2}h\d{2}/g, '')
-                                        .replace(/\*+/g, '')
-                                        .split('\n')[0]
-                                        .trim();
-                        }
-                        
-                        if (title) {
-                            title = title.replace(/\s+/g, ' ')
-                                        .replace(/VF|VOSTFR|AnimeVF|AnimeVOSTFR/gi, '')
-                                        .replace(/Anime|Manga|Scan/gi, '')
-                                        .replace(/\[FIN\]/gi, '')
-                                        .replace(/Reporté/gi, '')
-                                        .trim();
-                        }
-                        
-                        if (!title || title.length < 3) {
-                            title = animeId.replace(/-/g, ' ')
-                                          .split(' ')
-                                          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-                                          .join(' ');
-                        }
-                        
-                        // Extract release time and episode info from full element text
-                        const fullText = $el.text();
-                        const timeMatch = fullText.match(/(\d{1,2}h\d{2})/);
-                        const releaseTime = timeMatch ? timeMatch[1] : null;
-                        
-                        // Check for episode finale indicator
-                        const isFinale = fullText.toLowerCase().includes('[fin]') || 
-                                       fullText.toLowerCase().includes('finale') ||
-                                       fullText.toLowerCase().includes('dernier');
-                        
-                        // Determine if it's postponed/delayed
-                        const isPostponed = fullText.toLowerCase().includes('reporté') ||
-                                          fullText.toLowerCase().includes('retardé');
-                        
-                        // Extract image with enhanced detection
-                        const image = $el.find('img').attr('src') || 
-                                     $el.find('img').attr('data-src') ||
-                                     $el.closest('div').find('img').attr('src');
-                        
-                        // Determine content type from URL path and text
-                        let contentType = 'anime';
-                        if (link.includes('/scan/') || fullText.toLowerCase().includes('scan')) contentType = 'scan';
-                        else if (link.includes('/film/') || fullText.toLowerCase().includes('film')) contentType = 'film';
-                        else if (link.includes('/oav/') || fullText.toLowerCase().includes('oav')) contentType = 'oav';
-                        
-                        const episodeKey = `${animeId}-${season}-${language}-${contentType}`;
-                        
-                        if (!seenEpisodes.has(episodeKey)) {
-                            seenEpisodes.add(episodeKey);
+                            
+                            // Skip if no valid title
+                            if (!title || title.length < 2) return;
+                            
+                            // Extract release time
+                            let releaseTime = null;
+                            const timeText = $link.text();
+                            const timeMatch = timeText.match(/(\d{1,2}h\d{2})/);
+                            if (timeMatch) {
+                                releaseTime = timeMatch[1];
+                            }
+                            
+                            // Check for postponement indicators
+                            const isPostponed = timeText.includes('Reporté') || timeText.includes('reporté');
+                            
+                            // Extract image
+                            const $img = $link.find('img').first();
+                            let image = $img.attr('src') || $img.attr('data-src');
+                            if (image && !image.startsWith('http')) {
+                                image = `https://anime-sama.fr${image}`;
+                            }
+                            
+                            // Determine content type
+                            let contentType = 'anime';
+                            if (seasonPath && seasonPath.toLowerCase().includes('scan')) {
+                                contentType = 'scan';
+                            } else if (seasonPath && seasonPath.toLowerCase().includes('film')) {
+                                contentType = 'film';
+                            } else if (seasonPath && seasonPath.toLowerCase().includes('oav')) {
+                                contentType = 'oav';
+                            }
+                            
+                            // Create episode identifier to avoid duplicates
+                            const episodeId = `${animeId}-${seasonPath}-${language}`;
+                            if (seenEpisodes.has(episodeId)) return;
+                            seenEpisodes.add(episodeId);
+                            
+                            // Create language metadata
+                            const languageInfo = LANGUAGE_SYSTEM[language.toLowerCase()] || {
+                                code: language.toLowerCase(),
+                                name: language.toUpperCase(),
+                                fullName: `Version ${language.toUpperCase()}`,
+                                flag: 'unknown',
+                                priority: 99
+                            };
                             
                             recentEpisodes.push({
                                 animeId: animeId,
-                                animeTitle: title,
-                                season: season,
-                                episode: episodeNumber,
-                                language: language,
-                                languageInfo: LANGUAGE_SYSTEM[language.toLowerCase()] || null,
-                                contentType: contentType,
+                                title: title,
+                                image: image,
+                                url: fullUrl,
+                                dayOfWeek: sectionTitle,
+                                dayIndex: dayIndex,
                                 releaseTime: releaseTime,
-                                releaseDay: sectionTitle.replace('Sorties du ', ''),
-                                isFinale: isFinale,
                                 isPostponed: isPostponed,
-                                image: image ? (image.startsWith('http') ? image : `https://anime-sama.fr${image}`) : null,
-                                url: link.startsWith('http') ? link : `https://anime-sama.fr${link}`,
+                                season: seasonPath,
+                                language: languageInfo,
+                                contentType: contentType,
                                 isNew: true,
-                                extractedFrom: sectionTitle
+                                extractedAt: new Date().toISOString()
                             });
-                        }
-                    });
-                    
-                    nextElement = nextElement.next();
-                    elementsToCheck++;
+                        });
+                        
+                        $currentElement = $currentElement.next();
+                    }
                 }
-            }
+            });
         });
         
-        // Method 2: Extract from immediate homepage content if daily sections yield few results
-        if (recentEpisodes.length < 10) {
-            $('a[href*="/catalogue/"]').each((index, element) => {
-                if (recentEpisodes.length >= 25) return false; // Limit to prevent over-extraction
-                
+        // If we have episodes from the daily sections, use them, otherwise fallback to homepage content
+        if (recentEpisodes.length === 0) {
+            $('a[href*="/catalogue/"]').slice(0, 15).each((index, element) => {
                 const $el = $(element);
                 const link = $el.attr('href');
                 
@@ -1462,42 +1496,32 @@ async function getRecentEpisodes() {
                     
                     recentEpisodes.push({
                         animeId: animeId,
-                        animeTitle: title,
-                        season: 1,
-                        episode: null,
-                        language: 'VOSTFR',
-                        languageInfo: LANGUAGE_SYSTEM.vostfr,
-                        contentType: 'anime',
-                        releaseTime: null,
-                        releaseDay: 'Variable',
-                        isFinale: false,
-                        isPostponed: false,
+                        title: title,
                         image: image ? (image.startsWith('http') ? image : `https://anime-sama.fr${image}`) : null,
                         url: link.startsWith('http') ? link : `https://anime-sama.fr${link}`,
+                        dayOfWeek: 'Variable',
+                        dayIndex: 0,
+                        releaseTime: null,
+                        isPostponed: false,
+                        season: 'saison1',
+                        language: LANGUAGE_SYSTEM.vostfr,
+                        contentType: 'anime',
                         isNew: false,
-                        extractedFrom: 'Homepage Featured'
+                        extractedAt: new Date().toISOString()
                     });
                 }
             });
         }
         
-        // Sort by priority: new releases with specific times first, then by content type
+        // Sort by day order and then by release time 
         recentEpisodes.sort((a, b) => {
-            // Prioritize new releases with specific times
-            if (a.isNew && a.releaseTime && (!b.isNew || !b.releaseTime)) return -1;
-            if (b.isNew && b.releaseTime && (!a.isNew || !a.releaseTime)) return 1;
-            
-            // Sort by time for same-day releases (later times first)
-            if (a.releaseTime && b.releaseTime) {
-                const timeA = parseInt(a.releaseTime.replace(/[^\d]/g, ''));
-                const timeB = parseInt(b.releaseTime.replace(/[^\d]/g, ''));
-                return timeB - timeA;
+            if (a.dayIndex !== b.dayIndex) {
+                return a.dayIndex - b.dayIndex;
             }
-            
-            // Prioritize anime over scans/manga  
-            if (a.contentType === 'anime' && b.contentType !== 'anime') return -1;
-            if (b.contentType === 'anime' && a.contentType !== 'anime') return 1;
-            
+            // Sort by release time if same day
+            if (a.releaseTime && b.releaseTime) {
+                return a.releaseTime.localeCompare(b.releaseTime);
+            }
             return 0;
         });
         
