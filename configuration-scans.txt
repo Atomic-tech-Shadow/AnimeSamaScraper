@@ -1,7 +1,7 @@
 Configuration pour lire les scans dans votre application web
 ================================================================
 
-URL de l'API déployée : https://votre-api-deployee.replit.app
+URL de l'API déployée : https://anime-sama-scraper.vercel.app
 
 1. RÉCUPÉRATION DES SCANS DISPONIBLES
 =====================================
@@ -9,7 +9,7 @@ URL de l'API déployée : https://votre-api-deployee.replit.app
 Endpoint : GET /api/seasons/{animeId}
 
 Exemple :
-fetch('https://votre-api-deployee.replit.app/api/seasons/dandadan')
+fetch('https://anime-sama-scraper.vercel.app/api/seasons/dandadan')
   .then(response => response.json())
   .then(data => {
     // Filtrer uniquement les scans
@@ -39,7 +39,7 @@ Les scans retournés ont cette structure :
 Endpoint : GET /api/episodes/{animeId}?season={scanValue}&language={language}
 
 Exemple :
-fetch('https://votre-api-deployee.replit.app/api/episodes/dandadan?season=scan&language=VF')
+fetch('https://anime-sama-scraper.vercel.app/api/episodes/dandadan?season=scan&language=VF')
   .then(response => response.json())
   .then(data => {
     console.log(data.episodes); // Liste des chapitres
@@ -101,7 +101,7 @@ class AnimeViewer {
   
   async loadAnime(animeId) {
     try {
-      const response = await fetch(`${this.apiUrl}/api/seasons/${animeId}`);
+      const response = await fetch(`https://anime-sama-scraper.vercel.app/api/seasons/${animeId}`);
       this.currentAnime = await response.json();
       
       // Séparer anime et manga
@@ -171,7 +171,7 @@ class AnimeViewer {
 // Fonction pour charger les chapitres d'un scan
 async function loadScanChapters(animeId, scanValue, language) {
   try {
-    const response = await fetch(`https://votre-api-deployee.replit.app/api/episodes/${animeId}?season=${scanValue}&language=${language}`);
+    const response = await fetch(`https://anime-sama-scraper.vercel.app/api/episodes/${animeId}?season=${scanValue}&language=${language}`);
     const data = await response.json();
     
     if (data.success && data.episodes.length > 0) {
@@ -188,7 +188,7 @@ async function loadScanChapters(animeId, scanValue, language) {
 // Fonction pour charger les épisodes d'un anime
 async function loadAnimeEpisodes(animeId, seasonValue, language) {
   try {
-    const response = await fetch(`https://votre-api-deployee.replit.app/api/episodes/${animeId}?season=${seasonValue}&language=${language}`);
+    const response = await fetch(`https://anime-sama-scraper.vercel.app/api/episodes/${animeId}?season=${seasonValue}&language=${language}`);
     const data = await response.json();
     
     if (data.success && data.episodes.length > 0) {
@@ -251,7 +251,7 @@ function createEpisodesContainer() {
 }
 
 // Initialisation
-const viewer = new AnimeViewer('https://votre-api-deployee.replit.app');
+const viewer = new AnimeViewer('https://anime-sama-scraper.vercel.app');
 
 5. EXEMPLE D'UTILISATION COMPLÈTE
 ==================================
@@ -293,7 +293,7 @@ const viewer = new AnimeViewer('https://votre-api-deployee.replit.app');
 6. POINTS IMPORTANTS
 =====================
 
-- Remplacez "https://votre-api-deployee.replit.app" par l'URL réelle de votre API déployée
+- L'URL de l'API déployée est maintenant configurée : https://anime-sama-scraper.vercel.app
 - Les scans ont le contentType "manga" et les anime ont le contentType "anime"
 - Les scans sont généralement en langue VF (français)
 - Utilisez les filtres pour séparer clairement anime et manga dans votre interface
