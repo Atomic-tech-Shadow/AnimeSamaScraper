@@ -1,0 +1,311 @@
+Configuration pour lire les scans dans votre application web
+================================================================
+
+URL de l'API déployée : https://votre-api-deployee.replit.app
+
+1. RÉCUPÉRATION DES SCANS DISPONIBLES
+=====================================
+
+Endpoint : GET /api/seasons/{animeId}
+
+Exemple :
+fetch('https://votre-api-deployee.replit.app/api/seasons/dandadan')
+  .then(response => response.json())
+  .then(data => {
+    // Filtrer uniquement les scans
+    const scans = data.seasons.filter(season => season.contentType === 'manga');
+    console.log(scans);
+  });
+
+2. STRUCTURE DES DONNÉES DE SCANS
+==================================
+
+Les scans retournés ont cette structure :
+{
+  "number": 2000,
+  "name": "Scans",
+  "value": "scan",
+  "type": "Scan",
+  "languages": ["VF"],
+  "available": true,
+  "contentType": "manga",
+  "url": "scan/vf",
+  "fullUrl": "https://anime-sama.fr/catalogue/dandadan/scan/vf"
+}
+
+3. RÉCUPÉRATION DES CHAPITRES
+==============================
+
+Endpoint : GET /api/episodes/{animeId}?season={scanValue}&language={language}
+
+Exemple :
+fetch('https://votre-api-deployee.replit.app/api/episodes/dandadan?season=scan&language=VF')
+  .then(response => response.json())
+  .then(data => {
+    console.log(data.episodes); // Liste des chapitres
+  });
+
+4. CODE D'AFFICHAGE POUR L'INTERFACE
+=====================================
+
+HTML :
+<div id="anime-content"></div>
+<div id="manga-content"></div>
+
+CSS :
+.anime-section {
+  border-left: 4px solid #3498db;
+  background: #f8f9fa;
+  padding: 15px;
+  margin: 10px 0;
+}
+
+.manga-section {
+  border-left: 4px solid #e74c3c;
+  background: #fff5f5;
+  padding: 15px;
+  margin: 10px 0;
+}
+
+.scan-item {
+  padding: 10px;
+  margin: 5px 0;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.lang-badge {
+  background: #007bff;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  margin-right: 5px;
+}
+
+.read-scan-btn {
+  background: #e74c3c;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+JavaScript :
+class AnimeViewer {
+  constructor(apiUrl) {
+    this.apiUrl = apiUrl;
+    this.currentAnime = null;
+  }
+  
+  async loadAnime(animeId) {
+    try {
+      const response = await fetch(`${this.apiUrl}/api/seasons/${animeId}`);
+      this.currentAnime = await response.json();
+      
+      // Séparer anime et manga
+      const animeSeasons = this.currentAnime.seasons.filter(s => s.contentType === 'anime');
+      const mangaSeasons = this.currentAnime.seasons.filter(s => s.contentType === 'manga');
+      
+      // Afficher séparément
+      this.displayAnimeSeasons(animeSeasons);
+      this.displayMangaSeasons(mangaSeasons);
+      
+    } catch (error) {
+      console.error('Erreur lors du chargement:', error);
+    }
+  }
+  
+  displayMangaSeasons(mangaSeasons) {
+    const container = document.getElementById('manga-content');
+    
+    if (mangaSeasons.length === 0) {
+      container.innerHTML = '<p>Aucun scan disponible pour cet anime.</p>';
+      return;
+    }
+    
+    container.innerHTML = '<h2>Scans disponibles</h2>';
+    
+    mangaSeasons.forEach(scan => {
+      const scanDiv = document.createElement('div');
+      scanDiv.className = 'manga-section scan-item';
+      scanDiv.innerHTML = `
+        <h3>${scan.name}</h3>
+        <p><strong>Type:</strong> ${scan.type}</p>
+        <div class="scan-languages">
+          <strong>Langues:</strong> 
+          ${scan.languages.map(lang => `<span class="lang-badge">${lang}</span>`).join('')}
+        </div>
+        <button class="read-scan-btn" onclick="loadScanChapters('${this.currentAnime.animeId}', '${scan.value}', '${scan.languages[0]}')">
+          Voir les chapitres
+        </button>
+      `;
+      container.appendChild(scanDiv);
+    });
+  }
+  
+  displayAnimeSeasons(animeSeasons) {
+    const container = document.getElementById('anime-content');
+    container.innerHTML = '<h2>Anime disponible</h2>';
+    
+    animeSeasons.forEach(season => {
+      const seasonDiv = document.createElement('div');
+      seasonDiv.className = 'anime-section';
+      seasonDiv.innerHTML = `
+        <h3>${season.name}</h3>
+        <p><strong>Type:</strong> ${season.type}</p>
+        <div class="season-languages">
+          <strong>Langues:</strong> 
+          ${season.languages.map(lang => `<span class="lang-badge">${lang}</span>`).join('')}
+        </div>
+        <button onclick="loadAnimeEpisodes('${this.currentAnime.animeId}', '${season.value}', '${season.languages[0]}')">
+          Voir les épisodes
+        </button>
+      `;
+      container.appendChild(seasonDiv);
+    });
+  }
+}
+
+// Fonction pour charger les chapitres d'un scan
+async function loadScanChapters(animeId, scanValue, language) {
+  try {
+    const response = await fetch(`https://votre-api-deployee.replit.app/api/episodes/${animeId}?season=${scanValue}&language=${language}`);
+    const data = await response.json();
+    
+    if (data.success && data.episodes.length > 0) {
+      displayChapters(data.episodes);
+    } else {
+      alert('Aucun chapitre trouvé pour ce scan.');
+    }
+  } catch (error) {
+    console.error('Erreur lors du chargement des chapitres:', error);
+    alert('Erreur lors du chargement des chapitres.');
+  }
+}
+
+// Fonction pour charger les épisodes d'un anime
+async function loadAnimeEpisodes(animeId, seasonValue, language) {
+  try {
+    const response = await fetch(`https://votre-api-deployee.replit.app/api/episodes/${animeId}?season=${seasonValue}&language=${language}`);
+    const data = await response.json();
+    
+    if (data.success && data.episodes.length > 0) {
+      displayEpisodes(data.episodes);
+    } else {
+      alert('Aucun épisode trouvé pour cette saison.');
+    }
+  } catch (error) {
+    console.error('Erreur lors du chargement des épisodes:', error);
+    alert('Erreur lors du chargement des épisodes.');
+  }
+}
+
+// Fonction pour afficher les chapitres
+function displayChapters(chapters) {
+  const chaptersContainer = document.getElementById('chapters-container') || createChaptersContainer();
+  chaptersContainer.innerHTML = '<h3>Chapitres</h3>';
+  
+  chapters.forEach(chapter => {
+    const chapterDiv = document.createElement('div');
+    chapterDiv.className = 'chapter-item';
+    chapterDiv.innerHTML = `
+      <h4>${chapter.title || 'Chapitre ' + chapter.number}</h4>
+      <p>Numéro: ${chapter.number}</p>
+      <button onclick="readChapter('${chapter.url}')">Lire ce chapitre</button>
+    `;
+    chaptersContainer.appendChild(chapterDiv);
+  });
+}
+
+// Fonction pour afficher les épisodes
+function displayEpisodes(episodes) {
+  const episodesContainer = document.getElementById('episodes-container') || createEpisodesContainer();
+  episodesContainer.innerHTML = '<h3>Épisodes</h3>';
+  
+  episodes.forEach(episode => {
+    const episodeDiv = document.createElement('div');
+    episodeDiv.className = 'episode-item';
+    episodeDiv.innerHTML = `
+      <h4>${episode.title || 'Épisode ' + episode.number}</h4>
+      <p>Numéro: ${episode.number}</p>
+      <button onclick="watchEpisode('${episode.url}')">Regarder cet épisode</button>
+    `;
+    episodesContainer.appendChild(episodeDiv);
+  });
+}
+
+function createChaptersContainer() {
+  const container = document.createElement('div');
+  container.id = 'chapters-container';
+  document.body.appendChild(container);
+  return container;
+}
+
+function createEpisodesContainer() {
+  const container = document.createElement('div');
+  container.id = 'episodes-container';
+  document.body.appendChild(container);
+  return container;
+}
+
+// Initialisation
+const viewer = new AnimeViewer('https://votre-api-deployee.replit.app');
+
+5. EXEMPLE D'UTILISATION COMPLÈTE
+==================================
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Lecteur Anime/Manga</title>
+    <style>
+        /* CSS ci-dessus */
+    </style>
+</head>
+<body>
+    <h1>Lecteur Anime/Manga</h1>
+    
+    <div>
+        <input type="text" id="animeSearch" placeholder="Entrez l'ID de l'anime (ex: dandadan)">
+        <button onclick="searchAnime()">Charger</button>
+    </div>
+    
+    <div id="anime-content"></div>
+    <div id="manga-content"></div>
+    <div id="chapters-container"></div>
+    <div id="episodes-container"></div>
+    
+    <script>
+        // JavaScript ci-dessus
+        
+        function searchAnime() {
+            const animeId = document.getElementById('animeSearch').value.trim();
+            if (animeId) {
+                viewer.loadAnime(animeId);
+            }
+        }
+    </script>
+</body>
+</html>
+
+6. POINTS IMPORTANTS
+=====================
+
+- Remplacez "https://votre-api-deployee.replit.app" par l'URL réelle de votre API déployée
+- Les scans ont le contentType "manga" et les anime ont le contentType "anime"
+- Les scans sont généralement en langue VF (français)
+- Utilisez les filtres pour séparer clairement anime et manga dans votre interface
+- Gérez les erreurs avec try/catch pour une meilleure expérience utilisateur
+
+7. ENDPOINTS UTILES
+===================
+
+- GET /api/seasons/{animeId} : Récupère toutes les saisons/scans
+- GET /api/episodes/{animeId}?season={value}&language={lang} : Récupère les épisodes/chapitres
+- GET /api/search?query={terme} : Recherche d'anime
+- GET /api/trending : Anime populaires
+- GET /api/recent : Épisodes récents
+
+L'API récupère automatiquement et authentiquement tous les contenus depuis anime-sama.fr sans configuration supplémentaire.
