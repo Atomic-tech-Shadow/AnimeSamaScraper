@@ -29,8 +29,13 @@ module.exports = async (req, res) => {
             });
         }
 
-        // Get anime episodes
-        const episodes = await getAnimeEpisodes(animeId.trim(), season, language);
+        // Get anime episodes with timeout protection
+        const episodes = await Promise.race([
+            getAnimeEpisodes(animeId.trim(), season, language),
+            new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Episodes request timeout')), 8000)
+            )
+        ]);
 
         // Return episodes
         res.status(200).json({

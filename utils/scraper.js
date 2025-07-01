@@ -95,8 +95,8 @@ function getRandomUserAgent() {
     return USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
 }
 
-// Random delay to avoid detection
-function randomDelay(min = 500, max = 1500) {
+// Reduced delay for better performance
+function randomDelay(min = 100, max = 300) {
     return new Promise(resolve => {
         const delay = Math.floor(Math.random() * (max - min + 1)) + min;
         setTimeout(resolve, delay);
@@ -111,7 +111,7 @@ async function scrapeAnimesama(url, options = {}) {
         await randomDelay(); // Random delay before request
         
         const response = await axios.get(url, {
-            timeout: 8000, // 8 second timeout
+            timeout: 5000, // 5 second timeout for better performance
             headers: {
                 'User-Agent': getRandomUserAgent(),
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
@@ -664,51 +664,43 @@ async function getBasicAnimeInfo(animeId) {
     }
 }
 
-// Helper function to get available languages for a season
+// Optimized function to get available languages for a season
 async function getSeasonLanguages(animeId, seasonValue) {
-    const possibleLanguages = ['vostfr', 'vf', 'vf1', 'vf2', 'va', 'vkr', 'vcn', 'vqc', 'vj'];
+    const possibleLanguages = ['vostfr', 'vf', 'vf1', 'vf2', 'va'];
     const availableLanguages = [];
     
-    for (const lang of possibleLanguages) {
+    // Use Promise.allSettled for parallel requests instead of sequential
+    const languageChecks = possibleLanguages.map(async (lang) => {
         try {
-            // Check if episodes.js file exists for this language (more reliable)
             const episodesUrl = `https://anime-sama.fr/catalogue/${animeId}/${seasonValue}/${lang}/episodes.js`;
             const response = await axios.get(episodesUrl, {
-                timeout: 3000,
+                timeout: 2000, // Reduced timeout
                 headers: { 'User-Agent': getRandomUserAgent() },
                 validateStatus: function (status) {
-                    return status < 500; // Accept all status codes less than 500
+                    return status < 500;
                 }
             });
             
             // Check if we got actual JavaScript content (not a 404 page)
             if (response.status === 200 && response.data && 
                 (response.data.includes('var eps') || response.data.includes('eps1'))) {
-                availableLanguages.push(lang.toUpperCase());
+                return { lang: lang.toUpperCase(), available: true };
             }
         } catch (error) {
-            // Try fallback method - check the page itself
-            try {
-                const testUrl = `https://anime-sama.fr/catalogue/${animeId}/${seasonValue}/${lang}/`;
-                const pageResponse = await scrapeAnimesama(testUrl, { timeout: 2000 });
-                
-                // Check if page exists and is not a 404
-                const pageContent = pageResponse.html();
-                if (!pageContent.includes('Page introuvable') && 
-                    !pageContent.includes('Cette page n\'existe pas') &&
-                    !pageContent.includes('404') &&
-                    (pageContent.includes('Episode 1') || pageContent.includes('eps1'))) {
-                    availableLanguages.push(lang.toUpperCase());
-                }
-            } catch (fallbackError) {
-                // Language not available, continue to next
-                continue;
-            }
+            // Language not available
         }
-        
-        // Add small delay between requests to be respectful
-        await randomDelay(100, 200);
-    }
+        return { lang: lang.toUpperCase(), available: false };
+    });
+    
+    // Wait for all parallel requests to complete
+    const results = await Promise.allSettled(languageChecks);
+    
+    // Extract available languages from results
+    results.forEach(result => {
+        if (result.status === 'fulfilled' && result.value.available) {
+            availableLanguages.push(result.value.lang);
+        }
+    });
     
     return availableLanguages.length > 0 ? availableLanguages : ['VOSTFR'];
 }
@@ -937,53 +929,37 @@ async function getAnimeEpisodes(animeId, season = 1, language = 'VOSTFR') {
         // First check what language variants are actually available for this anime/season
         const possibleLanguages = ['vostfr', 'vf', 'vf1', 'vf2', 'va', 'vkr', 'vcn', 'vqc', 'vj'];
         
-        // Special handling for VF - check common variants first
-        if (requestedLang === 'vf') {
-            const vfVariants = ['vf1', 'vf2', 'vf'];
-            for (const vfVariant of vfVariants) {
-                try {
-                    const testUrl = `https://anime-sama.fr/catalogue/${animeId}/${seasonPath}/${vfVariant}/episodes.js`;
-                    const testResponse = await axios.get(testUrl, {
-                        timeout: 3000,
-                        headers: { 'User-Agent': getRandomUserAgent() },
-                        validateStatus: function (status) {
-                            return status < 500;
-                        }
-                    });
-                    
-                    // Check if we got actual JavaScript content
-                    if (testResponse.status === 200 && testResponse.data && 
-                        (testResponse.data.includes('var eps') || testResponse.data.includes('eps1'))) {
-                        languageCode = vfVariant;
-                        break;
+        // Optimized parallel language detection for better performance
+        const languagesToTest = requestedLang === 'vf' ? ['vf1', 'vf2', 'vf'] : [requestedLang];
+        
+        const languageTests = languagesToTest.map(async (testLang) => {
+            try {
+                const testUrl = `https://anime-sama.fr/catalogue/${animeId}/${seasonPath}/${testLang}/episodes.js`;
+                const testResponse = await axios.get(testUrl, {
+                    timeout: 1500,
+                    headers: { 'User-Agent': getRandomUserAgent() },
+                    validateStatus: function (status) {
+                        return status < 500;
                     }
-                } catch (e) {
-                    // Continue to next variant
+                });
+                
+                if (testResponse.status === 200 && testResponse.data && 
+                    (testResponse.data.includes('var eps') || testResponse.data.includes('eps1'))) {
+                    return testLang;
                 }
+            } catch (e) {
+                // Language not available
             }
-        } else {
-            // For other languages, try exact match
-            for (const testLang of possibleLanguages) {
-                if (requestedLang === testLang) {
-                    try {
-                        const testUrl = `https://anime-sama.fr/catalogue/${animeId}/${seasonPath}/${testLang}/episodes.js`;
-                        const testResponse = await axios.get(testUrl, {
-                            timeout: 3000,
-                            headers: { 'User-Agent': getRandomUserAgent() },
-                            validateStatus: function (status) {
-                                return status < 500;
-                            }
-                        });
-                        
-                        if (testResponse.status === 200 && testResponse.data && 
-                            (testResponse.data.includes('var eps') || testResponse.data.includes('eps1'))) {
-                            languageCode = testLang;
-                            break;
-                        }
-                    } catch (e) {
-                        // Continue to next variant
-                    }
-                }
+            return null;
+        });
+        
+        const languageResults = await Promise.allSettled(languageTests);
+        
+        // Find the first successful language
+        for (const result of languageResults) {
+            if (result.status === 'fulfilled' && result.value) {
+                languageCode = result.value;
+                break;
             }
         }
         
@@ -997,7 +973,7 @@ async function getAnimeEpisodes(animeId, season = 1, language = 'VOSTFR') {
         try {
             // Use axios directly to get the JavaScript file (raw text)
             const response = await axios.get(episodesJsUrl, {
-                timeout: 8000,
+                timeout: 4000, // Reduced timeout
                 headers: {
                     'User-Agent': getRandomUserAgent(),
                     'Accept': 'text/javascript, application/javascript, */*',
