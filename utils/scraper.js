@@ -1612,6 +1612,187 @@ async function getRecentEpisodes() {
     }
 }
 
+// Get manga chapters for scans
+async function getMangaChapters(animeId, scanValue = 'scan', language = 'VF') {
+    try {
+        const scanUrl = `https://anime-sama.fr/catalogue/${animeId}/${scanValue}/${language.toLowerCase()}/`;
+        console.log(`Getting manga chapters from: ${scanUrl}`);
+        
+        const $ = await scrapeAnimesama(scanUrl);
+        const chapters = [];
+        const seenChapters = new Set();
+        const pageHTML = $.html();
+        
+        console.log('Analyzing page for chapter data...');
+        
+        // Method 1: Look for eps variables in JavaScript (primary method for anime-sama.fr)
+        const epsVariables = [];
+        let epsCount = 1;
+        
+        // Extract all eps variables from JavaScript
+        while (epsCount <= 300) { // Max 300 chapters
+            const epsPattern = new RegExp(`var\\s+eps${epsCount}\\s*=\\s*\\[`, 'g');
+            const match = pageHTML.match(epsPattern);
+            
+            if (match) {
+                epsVariables.push(epsCount);
+                epsCount++;
+            } else {
+                break;
+            }
+        }
+        
+        console.log(`Found ${epsVariables.length} eps variables (chapters)`);
+        
+        // Create chapters based on found eps variables
+        if (epsVariables.length > 0) {
+            epsVariables.forEach(chapterNum => {
+                chapters.push({
+                    number: chapterNum,
+                    title: `Chapitre ${chapterNum}`,
+                    url: `${scanUrl}#chapitre-${chapterNum}`,
+                    language: language.toUpperCase(),
+                    type: 'scan',
+                    available: true
+                });
+            });
+        }
+        
+        // Method 2: Look for chapter count in JavaScript logic
+        if (chapters.length === 0) {
+            const scriptContent = $('script').map((i, el) => $(el).html()).get().join(' ');
+            
+            // Look for tailleChapitres or similar patterns
+            const patterns = [
+                /tailleChapitres\s*=\s*(\d+)/,
+                /numberOfChapters\s*=\s*(\d+)/,
+                /chaptersCount\s*=\s*(\d+)/,
+                /while.*eps.*(\d+)/
+            ];
+            
+            for (const pattern of patterns) {
+                const match = scriptContent.match(pattern);
+                if (match) {
+                    const totalChapters = parseInt(match[1]);
+                    console.log(`Found chapter count pattern: ${totalChapters}`);
+                    
+                    if (totalChapters > 0 && totalChapters <= 500) {
+                        for (let i = 1; i <= totalChapters; i++) {
+                            chapters.push({
+                                number: i,
+                                title: `Chapitre ${i}`,
+                                url: `${scanUrl}#chapitre-${i}`,
+                                language: language.toUpperCase(),
+                                type: 'scan',
+                                available: true
+                            });
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+        
+        // Method 3: Look for clickable chapter elements
+        if (chapters.length === 0) {
+            const chapterSelectors = [
+                'button[onclick*="chapitre"]',
+                'a[href*="chapitre"]',
+                '[data-chapter]',
+                '.chapter-btn',
+                'option[value*="chapitre"]'
+            ];
+            
+            chapterSelectors.forEach(selector => {
+                $(selector).each((index, element) => {
+                    const $el = $(element);
+                    const text = $el.text().trim();
+                    const onclick = $el.attr('onclick') || '';
+                    const value = $el.attr('value') || '';
+                    
+                    const sources = [text, onclick, value];
+                    
+                    for (const source of sources) {
+                        const chapterMatch = source.match(/chapitre[_\s]*(\d+(?:\.\d+)?)/i);
+                        if (chapterMatch) {
+                            const chapterNumber = parseFloat(chapterMatch[1]);
+                            const chapterKey = `${chapterNumber}`;
+                            
+                            if (!seenChapters.has(chapterKey) && chapterNumber > 0) {
+                                seenChapters.add(chapterKey);
+                                
+                                chapters.push({
+                                    number: chapterNumber,
+                                    title: text || `Chapitre ${chapterNumber}`,
+                                    url: `${scanUrl}#chapitre-${chapterNumber}`,
+                                    language: language.toUpperCase(),
+                                    type: 'scan',
+                                    available: true
+                                });
+                                break;
+                            }
+                        }
+                    }
+                });
+            });
+        }
+        
+        // Method 4: Fallback - create a reasonable number of chapters if we know the scan exists
+        if (chapters.length === 0) {
+            // Check if the page indicates this is a valid scan page
+            const hasValidScanContent = pageHTML.includes('scan') || 
+                                       pageHTML.includes('chapitre') || 
+                                       pageHTML.includes('lecteur');
+            
+            if (hasValidScanContent) {
+                console.log('Creating default chapter list based on scan page detection');
+                // Create a default range - this would be updated when the actual data is loaded
+                for (let i = 1; i <= 50; i++) {
+                    chapters.push({
+                        number: i,
+                        title: `Chapitre ${i}`,
+                        url: `${scanUrl}#chapitre-${i}`,
+                        language: language.toUpperCase(),
+                        type: 'scan',
+                        available: true,
+                        placeholder: true // Mark as placeholder
+                    });
+                }
+            }
+        }
+        
+        // Look for special chapters
+        const specialMatches = pageHTML.match(/Chapitre\s+(One\s+Shot|Special|Extra)/gi);
+        if (specialMatches) {
+            specialMatches.forEach((match, index) => {
+                chapters.push({
+                    number: 1000 + index, // High number for specials
+                    title: match,
+                    url: `${scanUrl}#${match.toLowerCase().replace(/\s+/g, '-')}`,
+                    language: language.toUpperCase(),
+                    type: 'scan',
+                    available: true,
+                    special: true
+                });
+            });
+        }
+        
+        // Sort chapters by number
+        chapters.sort((a, b) => {
+            if (a.special && !b.special) return 1;
+            if (!a.special && b.special) return -1;
+            return a.number - b.number;
+        });
+        
+        console.log(`Found ${chapters.length} chapters for ${animeId} scan`);
+        return chapters;
+        
+    } catch (error) {
+        console.error('Error getting manga chapters:', error.message);
+        throw error;
+    }
+}
+
 module.exports = {
     scrapeAnimesama,
     searchAnime,
@@ -1619,6 +1800,7 @@ module.exports = {
     getAnimeDetails,
     getAnimeSeasons,
     getAnimeEpisodes,
+    getMangaChapters,
     getEpisodeSources,
     getRecentEpisodes,
     randomDelay

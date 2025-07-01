@@ -1,4 +1,4 @@
-const { getAnimeEpisodes } = require('../../utils/scraper');
+const { getAnimeEpisodes, getMangaChapters } = require('../../utils/scraper');
 
 module.exports = async (req, res) => {
     // Enable CORS
@@ -29,20 +29,40 @@ module.exports = async (req, res) => {
             });
         }
 
-        // Get anime episodes with timeout protection
-        const episodes = await Promise.race([
-            getAnimeEpisodes(animeId.trim(), season, language),
-            new Promise((_, reject) => 
-                setTimeout(() => reject(new Error('Episodes request timeout')), 8000)
-            )
-        ]);
+        // Determine if this is a scan/manga request or anime episodes
+        const isScanRequest = season === 'scan' || season.toLowerCase().includes('scan') || 
+                             season.toLowerCase().includes('manga') || season.toLowerCase().includes('novel');
+        
+        let episodes;
+        let contentType;
+        
+        if (isScanRequest) {
+            // Get manga chapters
+            episodes = await Promise.race([
+                getMangaChapters(animeId.trim(), season, language),
+                new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('Manga chapters request timeout')), 8000)
+                )
+            ]);
+            contentType = 'manga';
+        } else {
+            // Get anime episodes
+            episodes = await Promise.race([
+                getAnimeEpisodes(animeId.trim(), season, language),
+                new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('Episodes request timeout')), 8000)
+                )
+            ]);
+            contentType = 'anime';
+        }
 
-        // Return episodes
+        // Return episodes/chapters
         res.status(200).json({
             success: true,
             animeId: animeId.trim(),
-            season: parseInt(season),
+            season: season,
             language: language,
+            contentType: contentType,
             count: episodes.length,
             episodes: episodes
         });
