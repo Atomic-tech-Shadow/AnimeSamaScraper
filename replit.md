@@ -93,7 +93,10 @@ This is a Node.js-based API that scrapes the anime-sama.fr website to provide an
 
 ## Recent Changes
 ✓ JULY 1, 2025: Successfully completed migration from Replit Agent to standard Replit environment
-✓ Migration verified by user - code functions correctly with temporary external API issues noted
+✓ Migration verified by user - code functions correctly
+✓ FIXED SCAN EPISODES ENDPOINT - Added automatic language detection for scan content
+✓ Enhanced /api/episodes endpoint to auto-detect correct language for scans (VF vs VOSTFR)
+✓ Resolved 404 errors for scan episodes by using proper language detection from seasons data
 ✓ Fixed missing dependencies - installed express, axios, cheerio, cors packages  
 ✓ API server now running cleanly on port 5000 with proper security practices
 ✓ VERIFIED SEASONS ENDPOINT AUTHENTICITY - API correctly extracts all content types from anime-sama.fr

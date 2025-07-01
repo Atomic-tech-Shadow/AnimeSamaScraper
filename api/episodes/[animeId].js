@@ -1,4 +1,4 @@
-const { getAnimeEpisodes, getMangaChapters } = require('../../utils/scraper');
+const { getAnimeEpisodes, getMangaChapters, getAnimeSeasons } = require('../../utils/scraper');
 
 module.exports = async (req, res) => {
     // Enable CORS
@@ -37,9 +37,27 @@ module.exports = async (req, res) => {
         let contentType;
         
         if (isScanRequest) {
+            // For scans, try to get the correct language from seasons data first
+            let scanLanguage = language;
+            try {
+                const seasonsData = await getAnimeSeasons(animeId.trim());
+                const scanSeason = seasonsData.find(s => 
+                    s.value === 'scan' || s.type.toLowerCase().includes('scan') || 
+                    s.name.toLowerCase().includes('scan')
+                );
+                
+                if (scanSeason && scanSeason.languages && scanSeason.languages.length > 0) {
+                    // Use the first available language for this scan
+                    scanLanguage = scanSeason.languages[0];
+                    console.log(`Auto-detected scan language: ${scanLanguage} for ${animeId}`);
+                }
+            } catch (seasonError) {
+                console.log('Could not auto-detect scan language, using default:', language);
+            }
+            
             // Get manga chapters
             episodes = await Promise.race([
-                getMangaChapters(animeId.trim(), season, language),
+                getMangaChapters(animeId.trim(), season, scanLanguage),
                 new Promise((_, reject) => 
                     setTimeout(() => reject(new Error('Manga chapters request timeout')), 8000)
                 )
