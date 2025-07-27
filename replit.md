@@ -107,6 +107,10 @@ This is a Node.js-based API that scrapes the anime-sama.fr website to provide an
 ✓ OPTIMIZED API STRUCTURE - Removed redundant /api/recent endpoint to eliminate duplication
 ✓ Clean endpoint architecture: search, trending, anime details, seasons, episodes, embed, planning
 ✓ All remaining endpoints provide unique, non-overlapping functionality
+✓ CREATED NEW /api/popular ENDPOINT - Extracts authentic content from anime-sama.fr sections
+✓ Popular endpoint targets specific sections: "les classiques" and "découvrez des pépites"  
+✓ Enhanced API architecture with dedicated endpoint for popular/recommended anime vs trending/recent
+✓ API now properly separates trending content (new episodes) from popular content (curated selections)
 ✓ Migration verified by user - code functions correctly
 ✓ FIXED SCAN EPISODES ENDPOINT - Added automatic language detection for scan content
 ✓ Enhanced /api/episodes endpoint to auto-detect correct language for scans (VF vs VOSTFR)
