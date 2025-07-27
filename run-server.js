@@ -21,7 +21,20 @@ app.get('/', (req, res) => {
             animeDetails: '/api/anime/:id',
             seasons: '/api/seasons/:animeId',
             episodes: '/api/episodes/:animeId?season=1&language=VOSTFR',
-            embed: '/api/embed?url=https%3A%2F%2Fanime-sama.fr%2Fcatalogue%2F...'
+            embed: '/api/embed?url=https%3A%2F%2Fanime-sama.fr%2Fcatalogue%2F...',
+            planning: '/api/planning'
+        },
+        improvements: {
+            version: '2.1.0',
+            lastUpdate: '2025-07-27',
+            newFeatures: [
+                'Enhanced title cleaning (removed whitespace artifacts)',
+                'VF Crunchyroll detection improved',
+                'Finale indicators ([FIN]) extraction',
+                'Recent episodes with bg-cyan-600 buttons',
+                'Planning API for Crunchyroll releases',
+                'Special metadata extraction'
+            ]
         }
     });
 });
@@ -44,6 +57,7 @@ app.get('/api/episodes/:animeId', (req, res) => {
 });
 
 app.get('/api/embed', require('./api/embed.js'));
+app.get('/api/planning', require('./api/planning.js'));
 
 // Error handling
 app.use((err, req, res, next) => {

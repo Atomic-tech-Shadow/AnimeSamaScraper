@@ -96,6 +96,14 @@ This is a Node.js-based API that scrapes the anime-sama.fr website to provide an
 ✓ Fixed missing dependency installation - all packages now properly installed via Replit package manager
 ✓ Verified production stability - API has been running successfully for over 1 month
 ✓ Migration preserves all existing functionality with enhanced security practices
+✓ MAJOR SITE AUDIT AND API IMPROVEMENTS COMPLETED
+✓ Fixed critical title formatting issues - removed whitespace artifacts (\n\t) from all titles
+✓ Enhanced VF Crunchyroll detection - properly identifies VF sources vs VOSTFR
+✓ Implemented recent episodes API with bg-cyan-600 button extraction from audit findings
+✓ Added planning API for Crunchyroll release schedules extraction
+✓ Created centralized title-cleaner utility for consistent title processing
+✓ Enhanced metadata extraction: finale indicators [FIN], source indicators (VF Crunchyroll)
+✓ API version upgraded to 2.1.0 with comprehensive site structure analysis
 ✓ Migration verified by user - code functions correctly
 ✓ FIXED SCAN EPISODES ENDPOINT - Added automatic language detection for scan content
 ✓ Enhanced /api/episodes endpoint to auto-detect correct language for scans (VF vs VOSTFR)

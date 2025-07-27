@@ -1,5 +1,6 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
+const { cleanTitleWithFallback } = require('./title-cleaner');
 
 // User-Agent rotation for anti-bot protection
 const USER_AGENTS = [
@@ -361,6 +362,9 @@ async function getTrendingAnime() {
                                 title = title.replace(/\*+/g, '').replace(/\d{1,2}h\d{2}/g, '').trim();
                             }
                             
+                            // CORRECTION CRITIQUE: Utiliser la fonction de nettoyage centralisée
+                            title = cleanTitleWithFallback(title, animeId);
+                            
                             if (!title || title.length < 3) {
                                 title = animeId.replace(/-/g, ' ')
                                               .split(' ')
@@ -384,9 +388,28 @@ async function getTrendingAnime() {
                                 contentType = 'film';
                             }
                             
-                            // Determine language from URL
-                            const language = urlParts[catalogueIndex + 3];
-                            const languageInfo = LANGUAGE_SYSTEM[language?.toLowerCase()] || LANGUAGE_SYSTEM.vostfr;
+                            // CORRECTION CRITIQUE: Améliorer la détection de langue
+                            let languageInfo = LANGUAGE_SYSTEM.vostfr; // Default
+                            
+                            // Détecter VF Crunchyroll spécifiquement
+                            const elementText = $link.text();
+                            if (elementText.includes('VF Crunchyroll') || elementText.includes('(VF Crunchyroll)')) {
+                                languageInfo = LANGUAGE_SYSTEM.vf;
+                            } else {
+                                // Détection normale à partir de l'URL
+                                const language = urlParts[catalogueIndex + 3];
+                                if (language && LANGUAGE_SYSTEM[language.toLowerCase()]) {
+                                    languageInfo = LANGUAGE_SYSTEM[language.toLowerCase()];
+                                }
+                            }
+                            
+                            // NOUVEAU: Extraire les métadonnées spéciales identifiées dans l'audit
+                            const isFinale = elementText.includes('[FIN]');
+                            const isVFCrunchyroll = elementText.includes('VF Crunchyroll') || elementText.includes('(VF Crunchyroll)');
+                            
+                            // Extraire numéro d'épisode et saison depuis le texte
+                            const episodeMatch = elementText.match(/Episode\s*(\d+)/i);
+                            const seasonMatch = elementText.match(/Saison\s*(\d+)/i);
                             
                             trending.push({
                                 id: animeId,
@@ -397,7 +420,16 @@ async function getTrendingAnime() {
                                 language: languageInfo,
                                 releaseDay: sectionTitle.replace('Sorties du ', ''),
                                 isTrending: true,
-                                extractedFrom: sectionTitle
+                                extractedFrom: sectionTitle,
+                                // NOUVELLES MÉTADONNÉES
+                                isFinale: isFinale,
+                                isVFCrunchyroll: isVFCrunchyroll,
+                                currentEpisode: episodeMatch ? parseInt(episodeMatch[1]) : null,
+                                currentSeason: seasonMatch ? parseInt(seasonMatch[1]) : null,
+                                specialIndicators: {
+                                    finale: isFinale,
+                                    crunchyrollVF: isVFCrunchyroll
+                                }
                             });
                         });
                         
@@ -425,6 +457,10 @@ async function getTrendingAnime() {
                 seenAnimes.add(animeId);
                 
                 let title = $el.text().trim();
+                
+                // CORRECTION CRITIQUE: Utiliser la fonction de nettoyage centralisée
+                title = cleanTitleWithFallback(title, animeId);
+                
                 if (!title || title.length < 3) {
                     title = animeId.replace(/-/g, ' ')
                                   .split(' ')
