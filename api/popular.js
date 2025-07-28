@@ -82,20 +82,27 @@ module.exports = async (req, res) => {
         // Extraire depuis les conteneurs spécifiques identifiés
         extractAnimeFromContainer('containerClassiques', 'Classiques', popularAnime.classiques, 20);
         
-        // Pour les pépites, utiliser les derniers contenus sortis ou derniers ajouts
-        // comme source alternative authentique
-        extractAnimeFromContainer('containerSorties', 'Pépites', popularAnime.pepites, 15);
+        // Pour les pépites, chercher spécifiquement la section "découvrez des pépites"
+        // D'abord essayer de trouver le conteneur spécifique aux pépites
+        extractAnimeFromContainer('containerPepites', 'Pépites', popularAnime.pepites, 15);
         
-        // Pour les pépites, essayer différentes stratégies
-        const $pepiteHeader = $('h2').filter((i, el) => {
-            return $(el).text().toLowerCase().includes('pépites');
+        // CORRECTION CRITIQUE: Pour les pépites, chercher la section "découvrez des pépites" spécifiquement
+        const $pepiteHeader = $('h2, h3, .title, .section-title').filter((i, el) => {
+            const text = $(el).text().toLowerCase();
+            return text.includes('pépites') || text.includes('découvrez') || text.includes('recommandés');
         }).first();
         
         if ($pepiteHeader.length) {
             console.log('💎 Header Pépites trouvé, recherche du conteneur associé');
             
-            // Stratégie 1: Chercher un conteneur avec ID spécifique
-            const pepiteContainers = ['containerPepites', 'containerPopular', 'containerRecommended'];
+            // Stratégie 1: Chercher un conteneur avec ID spécifique pour pépites
+            const pepiteContainers = [
+                'containerPepites', 
+                'containerRecommended', 
+                'containerPopular',
+                'pepites-section',
+                'decouvrez-section'
+            ];
             let foundPepiteContainer = false;
             
             for (const containerId of pepiteContainers) {
@@ -106,6 +113,67 @@ module.exports = async (req, res) => {
                     foundPepiteContainer = true;
                     break;
                 }
+            }
+            
+            // Stratégie alternative: Chercher des sections avec le mot "pépites" ou "découvrez" 
+            if (!foundPepiteContainer) {
+                console.log('🔍 Recherche alternative par classe ou contenu textuel');
+                
+                // Chercher dans toutes les divs qui contiennent des liens d'anime
+                $('div').each((i, div) => {
+                    const $div = $(div);
+                    const divText = $div.text().toLowerCase();
+                    const catalogueLinks = $div.find('a[href*="/catalogue/"]').length;
+                    
+                    // Vérifier si cette div semble contenir des pépites recommandées
+                    const isPepiteSection = (
+                        (divText.includes('pépites') || divText.includes('découvrez') || 
+                         divText.includes('recommand') || divText.includes('populaire')) &&
+                        catalogueLinks >= 5 && catalogueLinks <= 50 // Section raisonnable
+                    );
+                    
+                    if (isPepiteSection && popularAnime.pepites.length < 15) {
+                        console.log(`💎 Section Pépites détectée avec ${catalogueLinks} liens`);
+                        
+                        $div.find('a[href*="/catalogue/"]').each((linkIndex, link) => {
+                            if (popularAnime.pepites.length >= 15) return false;
+                            
+                            const $link = $(link);
+                            const href = $link.attr('href');
+                            
+                            if (href && href.includes('/catalogue/')) {
+                                const urlParts = href.split('/');
+                                const catalogueIndex = urlParts.indexOf('catalogue');
+                                const animeId = catalogueIndex >= 0 ? urlParts[catalogueIndex + 1] : null;
+                                
+                                if (animeId && !popularAnime.pepites.some(anime => anime.id === animeId)) {
+                                    let title = $link.text().trim().replace(/\s+/g, ' ');
+                                    title = cleanTitleWithFallback(title, animeId);
+                                    
+                                    const $img = $link.find('img').first();
+                                    let image = $img.attr('src') || $img.attr('data-src');
+                                    if (image && !image.startsWith('http')) {
+                                        image = image.startsWith('//') ? `https:${image}` : `https://anime-sama.fr${image}`;
+                                    }
+                                    
+                                    popularAnime.pepites.push({
+                                        id: animeId,
+                                        title: title,
+                                        image: image || `https://anime-sama.fr/s2/img/animes/${animeId}.jpg`,
+                                        url: href.startsWith('http') ? href : `https://anime-sama.fr${href}`,
+                                        category: 'pépite',
+                                        extractedFrom: 'Section Découvrez des Pépites (détectée)'
+                                    });
+                                    
+                                    console.log(`✅ Pépite détectée: ${title} (${animeId})`);
+                                }
+                            }
+                        });
+                        
+                        foundPepiteContainer = true;
+                        return false; // Arrêter après avoir trouvé une bonne section
+                    }
+                });
             }
             
             // Stratégie 2: Si pas de conteneur spécifique, chercher dans les éléments suivants

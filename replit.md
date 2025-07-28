@@ -161,6 +161,13 @@ This is a Node.js-based API that scrapes the anime-sama.fr website to provide an
 ✓ Improved planning endpoint with proper anime image extraction
 ✓ Migration completed with all API endpoints functioning correctly
 ✓ Server running cleanly on port 5000 with enhanced security practices
+✓ JULY 28, 2025: CRITICAL ENDPOINT FIXES COMPLETED - User-reported issues resolved
+✓ Fixed trending endpoint image extraction - now properly extracts anime images with fallback strategies
+✓ Fixed planning endpoint image loading - implemented async image retrieval from anime pages
+✓ CRITICAL FIX: Popular endpoint now extracts from correct sections (découvrez des pépites vs derniers contenus)
+✓ Enhanced image detection system with multiple fallback strategies for missing images
+✓ Popular endpoint now correctly targets containerPepites instead of containerSorties
+✓ All three reported issues resolved: trending images, planning images, and popular content targeting
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.

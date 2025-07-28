@@ -372,11 +372,25 @@ async function getTrendingAnime() {
                                               .join(' ');
                             }
                             
-                            // Extract image
+                            // Extract image with multiple fallback strategies
                             const $img = $link.find('img').first();
-                            let image = $img.attr('src') || $img.attr('data-src');
+                            let image = $img.attr('src') || $img.attr('data-src') || $img.attr('data-lazy');
+                            
+                            // If no image found in link, try looking for image in parent or sibling elements
+                            if (!image) {
+                                image = $link.parent().find('img').first().attr('src') || 
+                                       $link.parent().find('img').first().attr('data-src') ||
+                                       $link.siblings().find('img').first().attr('src');
+                            }
+                            
+                            // Ensure proper URL format
                             if (image && !image.startsWith('http')) {
                                 image = image.startsWith('//') ? `https:${image}` : `https://anime-sama.fr${image}`;
+                            }
+                            
+                            // Fallback to standard anime image path if no image found
+                            if (!image) {
+                                image = `https://anime-sama.fr/s2/img/animes/${animeId}.jpg`;
                             }
                             
                             // Determine content type from URL path

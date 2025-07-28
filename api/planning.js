@@ -50,7 +50,7 @@ module.exports = async (req, res) => {
         const planningMatches = pageHTML.match(/cartePlanningAnime\([^)]+\)/g);
         
         if (planningMatches) {
-            planningMatches.forEach(match => {
+            for (const match of planningMatches) {
                 // Parse cartePlanningAnime("Dandadan VF Crunchyroll", "dandadan/saison2/vf1/", "dandadan", "19h00", "", "VF");
                 const params = match.match(/cartePlanningAnime\("([^"]+)",\s*"([^"]+)",\s*"([^"]+)",\s*"([^"]+)",\s*"([^"]*)",\s*"([^"]+)"\)/);
                 
@@ -65,11 +65,11 @@ module.exports = async (req, res) => {
                         language: language,
                         isVFCrunchyroll: title.includes('VF Crunchyroll'),
                         url: `https://anime-sama.fr/catalogue/${path}`,
-                        image: `https://anime-sama.fr/s2/img/animes/${animeId}.jpg`,  
+                        image: await getAnimeImage(animeId),  
                         type: 'scheduled_release'
                     });
                 }
-            });
+            }
         }
         
         // Extraire aussi les éléments de planning depuis les boutons visibles
@@ -91,6 +91,7 @@ module.exports = async (req, res) => {
                     // Éviter les doublons
                     const exists = planningItems.some(item => item.animeId === animeId);
                     if (!exists) {
+                        const animeImage = await getAnimeImage(animeId);
                         planningItems.push({
                             title: `${animeTitle} VF Crunchyroll`,
                             animeId: animeId,
@@ -98,7 +99,7 @@ module.exports = async (req, res) => {
                             language: 'VF',
                             isVFCrunchyroll: true,
                             url: `https://anime-sama.fr/catalogue/${animeId}`,
-                            image: `https://anime-sama.fr/s2/img/animes/${animeId}.jpg`,
+                            image: animeImage,
                             type: 'crunchyroll_scheduled'
                         });
                     }
