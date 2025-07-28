@@ -65,7 +65,7 @@ module.exports = async (req, res) => {
                         language: language,
                         isVFCrunchyroll: title.includes('VF Crunchyroll'),
                         url: `https://anime-sama.fr/catalogue/${path}`,
-                        image: `https://anime-sama.fr/s2/img/animes/${animeId}.jpg`,
+                        image: `https://anime-sama.fr/s2/img/animes/${animeId}.jpg`,  
                         type: 'scheduled_release'
                     });
                 }
@@ -106,18 +106,11 @@ module.exports = async (req, res) => {
             }
         });
         
-        // Enhance planning items with proper images (simplified approach)
-        const enhancedPlanningItems = planningItems.map((item) => {
-            // Use standard anime image path
-            item.image = `https://anime-sama.fr/s2/img/animes/${item.animeId}.jpg`;
-            return item;
-        });
-
-        // Return planning data
+        // Return planning data directly (images already set above)
         res.status(200).json({
             success: true,
-            count: enhancedPlanningItems.length,
-            planning: enhancedPlanningItems,
+            count: planningItems.length,
+            planning: planningItems,
             extractedAt: new Date().toISOString()
         });
         

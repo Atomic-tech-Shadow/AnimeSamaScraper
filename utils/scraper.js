@@ -456,7 +456,44 @@ async function getTrendingAnime() {
             });
         });
         
-        // Priority 2: If not enough from daily sections, get featured anime from homepage
+        // Priority 2: Add planning/scheduled releases (they often contain VF content)
+        const planningMatches = $.html().match(/cartePlanningAnime\([^)]+\)/g);
+        if (planningMatches && trending.length < 20) {
+            planningMatches.forEach(match => {
+                const params = match.match(/cartePlanningAnime\("([^"]+)",\s*"([^"]+)",\s*"([^"]+)",\s*"([^"]+)",\s*"([^"]*)",\s*"([^"]+)"\)/);
+                
+                if (params) {
+                    const [, title, path, animeId, time, extra, language] = params;
+                    
+                    // Skip if already seen
+                    if (seenAnimes.has(animeId)) return;
+                    seenAnimes.add(animeId);
+                    
+                    // Clean title and get language info
+                    const cleanedTitle = cleanTitleWithFallback(title, animeId);
+                    const languageInfo = LANGUAGE_SYSTEM[language.toLowerCase()] || LANGUAGE_SYSTEM.vostfr;
+                    
+                    trending.push({
+                        id: animeId,
+                        title: cleanedTitle,
+                        image: `https://anime-sama.fr/s2/img/animes/${animeId}.jpg`,
+                        url: `https://anime-sama.fr/catalogue/${animeId}`,
+                        contentType: 'anime',
+                        language: languageInfo,
+                        releaseTime: time,
+                        isTrending: true,
+                        extractedFrom: 'planning_scheduled',
+                        isVFCrunchyroll: title.includes('VF Crunchyroll'),
+                        specialIndicators: {
+                            scheduled: true,
+                            crunchyrollVF: title.includes('VF Crunchyroll')
+                        }
+                    });
+                }
+            });
+        }
+
+        // Priority 3: If still not enough from daily sections, get featured anime from homepage
         if (trending.length < 15) {
             $('a[href*="/catalogue/"]').slice(0, 20).each((index, element) => {
                 const $el = $(element);
