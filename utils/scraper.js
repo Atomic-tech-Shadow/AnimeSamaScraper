@@ -321,153 +321,100 @@ async function getTrendingAnime() {
         const trending = [];
         const seenAnimes = new Set();
         
-        // Priority 1: Extract from daily release sections (these are the most trending)
-        const dailySections = [
-            'Sorties du Lundi', 'Sorties du Mardi', 'Sorties du Mercredi', 
-            'Sorties du Jeudi', 'Sorties du Vendredi', 'Sorties du Samedi'
-        ];
+        // Priority 1: Extract from recent episodes using bg-cyan-600 buttons (identified from site analysis)
+        console.log('🎯 Extraction des épisodes récents via boutons bg-cyan-600');
         
-        dailySections.forEach(sectionTitle => {
-            // Find the section header
-            $('h2').each((index, element) => {
-                const $header = $(element);
-                if ($header.text().trim() === sectionTitle) {
-                    
-                    // Get all anime in this daily section
-                    let $currentElement = $header.next();
-                    while ($currentElement.length && !$currentElement.is('h2') && trending.length < 25) {
-                        
-                        $currentElement.find('a[href*="/catalogue/"]').each((cardIndex, linkElement) => {
-                            const $link = $(linkElement);
-                            const href = $link.attr('href');
-                            
-                            if (!href || !href.includes('/catalogue/')) return;
-                            
-                            const fullUrl = href.startsWith('http') ? href : `https://anime-sama.fr${href}`;
-                            const urlParts = fullUrl.split('/');
-                            const catalogueIndex = urlParts.findIndex(part => part === 'catalogue');
-                            
-                            if (catalogueIndex === -1 || catalogueIndex + 1 >= urlParts.length) return;
-                            
-                            const animeId = urlParts[catalogueIndex + 1];
-                            
-                            // Skip if already seen
-                            if (seenAnimes.has(animeId)) return;
-                            seenAnimes.add(animeId);
-                            
-                            // Extract title from strong tag or fallback to clean text
-                            let title = $link.find('strong').first().text().trim();
-                            if (!title) {
-                                title = $link.text().split('\n')[0].trim();
-                                title = title.replace(/\*+/g, '').replace(/\d{1,2}h\d{2}/g, '').trim();
-                            }
-                            
-                            // CORRECTION CRITIQUE: Utiliser la fonction de nettoyage centralisée
-                            title = cleanTitleWithFallback(title, animeId);
-                            
-                            if (!title || title.length < 3) {
-                                title = animeId.replace(/-/g, ' ')
-                                              .split(' ')
-                                              .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-                                              .join(' ');
-                            }
-                            
-                            // Extract image with multiple fallback strategies
-                            const $img = $link.find('img').first();
-                            let image = $img.attr('src') || $img.attr('data-src') || $img.attr('data-lazy');
-                            
-                            // If no image found in link, try looking for image in parent or sibling elements
-                            if (!image) {
-                                image = $link.parent().find('img').first().attr('src') || 
-                                       $link.parent().find('img').first().attr('data-src') ||
-                                       $link.siblings().find('img').first().attr('src');
-                            }
-                            
-                            // Ensure proper URL format
-                            if (image && !image.startsWith('http')) {
-                                image = image.startsWith('//') ? `https:${image}` : `https://anime-sama.fr${image}`;
-                            }
-                            
-                            // Fallback to standard anime image path if no image found
-                            if (!image) {
-                                image = `https://anime-sama.fr/s2/img/animes/${animeId}.jpg`;
-                            }
-                            
-                            // Determine content type from URL path
-                            let contentType = 'anime';
-                            const seasonPath = urlParts[catalogueIndex + 2];
-                            if (seasonPath && seasonPath.toLowerCase().includes('scan')) {
-                                contentType = 'scan';
-                            } else if (seasonPath && seasonPath.toLowerCase().includes('film')) {
-                                contentType = 'film';
-                            }
-                            
-                            // CORRECTION CRITIQUE: Améliorer la détection de langue complète
-                            let languageInfo = LANGUAGE_SYSTEM.vostfr; // Default
-                            
-                            const elementText = $link.text();
-                            const linkHref = $link.attr('href');
-                            
-                            // 1. Détecter VF Crunchyroll spécifiquement
-                            if (elementText.includes('VF Crunchyroll') || elementText.includes('(VF Crunchyroll)')) {
-                                languageInfo = LANGUAGE_SYSTEM.vf;
-                            }
-                            // 2. Détecter à partir de l'URL (chemin complet)
-                            else if (linkHref) {
-                                const urlLanguageMatch = linkHref.match(/\/(vf\d?|va|vostfr|vkr|vcn|vqc|vj)\//i);
-                                if (urlLanguageMatch) {
-                                    const detectedLang = urlLanguageMatch[1].toLowerCase();
-                                    if (LANGUAGE_SYSTEM[detectedLang]) {
-                                        languageInfo = LANGUAGE_SYSTEM[detectedLang];
-                                    }
-                                }
-                            }
-                            // 3. Détecter à partir du texte de l'élément
-                            else if (elementText.includes(' VF ') || elementText.includes('(VF)') || elementText.endsWith(' VF')) {
-                                languageInfo = LANGUAGE_SYSTEM.vf;
-                            }
-                            // 4. Fallback: Détection normale à partir de la position URL
-                            else {
-                                const language = urlParts[catalogueIndex + 3];
-                                if (language && LANGUAGE_SYSTEM[language.toLowerCase()]) {
-                                    languageInfo = LANGUAGE_SYSTEM[language.toLowerCase()];
-                                }
-                            }
-                            
-                            // NOUVEAU: Extraire les métadonnées spéciales identifiées dans l'audit
-                            const isFinale = elementText.includes('[FIN]');
-                            const isVFCrunchyroll = elementText.includes('VF Crunchyroll') || elementText.includes('(VF Crunchyroll)');
-                            
-                            // Extraire numéro d'épisode et saison depuis le texte
-                            const episodeMatch = elementText.match(/Episode\s*(\d+)/i);
-                            const seasonMatch = elementText.match(/Saison\s*(\d+)/i);
-                            
-                            trending.push({
-                                id: animeId,
-                                title: title,
-                                image: image,
-                                url: `https://anime-sama.fr/catalogue/${animeId}`,
-                                contentType: contentType,
-                                language: languageInfo,
-                                releaseDay: sectionTitle.replace('Sorties du ', ''),
-                                isTrending: true,
-                                extractedFrom: sectionTitle,
-                                // NOUVELLES MÉTADONNÉES
-                                isFinale: isFinale,
-                                isVFCrunchyroll: isVFCrunchyroll,
-                                currentEpisode: episodeMatch ? parseInt(episodeMatch[1]) : null,
-                                currentSeason: seasonMatch ? parseInt(seasonMatch[1]) : null,
-                                specialIndicators: {
-                                    finale: isFinale,
-                                    crunchyrollVF: isVFCrunchyroll
-                                }
-                            });
-                        });
-                        
-                        $currentElement = $currentElement.next();
-                    }
+        $('.bg-cyan-600').each((index, button) => {
+            if (trending.length >= 25) return false;
+            
+            const $button = $(button);
+            const episodeText = $button.text().trim();
+            
+            // Find the parent anime link
+            const $animeLink = $button.closest('a[href*="/catalogue/"]');
+            if (!$animeLink.length) return;
+            
+            const href = $animeLink.attr('href');
+            if (!href || !href.includes('/catalogue/')) return;
+            
+            const fullUrl = href.startsWith('http') ? href : `https://anime-sama.fr${href}`;
+            const urlParts = fullUrl.split('/');
+            const catalogueIndex = urlParts.findIndex(part => part === 'catalogue');
+            
+            if (catalogueIndex === -1 || catalogueIndex + 1 >= urlParts.length) return;
+            
+            const animeId = urlParts[catalogueIndex + 1];
+            
+            // Create unique ID for this episode
+            const uniqueId = `${animeId}-${urlParts.slice(catalogueIndex + 2).join('-')}`;
+            
+            // Skip if already seen
+            if (seenAnimes.has(uniqueId)) return;
+            seenAnimes.add(uniqueId);
+            
+            // Extract title from the anime link text (not just the button)
+            let title = $animeLink.text().trim();
+            
+            // Clean up the title to get just the anime name
+            const lines = title.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+            const animeName = lines[0] || animeId.replace(/-/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+            
+            // Extract image using the correct CDN identified from site analysis
+            const $img = $animeLink.find('img').first();
+            let image = $img.attr('src');
+            
+            // The site analysis shows all images use the statically.io CDN
+            if (!image) {
+                image = `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${animeId}.jpg`;
+            }
+            
+            // Determine content type and language from URL
+            const seasonPath = urlParts[catalogueIndex + 2];
+            const languagePath = urlParts[catalogueIndex + 3];
+            
+            let contentType = 'anime';
+            if (seasonPath && seasonPath.toLowerCase().includes('scan')) {
+                contentType = 'scan';
+            } else if (seasonPath && seasonPath.toLowerCase().includes('film')) {
+                contentType = 'film';
+            }
+            
+            // Language detection from URL path
+            let languageInfo = LANGUAGE_SYSTEM.vostfr; // Default
+            if (languagePath && LANGUAGE_SYSTEM[languagePath.toLowerCase()]) {
+                languageInfo = LANGUAGE_SYSTEM[languagePath.toLowerCase()];
+            }
+            
+            // Extract episode and season info
+            const episodeMatch = episodeText.match(/Episode\s*(\d+)/i);
+            const seasonMatch = episodeText.match(/Saison\s*(\d+)/i);
+            
+            // Check for special indicators
+            const isFinale = title.includes('[FIN]') || episodeText.includes('[FIN]');
+            const isVFCrunchyroll = title.includes('VF Crunchyroll');
+            
+            trending.push({
+                id: uniqueId,
+                animeId: animeId,
+                title: animeName,
+                image: image,
+                url: fullUrl,
+                contentType: contentType,
+                language: languageInfo,
+                episodeInfo: episodeText,
+                currentEpisode: episodeMatch ? parseInt(episodeMatch[1]) : null,
+                currentSeason: seasonMatch ? parseInt(seasonMatch[1]) : null,
+                isTrending: true,
+                isFinale: isFinale,
+                isVFCrunchyroll: isVFCrunchyroll,
+                extractedFrom: 'Recent Episodes (bg-cyan-600 buttons)',
+                specialIndicators: {
+                    finale: isFinale,
+                    crunchyrollVF: isVFCrunchyroll
                 }
             });
+            
+            console.log(`✅ Trending: ${animeName} - ${episodeText} (${uniqueId})`);
         });
         
         // Priority 2: Add planning/scheduled releases (they often contain VF content)

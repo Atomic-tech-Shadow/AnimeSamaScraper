@@ -65,7 +65,7 @@ module.exports = async (req, res) => {
                         language: language,
                         isVFCrunchyroll: title.includes('VF Crunchyroll'),
                         url: `https://anime-sama.fr/catalogue/${path}`,
-                        image: `https://anime-sama.fr/s2/img/animes/${animeId}.jpg`,  
+                        image: `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${animeId}.jpg`,  
                         type: 'scheduled_release'
                     });
                 }
@@ -98,7 +98,7 @@ module.exports = async (req, res) => {
                             language: 'VF',
                             isVFCrunchyroll: true,
                             url: `https://anime-sama.fr/catalogue/${animeId}`,
-                            image: `https://anime-sama.fr/s2/img/animes/${animeId}.jpg`,
+                            image: `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${animeId}.jpg`,
                             type: 'crunchyroll_scheduled'
                         });
                     }
