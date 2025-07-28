@@ -388,15 +388,32 @@ async function getTrendingAnime() {
                                 contentType = 'film';
                             }
                             
-                            // CORRECTION CRITIQUE: Améliorer la détection de langue
+                            // CORRECTION CRITIQUE: Améliorer la détection de langue complète
                             let languageInfo = LANGUAGE_SYSTEM.vostfr; // Default
                             
-                            // Détecter VF Crunchyroll spécifiquement
                             const elementText = $link.text();
+                            const linkHref = $link.attr('href');
+                            
+                            // 1. Détecter VF Crunchyroll spécifiquement
                             if (elementText.includes('VF Crunchyroll') || elementText.includes('(VF Crunchyroll)')) {
                                 languageInfo = LANGUAGE_SYSTEM.vf;
-                            } else {
-                                // Détection normale à partir de l'URL
+                            }
+                            // 2. Détecter à partir de l'URL (chemin complet)
+                            else if (linkHref) {
+                                const urlLanguageMatch = linkHref.match(/\/(vf\d?|va|vostfr|vkr|vcn|vqc|vj)\//i);
+                                if (urlLanguageMatch) {
+                                    const detectedLang = urlLanguageMatch[1].toLowerCase();
+                                    if (LANGUAGE_SYSTEM[detectedLang]) {
+                                        languageInfo = LANGUAGE_SYSTEM[detectedLang];
+                                    }
+                                }
+                            }
+                            // 3. Détecter à partir du texte de l'élément
+                            else if (elementText.includes(' VF ') || elementText.includes('(VF)') || elementText.endsWith(' VF')) {
+                                languageInfo = LANGUAGE_SYSTEM.vf;
+                            }
+                            // 4. Fallback: Détection normale à partir de la position URL
+                            else {
                                 const language = urlParts[catalogueIndex + 3];
                                 if (language && LANGUAGE_SYSTEM[language.toLowerCase()]) {
                                     languageInfo = LANGUAGE_SYSTEM[language.toLowerCase()];

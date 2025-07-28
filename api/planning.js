@@ -1,5 +1,26 @@
 const { scrapeAnimesama } = require('../utils/scraper');
 
+// Helper function to get anime image dynamically
+async function getAnimeImage(animeId) {
+    try {
+        // Try the standard image path first
+        const standardImageUrl = `https://anime-sama.fr/s2/img/animes/${animeId}.jpg`;
+        
+        // Alternative: try to get from anime page directly
+        const animePage = await scrapeAnimesama(`https://anime-sama.fr/catalogue/${animeId}`);
+        const animeImage = animePage('img[src*="/img/animes/"]').first().attr('src');
+        
+        if (animeImage) {
+            return animeImage.startsWith('http') ? animeImage : `https://anime-sama.fr${animeImage}`;
+        }
+        
+        return standardImageUrl;
+    } catch (error) {
+        // Fallback to standard path
+        return `https://anime-sama.fr/s2/img/animes/${animeId}.jpg`;
+    }
+}
+
 module.exports = async (req, res) => {
     // Enable CORS
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -44,6 +65,7 @@ module.exports = async (req, res) => {
                         language: language,
                         isVFCrunchyroll: title.includes('VF Crunchyroll'),
                         url: `https://anime-sama.fr/catalogue/${path}`,
+                        image: `https://anime-sama.fr/s2/img/animes/${animeId}.jpg`,
                         type: 'scheduled_release'
                     });
                 }
@@ -76,6 +98,7 @@ module.exports = async (req, res) => {
                             language: 'VF',
                             isVFCrunchyroll: true,
                             url: `https://anime-sama.fr/catalogue/${animeId}`,
+                            image: `https://anime-sama.fr/s2/img/animes/${animeId}.jpg`,
                             type: 'crunchyroll_scheduled'
                         });
                     }
@@ -83,11 +106,18 @@ module.exports = async (req, res) => {
             }
         });
         
+        // Enhance planning items with proper images (simplified approach)
+        const enhancedPlanningItems = planningItems.map((item) => {
+            // Use standard anime image path
+            item.image = `https://anime-sama.fr/s2/img/animes/${item.animeId}.jpg`;
+            return item;
+        });
+
         // Return planning data
         res.status(200).json({
             success: true,
-            count: planningItems.length,
-            planning: planningItems,
+            count: enhancedPlanningItems.length,
+            planning: enhancedPlanningItems,
             extractedAt: new Date().toISOString()
         });
         
