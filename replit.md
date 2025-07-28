@@ -168,11 +168,12 @@ This is a Node.js-based API that scrapes the anime-sama.fr website to provide an
 ✓ Enhanced image detection system with multiple fallback strategies for missing images
 ✓ Popular endpoint now correctly targets containerPepites instead of containerSorties
 ✓ All three reported issues resolved: trending images, planning images, and popular content targeting
-✓ JULY 28, 2025: NEW RECENT EPISODES ENDPOINT CREATED
-✓ Created new /api/recent-episodes endpoint specifically for "derniers épisodes ajoutés" section
-✓ Enhanced endpoint architecture with clear separation of content types
-✓ Recent episodes endpoint provides detailed episode metadata (season, episode, language, finale status)
-✓ Migration completed successfully with all functionality preserved and enhanced
+✓ JULY 28, 2025: ENDPOINT ARCHITECTURE OPTIMIZED  
+✓ Removed redundant /api/recent-episodes endpoint (trending already extracts from "derniers épisodes ajoutés")
+✓ Fixed trending endpoint to use bg-cyan-600 buttons for authentic recent episode data
+✓ Fixed all image paths to use correct CDN: https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/
+✓ Clean API architecture: search, trending, popular, anime details, seasons, episodes, embed, planning
+✓ All endpoints now provide authentic data with proper image display
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
