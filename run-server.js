@@ -18,6 +18,7 @@ app.get('/', (req, res) => {
             search: '/api/search?query=naruto',
             trending: '/api/trending',
             popular: '/api/popular',
+            recentEpisodes: '/api/recent-episodes', // NOUVEAU - Derniers épisodes ajoutés
             // recent: '/api/recent', // SUPPRIMÉ - Redondant avec trending
             animeDetails: '/api/anime/:id',
             seasons: '/api/seasons/:animeId',
@@ -44,6 +45,7 @@ app.get('/', (req, res) => {
 app.get('/api/search', require('./api/search.js'));
 app.get('/api/trending', require('./api/trending.js'));
 app.get('/api/popular', require('./api/popular.js'));
+app.get('/api/recent-episodes', require('./api/recent-episodes.js')); // NOUVEAU - Derniers épisodes ajoutés
 // app.get('/api/recent', require('./api/recent.js')); // SUPPRIMÉ - Redondant avec /api/trending
 
 app.get('/api/anime/:id', (req, res) => {
@@ -71,7 +73,7 @@ app.use((err, req, res, next) => {
 app.use((req, res) => {
     res.status(404).json({
         error: 'Endpoint not found',
-        availableEndpoints: ['/api/search', '/api/trending', '/api/popular', '/api/anime/:id', '/api/seasons/:animeId', '/api/episodes/:animeId', '/api/embed', '/api/planning']
+        availableEndpoints: ['/api/search', '/api/trending', '/api/popular', '/api/recent-episodes', '/api/anime/:id', '/api/seasons/:animeId', '/api/episodes/:animeId', '/api/embed', '/api/planning']
     });
 });
 
@@ -81,5 +83,6 @@ app.listen(PORT, '0.0.0.0', () => {
     console.log(`🔍 Search: http://localhost:${PORT}/api/search?query=naruto`);
     console.log(`📈 Trending: http://localhost:${PORT}/api/trending`);
     console.log(`🔥 Popular: http://localhost:${PORT}/api/popular`);
+    console.log(`📺 Recent Episodes: http://localhost:${PORT}/api/recent-episodes`);
     console.log(`📅 Planning: http://localhost:${PORT}/api/planning`);
 });

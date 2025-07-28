@@ -65,7 +65,7 @@ module.exports = async (req, res) => {
                         language: language,
                         isVFCrunchyroll: title.includes('VF Crunchyroll'),
                         url: `https://anime-sama.fr/catalogue/${path}`,
-                        image: await getAnimeImage(animeId),  
+                        image: `https://anime-sama.fr/s2/img/animes/${animeId}.jpg`,  
                         type: 'scheduled_release'
                     });
                 }
@@ -91,7 +91,6 @@ module.exports = async (req, res) => {
                     // Éviter les doublons
                     const exists = planningItems.some(item => item.animeId === animeId);
                     if (!exists) {
-                        const animeImage = await getAnimeImage(animeId);
                         planningItems.push({
                             title: `${animeTitle} VF Crunchyroll`,
                             animeId: animeId,
@@ -99,7 +98,7 @@ module.exports = async (req, res) => {
                             language: 'VF',
                             isVFCrunchyroll: true,
                             url: `https://anime-sama.fr/catalogue/${animeId}`,
-                            image: animeImage,
+                            image: `https://anime-sama.fr/s2/img/animes/${animeId}.jpg`,
                             type: 'crunchyroll_scheduled'
                         });
                     }
