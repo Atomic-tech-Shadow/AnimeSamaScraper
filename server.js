@@ -24,7 +24,7 @@ app.get('/', (req, res) => {
         status: 'running',
         endpoints: {
             search: '/api/search?query=naruto',
-            trending: '/api/trending',
+            recent: '/api/recent',
             planning: '/api/planning',
             animeDetails: '/api/anime/:id',
             seasons: '/api/seasons/:animeId',
@@ -36,7 +36,7 @@ app.get('/', (req, res) => {
         },
         examples: {
             searchAnime: 'GET /api/search?query=black%20butler',
-            getTrending: 'GET /api/trending',
+            getRecent: 'GET /api/recent',
             getPlanning: 'GET /api/planning (jour actuel) ou ?day=all&filter=anime',
             getAnimeDetails: 'GET /api/anime/black-butler',
             getSeasons: 'GET /api/seasons/black-butler',
@@ -49,7 +49,7 @@ app.get('/', (req, res) => {
 
 // API Routes
 app.get('/api/search', require('./api/search.js'));
-app.get('/api/trending', require('./api/trending.js'));
+app.get('/api/recent', require('./api/recent.js'));
 app.get('/api/planning', require('./api/planning.js'));
 app.get('/api/popular', require('./api/popular.js'));
 app.get('/api/anime/:id', (req, res) => {
