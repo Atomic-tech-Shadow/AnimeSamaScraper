@@ -2,6 +2,20 @@
 
 Une API Node.js serverless qui scrape le site anime-sama.fr en temps réel pour fournir des données d'anime via des endpoints JSON. Compatible avec Vercel et prêt pour le déploiement.
 
+## 📄 Licence
+
+Ce projet est sous licence **MIT** - voir le fichier [LICENSE](LICENSE) pour plus de détails.
+
+### Pourquoi la licence MIT ?
+
+- **🆓 Totalement gratuite** - Utilisation libre pour projets personnels et commerciaux
+- **🔧 Modification autorisée** - Tu peux adapter le code à tes besoins
+- **📤 Redistribution libre** - Partage et distribue sans restrictions
+- **⚖️ Simple et claire** - Pas de complications légales
+- **🏢 Compatible entreprise** - Peut être utilisée dans des projets commerciaux
+
+La licence MIT est parfaite pour un projet open-source comme celui-ci qui vise à être utilisé par la communauté des développeurs.
+
 ## 🚀 Fonctionnalités
 
 - **Recherche d'anime** - Trouve des anime par nom avec correspondance floue
