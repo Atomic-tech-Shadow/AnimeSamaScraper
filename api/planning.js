@@ -1,26 +1,5 @@
 const { scrapeAnimesama } = require('../utils/scraper');
 
-// Helper function to get anime image dynamically
-async function getAnimeImage(animeId) {
-    try {
-        // Try the standard image path first
-        const standardImageUrl = `https://anime-sama.fr/s2/img/animes/${animeId}.jpg`;
-        
-        // Alternative: try to get from anime page directly
-        const animePage = await scrapeAnimesama(`https://anime-sama.fr/catalogue/${animeId}`);
-        const animeImage = animePage('img[src*="/img/animes/"]').first().attr('src');
-        
-        if (animeImage) {
-            return animeImage.startsWith('http') ? animeImage : `https://anime-sama.fr${animeImage}`;
-        }
-        
-        return standardImageUrl;
-    } catch (error) {
-        // Fallback to standard path
-        return `https://anime-sama.fr/s2/img/animes/${animeId}.jpg`;
-    }
-}
-
 module.exports = async (req, res) => {
     // Enable CORS
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -38,81 +17,130 @@ module.exports = async (req, res) => {
     }
 
     try {
-        // Scraper le planning des sorties Crunchyroll depuis la homepage
-        const $ = await scrapeAnimesama('https://anime-sama.fr/');
+        // Get optional day filter from query params
+        const { day, filter } = req.query;
         
-        const planningItems = [];
+        // Scraper la page planning dédiée
+        const $ = await scrapeAnimesama('https://anime-sama.fr/planning');
         
-        // Extraire les éléments de planning avec cartePlanningAnime
-        const pageHTML = $.html();
+        const planningData = {
+            success: true,
+            extractedAt: new Date().toISOString(),
+            days: {}
+        };
         
-        // Rechercher les appels à cartePlanningAnime dans le code JavaScript
-        const planningMatches = pageHTML.match(/cartePlanningAnime\([^)]+\)/g);
+        // Jours de la semaine en français
+        const daysOfWeek = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
         
-        if (planningMatches) {
-            for (const match of planningMatches) {
-                // Parse cartePlanningAnime("Dandadan VF Crunchyroll", "dandadan/saison2/vf1/", "dandadan", "19h00", "", "VF");
-                const params = match.match(/cartePlanningAnime\("([^"]+)",\s*"([^"]+)",\s*"([^"]+)",\s*"([^"]+)",\s*"([^"]*)",\s*"([^"]+)"\)/);
+        // Parcourir chaque jour
+        daysOfWeek.forEach(dayName => {
+            const dayItems = [];
+            
+            // Trouver la section du jour (h2 ou h3 contenant le nom du jour)
+            const dayHeader = $(`h2:contains("${dayName}"), h3:contains("${dayName}")`);
+            
+            if (dayHeader.length > 0) {
+                // Récupérer tous les éléments après le header jusqu'au prochain jour
+                let nextElement = dayHeader.next();
                 
-                if (params) {
-                    const [, title, path, animeId, time, extra, language] = params;
+                while (nextElement.length > 0 && !daysOfWeek.some(d => nextElement.text().includes(d))) {
+                    // Si c'est un lien d'anime
+                    if (nextElement.is('a') && nextElement.attr('href') && nextElement.attr('href').includes('/catalogue/')) {
+                        const $link = nextElement;
+                        const href = $link.attr('href');
+                        const $img = $link.find('img');
+                        
+                        // Extraire les informations de l'anime
+                        const title = $link.find('strong').text().trim() || 
+                                     $img.attr('alt') || 
+                                     $link.text().replace(/\*\*\*/g, '').trim();
+                        
+                        // Extraire l'heure
+                        const timeMatch = $link.text().match(/(\d{1,2}h\d{2})/);
+                        const reportedMatch = $link.text().match(/(Reporté|Retardé)/);
+                        
+                        // Extraire le type (Anime, Scans) et langue (VOSTFR, VF)
+                        const isAnime = $link.text().includes('Anime');
+                        const isScan = $link.text().includes('Scans');
+                        const language = $link.text().includes('AnimeVF') || $link.text().includes('ScansVF') ? 'VF' : 'VOSTFR';
+                        
+                        // Extraire l'ID anime depuis l'URL
+                        const urlParts = href.split('/');
+                        const catalogueIndex = urlParts.indexOf('catalogue');
+                        const animeId = catalogueIndex >= 0 ? urlParts[catalogueIndex + 1] : null;
+                        
+                        // Obtenir l'image
+                        const imgSrc = $img.attr('src');
+                        const image = imgSrc && imgSrc.startsWith('http') ? imgSrc : 
+                                     imgSrc ? `https://anime-sama.fr${imgSrc}` : 
+                                     `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${animeId}.jpg`;
+                        
+                        if (title && animeId) {
+                            dayItems.push({
+                                animeId: animeId,
+                                title: title.replace(/\*\*\*/g, '').trim(),
+                                url: href.startsWith('http') ? href : `https://anime-sama.fr${href}`,
+                                image: image,
+                                releaseTime: timeMatch ? timeMatch[1] : '?',
+                                language: language,
+                                type: isAnime ? 'anime' : isScan ? 'scan' : 'unknown',
+                                day: dayName,
+                                isReported: reportedMatch ? true : false,
+                                status: reportedMatch ? reportedMatch[1] : 'scheduled'
+                            });
+                        }
+                    }
                     
-                    planningItems.push({
-                        title: title,
-                        animeId: animeId,
-                        path: path,
-                        releaseTime: time,
-                        language: language,
-                        isVFCrunchyroll: title.includes('VF Crunchyroll'),
-                        url: `https://anime-sama.fr/catalogue/${path}`,
-                        image: `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${animeId}.jpg`,  
-                        type: 'scheduled_release'
-                    });
+                    nextElement = nextElement.next();
                 }
             }
+            
+            planningData.days[dayName.toLowerCase()] = {
+                day: dayName,
+                count: dayItems.length,
+                items: dayItems
+            };
+        });
+        
+        // Si un jour spécifique est demandé
+        if (day && planningData.days[day.toLowerCase()]) {
+            return res.status(200).json({
+                success: true,
+                day: day,
+                extractedAt: planningData.extractedAt,
+                ...planningData.days[day.toLowerCase()]
+            });
         }
         
-        // Extraire aussi les éléments de planning depuis les boutons visibles
-        $('*:contains("VF Crunchyroll")').each((index, element) => {
-            const $el = $(element);
-            const text = $el.text().trim();
-            
-            if (text.includes('VF Crunchyroll') && text.includes('h')) {
-                // Extraire les informations depuis le texte visible
-                const timeMatch = text.match(/(\d{1,2}h\d{2})/);
-                const animeMatch = text.match(/^([^V]+)\s*VF Crunchyroll/);
-                
-                if (timeMatch && animeMatch) {
-                    const animeTitle = animeMatch[1].trim();
-                    const animeId = animeTitle.toLowerCase()
-                                            .replace(/[^a-z0-9\s-]/g, '')
-                                            .replace(/\s+/g, '-');
-                    
-                    // Éviter les doublons
-                    const exists = planningItems.some(item => item.animeId === animeId);
-                    if (!exists) {
-                        planningItems.push({
-                            title: `${animeTitle} VF Crunchyroll`,
-                            animeId: animeId,
-                            releaseTime: timeMatch[1],
-                            language: 'VF',
-                            isVFCrunchyroll: true,
-                            url: `https://anime-sama.fr/catalogue/${animeId}`,
-                            image: `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${animeId}.jpg`,
-                            type: 'crunchyroll_scheduled'
-                        });
+        // Filtrer par type si demandé
+        if (filter) {
+            Object.keys(planningData.days).forEach(dayKey => {
+                planningData.days[dayKey].items = planningData.days[dayKey].items.filter(item => {
+                    switch (filter.toLowerCase()) {
+                        case 'anime':
+                        case 'animes':
+                            return item.type === 'anime';
+                        case 'scan':
+                        case 'scans':
+                            return item.type === 'scan';
+                        case 'vf':
+                            return item.language === 'VF';
+                        case 'vo':
+                        case 'vostfr':
+                            return item.language === 'VOSTFR';
+                        default:
+                            return true;
                     }
-                }
-            }
-        });
+                });
+                planningData.days[dayKey].count = planningData.days[dayKey].items.length;
+            });
+        }
         
-        // Return planning data directly (images already set above)
-        res.status(200).json({
-            success: true,
-            count: planningItems.length,
-            planning: planningItems,
-            extractedAt: new Date().toISOString()
-        });
+        // Calculer les totaux
+        const totalItems = Object.values(planningData.days).reduce((sum, day) => sum + day.count, 0);
+        planningData.totalItems = totalItems;
+        
+        res.status(200).json(planningData);
         
     } catch (error) {
         console.error('Planning API error:', error);
