@@ -797,19 +797,28 @@ async function getAnimeSeasons(animeId) {
                         let seasonNumber = index + 1;
                         let seasonType = 'Saison';
                         
-                        // Analyze season name and URL for type and number
-                        if (seasonName.toLowerCase().includes('film')) {
+                        // Enhanced content type detection
+                        if (seasonName.toLowerCase().includes('film') || seasonUrl.toLowerCase().includes('film')) {
                             seasonType = 'Film';
                             seasonNumber = 1000 + index; // Group films together
-                        } else if (seasonName.toLowerCase().includes('oav') || seasonName.toLowerCase().includes('ova')) {
+                        } else if (seasonName.toLowerCase().includes('oav') || seasonName.toLowerCase().includes('ova') || 
+                                   seasonUrl.toLowerCase().includes('oav') || seasonUrl.toLowerCase().includes('ova')) {
                             seasonType = 'OAV';
                             seasonNumber = 990 + index; // Group OAVs together
-                        } else if (seasonName.toLowerCase().includes('épisode') && seasonName.toLowerCase().includes('train')) {
+                        } else if (seasonName.toLowerCase().includes('spécial') || seasonName.toLowerCase().includes('special') ||
+                                   seasonUrl.toLowerCase().includes('special') || seasonUrl.toLowerCase().includes('speciale')) {
                             seasonType = 'Spécial';
                             seasonNumber = 980 + index; // Special episodes
-                        } else if (seasonName.toLowerCase().includes('hors série') || seasonName.toLowerCase().includes('hs')) {
+                        } else if (seasonName.toLowerCase().includes('hors série') || seasonName.toLowerCase().includes('hs') ||
+                                   seasonUrl.toLowerCase().includes('hs') || seasonName.toLowerCase().includes('hors-série')) {
                             seasonType = 'Hors-Série';
                             seasonNumber = 970 + index;
+                        } else if (seasonName.toLowerCase().includes('movie') || seasonUrl.toLowerCase().includes('movie')) {
+                            seasonType = 'Film';
+                            seasonNumber = 1000 + index;
+                        } else if (seasonName.toLowerCase().includes('kai') && seasonName.toLowerCase().includes('films')) {
+                            seasonType = 'Film';
+                            seasonNumber = 1000 + index;
                         } else {
                             // Regular season - extract number
                             const seasonMatch = seasonName.match(/saison\s*(\d+)|(\d+)/i);
@@ -896,16 +905,20 @@ async function getAnimeSeasons(animeId) {
             }
         }
         
-        // Also check for direct HTML links as fallback
+        // Enhanced fallback detection for missed content
         $('a[href*="' + animeId + '"]').each((index, element) => {
             const $el = $(element);
             const href = $el.attr('href');
-            const text = $el.text().trim();
+            const text = $el.text().trim().toLowerCase();
             
-            // Check for scan links that might not be in panneauAnime calls
-            if (href && (href.includes('/scan/') || text.toLowerCase().includes('scan'))) {
+            if (!href) return;
+            
+            const urlParts = href.split('/');
+            const contentPath = urlParts[urlParts.length - 2] || urlParts[urlParts.length - 1];
+            
+            // Check for various content types that might be missed
+            if (href.includes('/scan/') || text.includes('scan')) {
                 const scanUrl = href.replace(`https://anime-sama.fr/catalogue/${animeId}/`, '');
-                
                 if (!seasons.find(s => s.url === scanUrl)) {
                     seasons.push({
                         number: 2100 + index,
@@ -917,6 +930,36 @@ async function getAnimeSeasons(animeId) {
                         languages: ['VF'],
                         available: true,
                         contentType: 'manga'
+                    });
+                }
+            } else if (href.includes('/oav/') || text.includes('oav') || text.includes('ova')) {
+                const oavUrl = href.replace(`https://anime-sama.fr/catalogue/${animeId}/`, '');
+                if (!seasons.find(s => s.url === oavUrl)) {
+                    seasons.push({
+                        number: 990 + index,
+                        name: text || 'OAV',
+                        value: 'oav',
+                        type: 'OAV',
+                        url: oavUrl,
+                        fullUrl: href,
+                        languages: ['VOSTFR', 'VF'],
+                        available: true,
+                        contentType: 'anime'
+                    });
+                }
+            } else if (href.includes('/special/') || text.includes('spécial') || text.includes('special')) {
+                const specialUrl = href.replace(`https://anime-sama.fr/catalogue/${animeId}/`, '');
+                if (!seasons.find(s => s.url === specialUrl)) {
+                    seasons.push({
+                        number: 980 + index,
+                        name: text || 'Spécial',
+                        value: 'special',
+                        type: 'Spécial',
+                        url: specialUrl,
+                        fullUrl: href,
+                        languages: ['VOSTFR', 'VF'],
+                        available: true,
+                        contentType: 'anime'
                     });
                 }
             }

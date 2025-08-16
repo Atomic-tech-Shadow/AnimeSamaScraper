@@ -174,6 +174,14 @@ This is a Node.js-based API that scrapes the anime-sama.fr website to provide an
 ✓ Fixed all image paths to use correct CDN: https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/
 ✓ Clean API architecture: search, trending, popular, anime details, seasons, episodes, embed, planning
 ✓ All endpoints now provide authentic data with proper image display
+✓ AUGUST 16, 2025: ENHANCED CONTENT TYPE DETECTION SYSTEM
+✓ Fixed incomplete film and special content extraction - API now captures ALL authentic content types
+✓ Enhanced getAnimeSeasons function with dual detection (season names AND URLs)
+✓ Added comprehensive keyword detection: film, movie, oav, ova, spécial, special, hors-série
+✓ Improved fallback system to catch missed OAV, films, and special episodes via HTML link analysis  
+✓ Fixed detection of special formats like "Kai - Format Films" and variant naming conventions
+✓ API now correctly extracts all films, OAV, hors-séries from anime pages without missing content
+✓ Verified with One Piece (OAV + Hors-Série), Dragon Ball Z (multiple film formats), and other complex anime
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
