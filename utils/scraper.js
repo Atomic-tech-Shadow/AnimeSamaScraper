@@ -1155,8 +1155,13 @@ async function getEpisodeSources(episodeUrl) {
         // Handle different URL formats
         let finalUrl = episodeUrl;
         
-        // If it's already a full anime-sama.fr URL, use it directly
-        if (!episodeUrl.includes('anime-sama.fr')) {
+        // If it's an episode ID format like "dandadan-s2-e1", convert to URL
+        const episodeIdMatch = episodeUrl.match(/^([a-z0-9-]+)-s(\d+)-e(\d+)$/i);
+        if (episodeIdMatch) {
+            const [, animeId, season, episode] = episodeIdMatch;
+            finalUrl = `https://anime-sama.fr/catalogue/${animeId}/saison${season}/vostfr/episode-${episode}`;
+        } else if (!episodeUrl.includes('anime-sama.fr')) {
+            // If it's a relative path, add the domain
             finalUrl = `https://anime-sama.fr${episodeUrl}`;
         }
         

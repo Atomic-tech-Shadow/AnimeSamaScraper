@@ -1,4 +1,4 @@
-const { getEpisodeSources } = require('../../utils/scraper');
+const { getEpisodeSources } = require('../utils/scraper');
 
 module.exports = async (req, res) => {
     // Enable CORS
