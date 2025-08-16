@@ -35,7 +35,7 @@ module.exports = async (req, res) => {
             success: true,
             query: query.trim(),
             count: results.length,
-            results: results
+            animes: results
         });
 
     } catch (error) {
