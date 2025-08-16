@@ -20,7 +20,7 @@ module.exports = (req, res) => {
         deployment: 'vercel',
         endpoints: {
             search: '/api/search?query=naruto',
-            trending: '/api/trending',
+            recent: '/api/recent',
             animeDetails: '/api/anime/:id',
             seasons: '/api/seasons/:animeId',
             episodes: '/api/episodes/:animeId?season=1&language=VOSTFR',
@@ -31,7 +31,7 @@ module.exports = (req, res) => {
         },
         examples: {
             searchAnime: 'GET /api/search?query=black%20butler',
-            getTrending: 'GET /api/trending',
+            getRecent: 'GET /api/recent',
             getAnimeDetails: 'GET /api/anime/black-butler',
             getSeasons: 'GET /api/seasons/black-butler',
             getEpisodes: 'GET /api/episodes/black-butler?season=1&language=VOSTFR',

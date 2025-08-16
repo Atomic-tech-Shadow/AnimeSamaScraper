@@ -34,8 +34,8 @@ curl "http://localhost:5000/api/episodes/dandadan?season=1&language=vostfr"
 # 5. Saisons disponibles
 curl "http://localhost:5000/api/seasons/dandadan"
 
-# 6. Anime en tendance
-curl "http://localhost:5000/api/trending"
+# 6. Épisodes récents
+curl "http://localhost:5000/api/recent"
 
 # 7. Épisodes récents
 curl "http://localhost:5000/api/recent"
@@ -120,9 +120,9 @@ Type: ${anime.type}
             
             try {
                 // Test trending
-                const trendingResponse = await fetch(`${API_URL}/api/trending`);
-                const trendingData = await trendingResponse.json();
-                console.log('✅ Trending:', trendingData.count, 'animes');
+                const recentResponse = await fetch(`${API_URL}/api/recent`);
+                const recentData = await recentResponse.json();
+                console.log('✅ Recent:', recentData.count, 'épisodes');
                 
                 // Test recent
                 const recentResponse = await fetch(`${API_URL}/api/recent`);
@@ -203,7 +203,7 @@ function AnimeApp() {
 
     // Charger les tendances au démarrage
     useEffect(() => {
-        fetch(`${API_URL}/api/trending`)
+        fetch(`${API_URL}/api/recent`)
             .then(res => res.json())
             .then(data => setTrending(data.trending || []))
             .catch(console.error);
@@ -324,7 +324,7 @@ class AnimeSamaAPI {
     }
 
     getTrending() {
-        return this.request('/api/trending');
+        return this.request('/api/recent');
     }
 
     getRecent() {
@@ -369,9 +369,9 @@ async function testMobileAPI() {
         const searchResult = await api.search('naruto');
         console.log(`✅ Trouvé ${searchResult.count} résultats`);
         
-        console.log('📈 Test trending...');
-        const trending = await api.getTrending();
-        console.log(`✅ ${trending.count} animes tendances`);
+        console.log('📈 Test recent...');
+        const recent = await api.getRecent();
+        console.log(`✅ ${recent.count} épisodes récents`);
         
         console.log('📺 Test épisodes récents...');
         const recent = await api.getRecent();

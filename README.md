@@ -57,11 +57,11 @@ Recherche des anime par nom. Supporte la correspondance partielle et floue.
 }
 ```
 
-### 📈 Tendances
+### 📈 Épisodes récents
 ```http
-GET /api/trending
+GET /api/recent
 ```
-Récupère les anime actuellement populaires depuis la page d'accueil.
+Récupère les épisodes récemment ajoutés sur le site.
 
 ### 🎬 Détails d'anime
 ```http
@@ -199,25 +199,25 @@ Le fichier `vercel.json` est configuré pour :
 ### JavaScript/Fetch
 ```javascript
 // Rechercher des anime
-const response = await fetch('https://your-api.vercel.app/api/search?query=naruto');
+const response = await fetch('https://anime-sama-scraper.vercel.app/api/search?query=naruto');
 const data = await response.json();
 console.log(data.results);
 
-// Récupérer les tendances
-const trending = await fetch('https://your-api.vercel.app/api/trending');
-const trendingData = await trending.json();
+// Récupérer les épisodes récents
+const recent = await fetch('https://anime-sama-scraper.vercel.app/api/recent');
+const recentData = await recent.json();
 ```
 
 ### cURL
 ```bash
 # Recherche
-curl "https://your-api.vercel.app/api/search?query=black%20butler"
+curl "https://anime-sama-scraper.vercel.app/api/search?query=black%20butler"
 
-# Tendances
-curl "https://your-api.vercel.app/api/trending"
+# Épisodes récents
+curl "https://anime-sama-scraper.vercel.app/api/recent"
 
 # Embed
-curl "https://your-api.vercel.app/api/embed?url=https%3A%2F%2Fanime-sama.fr%2Fcatalogue%2Fblack-butler"
+curl "https://anime-sama-scraper.vercel.app/api/embed?url=https%3A%2F%2Fanime-sama.fr%2Fcatalogue%2Fblack-butler"
 ```
 
 ## 📄 Licence

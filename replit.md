@@ -23,7 +23,7 @@ This is a Node.js-based API that scrapes the anime-sama.fr website to provide an
 
 ### API Endpoints
 1. **Search API** (`/api/search`) - Search for anime by query string
-2. **Trending API** (`/api/trending`) - Get currently trending anime
+2. **Recent Episodes API** (`/api/recent`) - Get recently added episodes
 3. **Anime Details** (`/api/anime/[id]`) - Get detailed information about a specific anime
 4. **Seasons** (`/api/seasons/[animeId]`) - Get available seasons for an anime
 5. **Episodes** (`/api/episodes/[animeId]`) - Get episodes for a specific anime season
@@ -99,7 +99,7 @@ This is a Node.js-based API that scrapes the anime-sama.fr website to provide an
 ✓ MAJOR SITE AUDIT AND API IMPROVEMENTS COMPLETED
 ✓ Fixed critical title formatting issues - removed whitespace artifacts (\n\t) from all titles
 ✓ Enhanced VF Crunchyroll detection - properly identifies VF sources vs VOSTFR
-✓ Removed redundant /api/recent endpoint (duplicate of /api/trending functionality)
+✓ Replaced /api/trending with /api/recent endpoint for better functionality
 ✓ Added planning API for Crunchyroll release schedules extraction
 ✓ Created centralized title-cleaner utility for consistent title processing
 ✓ Enhanced metadata extraction: finale indicators [FIN], source indicators (VF Crunchyroll)

@@ -42,7 +42,6 @@ export const useAnimeSama = () => {
     loading,
     error,
     search: (query) => request('/api/search', { query }),
-    getTrending: () => request('/api/trending'),
     getRecent: () => request('/api/recent'),
     getAnimeDetails: (id) => request(`/api/anime/${id}`),
     getSeasons: (animeId) => request(`/api/seasons/${animeId}`),

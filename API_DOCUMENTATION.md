@@ -250,13 +250,13 @@ fetch('http://localhost:5000/api/embed?url=https://anime-sama.fr/catalogue/danda
 }
 ```
 
-### 6. Anime en tendance
+### 6. Épisodes récents
 
-**Endpoint :** `GET /api/trending`
+**Endpoint :** `GET /api/recent`
 
 **Exemple de requête :**
 ```javascript
-fetch('http://localhost:5000/api/trending')
+fetch('http://localhost:5000/api/recent')
 ```
 
 **Réponse :**
@@ -412,7 +412,7 @@ class AnimeAPI {
   }
 
   async getTrending() {
-    const response = await fetch(`${this.baseURL}/api/trending`);
+    const response = await fetch(`${this.baseURL}/api/recent`);
     return response.json();
   }
 
