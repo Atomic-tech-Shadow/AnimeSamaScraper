@@ -96,7 +96,7 @@ app.use((req, res) => {
         message: 'The requested endpoint does not exist',
         availableEndpoints: [
             '/api/search?query=anime_name',
-            '/api/trending',
+            '/api/recent',
             '/api/planning',
             '/api/anime/:id',
             '/api/seasons/:animeId',
@@ -125,7 +125,7 @@ if (require.main === module) {
         console.log('⚡ Powered by el_cid');
         console.log('📚 API Documentation:', `http://localhost:${PORT}`);
         console.log('🔍 Search endpoint:', `http://localhost:${PORT}/api/search?query=naruto`);
-        console.log('📈 Trending endpoint:', `http://localhost:${PORT}/api/trending`);
+        console.log('📈 Recent endpoint:', `http://localhost:${PORT}/api/recent`);
         console.log('🎬 Embed endpoint:', `http://localhost:${PORT}/api/embed?url=https%3A%2F%2Fanime-sama.fr%2Fcatalogue%2Fblack-butler`);
     });
 }
