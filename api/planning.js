@@ -20,6 +20,11 @@ module.exports = async (req, res) => {
         // Get optional day filter from query params
         const { day, filter } = req.query;
         
+        // Déterminer le jour actuel
+        const today = new Date();
+        const dayNames = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+        const currentDay = dayNames[today.getDay()];
+        
         // Scraper la page planning dédiée
         const $ = await scrapeAnimesama('https://anime-sama.fr/planning');
         
@@ -103,13 +108,26 @@ module.exports = async (req, res) => {
         });
         
         // Si un jour spécifique est demandé
-        if (day && planningData.days[day.toLowerCase()]) {
+        if (day && day.toLowerCase() !== 'all' && planningData.days[day.toLowerCase()]) {
             return res.status(200).json({
                 success: true,
                 day: day,
                 extractedAt: planningData.extractedAt,
                 ...planningData.days[day.toLowerCase()]
             });
+        }
+        
+        // Par défaut, retourner seulement le jour actuel (sauf si day=all)
+        if (!day || day.toLowerCase() !== 'all') {
+            const todayData = planningData.days[currentDay];
+            if (todayData) {
+                return res.status(200).json({
+                    success: true,
+                    currentDay: currentDay,
+                    extractedAt: planningData.extractedAt,
+                    ...todayData
+                });
+            }
         }
         
         // Filtrer par type si demandé
@@ -136,9 +154,11 @@ module.exports = async (req, res) => {
             });
         }
         
+        // Si on arrive ici, c'est que day=all ou le jour actuel n'existe pas
         // Calculer les totaux
         const totalItems = Object.values(planningData.days).reduce((sum, day) => sum + day.count, 0);
         planningData.totalItems = totalItems;
+        planningData.currentDay = currentDay;
         
         res.status(200).json(planningData);
         

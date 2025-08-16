@@ -37,7 +37,7 @@ app.get('/', (req, res) => {
         examples: {
             searchAnime: 'GET /api/search?query=black%20butler',
             getTrending: 'GET /api/trending',
-            getPlanning: 'GET /api/planning?day=lundi&filter=anime',
+            getPlanning: 'GET /api/planning (jour actuel) ou ?day=all&filter=anime',
             getAnimeDetails: 'GET /api/anime/black-butler',
             getSeasons: 'GET /api/seasons/black-butler',
             getEpisodes: 'GET /api/episodes/black-butler?season=1&language=VOSTFR',
