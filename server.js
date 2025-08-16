@@ -21,6 +21,8 @@ app.get('/', (req, res) => {
         name: 'Anime-Sama API',
         version: '1.0.0',
         description: 'Real-time anime scraping API for anime-sama.fr',
+        author: 'el_cid',
+        poweredBy: 'el_cid',
         status: 'running',
         endpoints: {
             search: '/api/search?query=naruto',
@@ -120,6 +122,7 @@ app.use((error, req, res, next) => {
 if (require.main === module) {
     app.listen(PORT, '0.0.0.0', () => {
         console.log('🚀 Anime-Sama API Server running on port', PORT);
+        console.log('⚡ Powered by el_cid');
         console.log('📚 API Documentation:', `http://localhost:${PORT}`);
         console.log('🔍 Search endpoint:', `http://localhost:${PORT}/api/search?query=naruto`);
         console.log('📈 Trending endpoint:', `http://localhost:${PORT}/api/trending`);

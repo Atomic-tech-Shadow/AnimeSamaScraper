@@ -16,6 +16,12 @@ Ce projet est sous licence **MIT** - voir le fichier [LICENSE](LICENSE) pour plu
 
 La licence MIT est parfaite pour un projet open-source comme celui-ci qui vise à être utilisé par la communauté des développeurs.
 
+---
+
+**🚀 Powered by el_cid**
+
+© 2025 el_cid - Tous droits réservés
+
 ## 🚀 Fonctionnalités
 
 - **Recherche d'anime** - Trouve des anime par nom avec correspondance floue

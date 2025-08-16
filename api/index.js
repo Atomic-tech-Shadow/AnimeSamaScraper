@@ -13,6 +13,9 @@ module.exports = (req, res) => {
         name: 'Anime-Sama API',
         version: '1.0.0',
         description: 'Real-time anime scraping API for anime-sama.fr',
+        author: 'el_cid',
+        poweredBy: 'el_cid',
+        copyright: '© 2025 el_cid',
         status: 'running',
         deployment: 'vercel',
         endpoints: {
