@@ -37,74 +37,99 @@ module.exports = async (req, res) => {
         // Jours de la semaine en français
         const daysOfWeek = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
         
-        // Parcourir chaque jour
-        daysOfWeek.forEach(dayName => {
+        // Extraire les appels cartePlanningAnime depuis le JavaScript
+        const pageHtml = $.html();
+        const planningMatches = pageHtml.match(/cartePlanningAnime\([^)]+\)/g);
+        const scanMatches = pageHtml.match(/cartePlanningScan\([^)]+\)/g);
+        
+        // Mapper les indices de scripts aux jours (basé sur l'ordre observé)
+        const scriptToDayMap = {
+            8: 'lundi',      // Script 8 = Lundi
+            9: 'mardi',      // Script 9 = Mardi  
+            10: 'mercredi',  // Script 10 = Mercredi
+            11: 'jeudi',     // Script 11 = Jeudi
+            12: 'vendredi',  // Script 12 = Vendredi
+            13: 'samedi',    // Script 13 = Samedi
+            14: 'dimanche'   // Script 14 = Dimanche
+        };
+        
+        // Parser les appels cartePlanningAnime par script/jour
+        $('script').each((scriptIndex, script) => {
+            const content = $(script).html();
+            if (!content || !content.includes('cartePlanningAnime')) return;
+            
+            const dayKey = scriptToDayMap[scriptIndex];
+            if (!dayKey) return;
+            
+            const dayName = daysOfWeek.find(d => d.toLowerCase() === dayKey);
+            if (!dayName) return;
+            
             const dayItems = [];
+            const lines = content.split('\n');
             
-            // Trouver la section du jour (h2 ou h3 contenant le nom du jour)
-            const dayHeader = $(`h2:contains("${dayName}"), h3:contains("${dayName}")`);
-            
-            if (dayHeader.length > 0) {
-                // Récupérer tous les éléments après le header jusqu'au prochain jour
-                let nextElement = dayHeader.next();
-                
-                while (nextElement.length > 0 && !daysOfWeek.some(d => nextElement.text().includes(d))) {
-                    // Si c'est un lien d'anime
-                    if (nextElement.is('a') && nextElement.attr('href') && nextElement.attr('href').includes('/catalogue/')) {
-                        const $link = nextElement;
-                        const href = $link.attr('href');
-                        const $img = $link.find('img');
-                        
-                        // Extraire les informations de l'anime
-                        const title = $link.find('strong').text().trim() || 
-                                     $img.attr('alt') || 
-                                     $link.text().replace(/\*\*\*/g, '').trim();
-                        
-                        // Extraire l'heure
-                        const timeMatch = $link.text().match(/(\d{1,2}h\d{2})/);
-                        const reportedMatch = $link.text().match(/(Reporté|Retardé)/);
-                        
-                        // Extraire le type (Anime, Scans) et langue (VOSTFR, VF)
-                        const isAnime = $link.text().includes('Anime');
-                        const isScan = $link.text().includes('Scans');
-                        const language = $link.text().includes('AnimeVF') || $link.text().includes('ScansVF') ? 'VF' : 'VOSTFR';
-                        
-                        // Extraire l'ID anime depuis l'URL
-                        const urlParts = href.split('/');
-                        const catalogueIndex = urlParts.indexOf('catalogue');
-                        const animeId = catalogueIndex >= 0 ? urlParts[catalogueIndex + 1] : null;
-                        
-                        // Obtenir l'image
-                        const imgSrc = $img.attr('src');
-                        const image = imgSrc && imgSrc.startsWith('http') ? imgSrc : 
-                                     imgSrc ? `https://anime-sama.fr${imgSrc}` : 
-                                     `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${animeId}.jpg`;
-                        
-                        if (title && animeId) {
-                            dayItems.push({
-                                animeId: animeId,
-                                title: title.replace(/\*\*\*/g, '').trim(),
-                                url: href.startsWith('http') ? href : `https://anime-sama.fr${href}`,
-                                image: image,
-                                releaseTime: timeMatch ? timeMatch[1] : '?',
-                                language: language,
-                                type: isAnime ? 'anime' : isScan ? 'scan' : 'unknown',
-                                day: dayName,
-                                isReported: reportedMatch ? true : false,
-                                status: reportedMatch ? reportedMatch[1] : 'scheduled'
-                            });
-                        }
-                    }
+            lines.forEach(line => {
+                // Parser cartePlanningAnime
+                const animeMatch = line.match(/cartePlanningAnime\("([^"]+)",\s*"([^"]+)",\s*"([^"]+)",\s*"([^"]+)",\s*"([^"]*)",\s*"([^"]+)"\)/);
+                if (animeMatch) {
+                    const [, title, path, imageId, time, status, language] = animeMatch;
                     
-                    nextElement = nextElement.next();
+                    // Ignorer les templates (nom, url, image)
+                    if (title === 'nom' || path === 'url' || imageId === 'image') return;
+                    
+                    dayItems.push({
+                        animeId: imageId,
+                        title: title.trim(),
+                        url: `https://anime-sama.fr/catalogue/${path}`,
+                        image: `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${imageId}.jpg`,
+                        releaseTime: time,
+                        language: language,
+                        type: 'anime',
+                        day: dayName,
+                        isReported: status.includes('Retardé') || status.includes('Reporté'),
+                        status: status || 'scheduled'
+                    });
                 }
-            }
+                
+                // Parser cartePlanningScan
+                const scanMatch = line.match(/cartePlanningScan\("([^"]+)",\s*"([^"]+)",\s*"([^"]+)",\s*"([^"]+)",\s*"([^"]*)",\s*"([^"]+)"\)/);
+                if (scanMatch) {
+                    const [, title, path, imageId, time, status, language] = scanMatch;
+                    
+                    // Ignorer les templates
+                    if (title === 'nom' || path === 'url' || imageId === 'image') return;
+                    
+                    dayItems.push({
+                        animeId: imageId,
+                        title: title.trim(),
+                        url: `https://anime-sama.fr/catalogue/${path}`,
+                        image: `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${imageId}.jpg`,
+                        releaseTime: time,
+                        language: language,
+                        type: 'scan',
+                        day: dayName,
+                        isReported: status.includes('Retardé') || status.includes('Reporté'),
+                        status: status || 'scheduled'
+                    });
+                }
+            });
             
-            planningData.days[dayName.toLowerCase()] = {
+            planningData.days[dayKey] = {
                 day: dayName,
                 count: dayItems.length,
                 items: dayItems
             };
+        });
+        
+        // Initialiser les jours vides
+        daysOfWeek.forEach(dayName => {
+            const dayKey = dayName.toLowerCase();
+            if (!planningData.days[dayKey]) {
+                planningData.days[dayKey] = {
+                    day: dayName,
+                    count: 0,
+                    items: []
+                };
+            }
         });
         
         // Si un jour spécifique est demandé
