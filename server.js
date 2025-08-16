@@ -50,7 +50,6 @@ app.get('/', (req, res) => {
 // API Routes
 app.get('/api/search', require('./api/search.js'));
 app.get('/api/trending', require('./api/trending.js'));
-app.get('/api/recent', require('./api/recent.js'));
 app.get('/api/planning', require('./api/planning.js'));
 app.get('/api/popular', require('./api/popular.js'));
 app.get('/api/anime/:id', (req, res) => {
