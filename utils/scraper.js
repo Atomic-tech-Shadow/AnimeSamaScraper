@@ -765,89 +765,116 @@ async function getAnimeSeasons(animeId) {
         const seasons = [];
         const fullHtml = $.html();
         
-        // Extract both ANIME and MANGA sections
+        // Extract ALL sections with panneauAnime calls (ANIME, KAI, etc.)
         const animeSection = fullHtml.split('<!-- ANIME -->')[1]?.split('<!-- MANGA -->')[0];
         const mangaSection = fullHtml.split('<!-- MANGA -->')[1];
         
-        // Process ANIME section
-        if (animeSection) {
-            // Process section without anime-specific configurations
-            let processedSection = animeSection;
-            
-            // Remove commented blocks and single-line comments (but preserve authentic data)
-            processedSection = processedSection.replace(/\/\*[\s\S]*?\*\//g, '');
-            processedSection = processedSection.replace(/\/\/.*$/gm, '');
-            
-            const panneauMatches = processedSection.match(/panneauAnime\("([^"]+)",\s*"([^"]+)"\);/g);
-            
-            if (panneauMatches) {
-                for (let index = 0; index < panneauMatches.length; index++) {
-                    const match = panneauMatches[index];
-                    const parts = match.match(/panneauAnime\("([^"]+)",\s*"([^"]+)"\);/);
-                    if (parts && parts.length >= 3) {
-                        const seasonName = parts[1];
-                        const seasonUrl = parts[2];
-                        
-                        // Skip generic placeholder entries
-                        if (seasonName === 'nom' && seasonUrl === 'url') {
-                            continue;
-                        }
-                        
-                        // Better season number extraction
-                        let seasonNumber = index + 1;
-                        let seasonType = 'Saison';
-                        
-                        // Enhanced content type detection
-                        if (seasonName.toLowerCase().includes('film') || seasonUrl.toLowerCase().includes('film')) {
+        // Extract ALL panneauAnime calls from the entire HTML before MANGA section
+        const beforeManga = fullHtml.split('<!-- MANGA -->')[0];
+        
+        // Remove commented blocks and single-line comments (but preserve authentic data)
+        let processedSection = beforeManga.replace(/\/\*[\s\S]*?\*\//g, '');
+        processedSection = processedSection.replace(/\/\/.*$/gm, '');
+        
+        const panneauMatches = processedSection.match(/panneauAnime\("([^"]+)",\s*"([^"]+)"\);/g);
+        
+        if (panneauMatches) {
+            for (let index = 0; index < panneauMatches.length; index++) {
+                const match = panneauMatches[index];
+                const parts = match.match(/panneauAnime\("([^"]+)",\s*"([^"]+)"\);/);
+                if (parts && parts.length >= 3) {
+                    const seasonName = parts[1];
+                    const seasonUrl = parts[2];
+                    
+                    // Skip generic placeholder entries
+                    if (seasonName === 'nom' && seasonUrl === 'url') {
+                        continue;
+                    }
+                    
+                    // Check if already exists to avoid duplicates
+                    if (seasons.find(s => s.value === seasonUrl.split('/')[0])) {
+                        continue;
+                    }
+                    
+                    // Better season number extraction based on total count
+                    let seasonNumber = seasons.length + index + 1;
+                    let seasonType = 'Saison';
+                    
+                    // Enhanced content type detection
+                    if (seasonName.toLowerCase().includes('film') || seasonUrl.toLowerCase().includes('film')) {
+                        seasonType = 'Film';
+                        seasonNumber = 1000 + seasons.filter(s => s.type === 'Film').length;
+                    } else if (seasonName.toLowerCase().includes('oav') || seasonName.toLowerCase().includes('ova') || 
+                               seasonUrl.toLowerCase().includes('oav') || seasonUrl.toLowerCase().includes('ova')) {
+                        seasonType = 'OAV';
+                        seasonNumber = 990 + seasons.filter(s => s.type === 'OAV').length;
+                    } else if (seasonName.toLowerCase().includes('spécial') || seasonName.toLowerCase().includes('special') ||
+                               seasonUrl.toLowerCase().includes('special') || seasonUrl.toLowerCase().includes('speciale')) {
+                        seasonType = 'Spécial';
+                        seasonNumber = 980 + seasons.filter(s => s.type === 'Spécial').length;
+                    } else if (seasonName.toLowerCase().includes('hors série') || seasonName.toLowerCase().includes('hors-série') ||
+                               (seasonName.toLowerCase().includes('hs') && !seasonName.toLowerCase().includes('saga')) ||
+                               (seasonUrl.toLowerCase().includes('hs') && !seasonUrl.toLowerCase().includes('saison')) ||
+                               seasonName.toLowerCase().includes('log:')) {
+                        seasonType = 'Hors-Série';
+                        seasonNumber = 970 + seasons.filter(s => s.type === 'Hors-Série').length;
+                    } else if (seasonName.toLowerCase().includes('movie') || seasonUrl.toLowerCase().includes('movie')) {
+                        seasonType = 'Film';
+                        seasonNumber = 1000 + seasons.filter(s => s.type === 'Film').length;
+                    } else if (seasonName.toLowerCase().includes('kai')) {
+                        // Kai can be either regular season or film format
+                        if (seasonName.toLowerCase().includes('films')) {
                             seasonType = 'Film';
-                            seasonNumber = 1000 + index; // Group films together
-                        } else if (seasonName.toLowerCase().includes('oav') || seasonName.toLowerCase().includes('ova') || 
-                                   seasonUrl.toLowerCase().includes('oav') || seasonUrl.toLowerCase().includes('ova')) {
-                            seasonType = 'OAV';
-                            seasonNumber = 990 + index; // Group OAVs together
-                        } else if (seasonName.toLowerCase().includes('spécial') || seasonName.toLowerCase().includes('special') ||
-                                   seasonUrl.toLowerCase().includes('special') || seasonUrl.toLowerCase().includes('speciale')) {
-                            seasonType = 'Spécial';
-                            seasonNumber = 980 + index; // Special episodes
-                        } else if (seasonName.toLowerCase().includes('hors série') || seasonName.toLowerCase().includes('hs') ||
-                                   seasonUrl.toLowerCase().includes('hs') || seasonName.toLowerCase().includes('hors-série')) {
-                            seasonType = 'Hors-Série';
-                            seasonNumber = 970 + index;
-                        } else if (seasonName.toLowerCase().includes('movie') || seasonUrl.toLowerCase().includes('movie')) {
-                            seasonType = 'Film';
-                            seasonNumber = 1000 + index;
-                        } else if (seasonName.toLowerCase().includes('kai') && seasonName.toLowerCase().includes('films')) {
-                            seasonType = 'Film';
-                            seasonNumber = 1000 + index;
+                            seasonNumber = 1000 + seasons.filter(s => s.type === 'Film').length;
                         } else {
-                            // Regular season - extract number
-                            const seasonMatch = seasonName.match(/saison\s*(\d+)|(\d+)/i);
+                            seasonType = 'Saison';
+                            const seasonMatch = seasonName.match(/(\d+)/);
+                            if (seasonMatch) {
+                                seasonNumber = parseInt(seasonMatch[1]) + 100; // Kai seasons are offset
+                            } else {
+                                seasonNumber = 100 + seasons.filter(s => s.type === 'Saison' && s.name.includes('Kai')).length;
+                            }
+                        }
+                    } else {
+                        // Regular season/saga - extract number
+                        if (seasonName.toLowerCase().includes('saga') || seasonName.toLowerCase().includes('saison')) {
+                            const seasonMatch = seasonName.match(/saga\s*(\d+)|saison\s*(\d+)/i);
                             if (seasonMatch) {
                                 seasonNumber = parseInt(seasonMatch[1] || seasonMatch[2]);
                             }
+                        } else {
+                            // Generic numbering
+                            const numberMatch = seasonName.match(/(\d+)/);
+                            if (numberMatch) {
+                                seasonNumber = parseInt(numberMatch[1]);
+                            } else {
+                                seasonNumber = seasons.filter(s => s.type === 'Saison').length + 1;
+                            }
                         }
-                        
-                        // Extract season folder name for value
-                        const seasonValue = seasonUrl.split('/')[0];
-                        
-                        // Get all available languages for this season
-                        const languages = await getSeasonLanguages(animeId, seasonValue);
-                        
-                        seasons.push({
-                            number: seasonNumber,
-                            name: seasonName,
-                            value: seasonValue, // saison1, film, etc.
-                            type: seasonType,
-                            url: seasonUrl,
-                            fullUrl: `https://anime-sama.fr/catalogue/${animeId}/${seasonUrl}`,
-                            languages: languages,
-                            available: true,
-                            contentType: 'anime'
-                        });
                     }
+                    
+                    // Extract season folder name for value
+                    const seasonValue = seasonUrl.split('/')[0];
+                    
+                    // Get all available languages for this season
+                    const languages = await getSeasonLanguages(animeId, seasonValue);
+                    
+                    seasons.push({
+                        number: seasonNumber,
+                        name: seasonName,
+                        value: seasonValue, // saison1, film, etc.
+                        type: seasonType,
+                        url: seasonUrl,
+                        fullUrl: `https://anime-sama.fr/catalogue/${animeId}/${seasonUrl}`,
+                        languages: languages,
+                        available: true,
+                        contentType: 'anime'
+                    });
                 }
             }
         }
+            
+
         
         // Process MANGA section (Scans) - uses panneauScan instead of panneauAnime
         if (mangaSection) {
