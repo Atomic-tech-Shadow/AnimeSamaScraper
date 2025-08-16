@@ -175,23 +175,5 @@ This is a Node.js-based API that scrapes the anime-sama.fr website to provide an
 ✓ Clean API architecture: search, trending, popular, anime details, seasons, episodes, embed, planning
 ✓ All endpoints now provide authentic data with proper image display
 
-## Deployment Strategy Evolution
-
-### Current Status
-- **Primary:** Vercel serverless (10s timeout limit)
-- **Backup:** Replit hosting ready (no timeout limits)
-- **Optimization:** Enhanced vercel.json with 60s timeout + 1GB memory (Pro plan)
-
-### Scaling Plan
-1. **Phase 1:** Optimized Vercel config (current)
-2. **Phase 2:** Replit Deployments if limits exceeded
-3. **Phase 3:** Multi-platform deployment for redundancy
-
-### Performance Monitoring
-- Function execution times
-- API response rates
-- Scraping success ratios
-- Error rate tracking
-
 ## User Preferences
 Preferred communication style: Simple, everyday language.
