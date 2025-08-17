@@ -1,6 +1,6 @@
-# Anime-Sama API
+# Anime-Sama API v2.0
 
-Une API Node.js serverless qui scrape le site anime-sama.fr en temps réel pour fournir des données d'anime via des endpoints JSON. Compatible avec Vercel et prêt pour le déploiement.
+Une API Node.js serverless avancée qui scrape intelligemment le site anime-sama.fr en temps réel pour fournir des données d'anime via des endpoints JSON optimisés. Compatible avec Vercel et prêt pour le déploiement en production.
 
 ## 📄 Licence
 
@@ -22,15 +22,25 @@ La licence MIT est parfaite pour un projet open-source comme celui-ci qui vise �
 
 © 2025 el_cid - Tous droits réservés
 
-## 🚀 Fonctionnalités
+## 🚀 Fonctionnalités v2.0
 
+### Core Features
 - **Recherche d'anime** - Trouve des anime par nom avec correspondance floue
-- **Tendances** - Récupère les anime populaires depuis la page d'accueil
+- **Épisodes récents** - Sans doublons grâce au système de déduplication avancé
+- **Planning** - Récupère les planning des anime
 - **Détails d'anime** - Informations complètes sur un anime spécifique
 - **Saisons et épisodes** - Navigation dans la structure des contenus
 - **Lecteur intégré** - Génère des pages HTML pour l'intégration de lecteurs vidéo
 - **Protection anti-bot** - Rotation des User-Agent et délais aléatoires
 - **CORS activé** - Compatible avec tous les frontends web
+
+### Advanced v2.0 Features
+- **🎯 Smart Recommendations** - Exploration aléatoire intelligente de tout le catalogue (38 pages)
+- **⚡ Advanced Caching** - Cache optimisé de 5 minutes pour performances optimales
+- **🔄 Zero Duplication** - Système anti-répétition double couche (cache + requête)
+- **📊 Complete Coverage** - Découvre ~1500-2000 animes de tout le site
+- **🎲 Intelligent Randomization** - Mélange aléatoire à chaque appel pour variété maximale
+- **🌐 Production Ready** - Système respectueux du serveur avec exploration efficace
 
 ## 📋 Endpoints API
 

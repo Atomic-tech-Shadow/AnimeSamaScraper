@@ -19,7 +19,7 @@ app.options('*', cors());
 app.get('/', (req, res) => {
     res.json({
         name: 'Anime-Sama API',
-        version: '1.0.0',
+        version: '2.0.0',
         description: 'Real-time anime scraping API for anime-sama.fr',
         author: 'el_cid',
         poweredBy: 'el_cid',

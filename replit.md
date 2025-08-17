@@ -1,7 +1,14 @@
-# Anime-Sama API Project
+# Anime-Sama API Project v2.0
 
 ## Overview
-API Node.js serverless qui scrape le site anime-sama.fr en temps réel pour fournir des données d'anime via des endpoints JSON. Compatible avec Vercel et Replit.
+API Node.js serverless avancée qui scrape le site anime-sama.fr en temps réel pour fournir des données d'anime via des endpoints JSON. Compatible avec Vercel et Replit.
+
+## Version 2.0 Features
+- **Smart Recommendations System**: Exploration aléatoire intelligente de tout le catalogue (38 pages)
+- **Advanced Caching**: Cache optimisé de 5 minutes avec rotation automatique des pages
+- **Zero Duplication**: Système anti-répétition double couche (cache + requête)
+- **Complete Catalog Coverage**: Découverte de ~1500-2000 animes de tout le site
+- **Production Ready**: Système respectueux du serveur avec exploration efficace
 
 ## Project Architecture
 - **Server**: Express.js server running on port 5000
