@@ -110,12 +110,17 @@ async function refreshRecommendationsCache() {
             });
         });
         
-        // Remove duplicates and sort
+        // Remove duplicates
         const uniqueRecommendations = recommendations
             .filter((anime, index, self) => 
                 index === self.findIndex(a => a.id === anime.id)
-            )
-            .sort((a, b) => a.title.localeCompare(b.title));
+            );
+        
+        // Shuffle array to get random order each time
+        for (let i = uniqueRecommendations.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [uniqueRecommendations[i], uniqueRecommendations[j]] = [uniqueRecommendations[j], uniqueRecommendations[i]];
+        }
         
         // Update cache
         recommendationsCache.data = uniqueRecommendations;
@@ -165,13 +170,21 @@ async function getRecommendations(req, res) {
         
         const uniqueRecommendations = recommendationsCache.data;
         
-        // Pagination support
+        // Pagination support with random rotation for each request
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 50;
+        
+        // Create a fresh shuffled copy for each request to ensure variety
+        const shuffledRecommendations = [...uniqueRecommendations];
+        for (let i = shuffledRecommendations.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffledRecommendations[i], shuffledRecommendations[j]] = [shuffledRecommendations[j], shuffledRecommendations[i]];
+        }
+        
         const startIndex = (page - 1) * limit;
         const endIndex = startIndex + limit;
         
-        const paginatedResults = uniqueRecommendations.slice(startIndex, endIndex);
+        const paginatedResults = shuffledRecommendations.slice(startIndex, endIndex);
         
         res.json({
             success: true,
