@@ -122,6 +122,28 @@ npm start
 
 <img src="https://user-images.githubusercontent.com/74038190/216649417-9acc58df-9186-4132-ad43-819a57babb67.gif" width="200">
 
+### 📞 Contact & Réseaux Sociaux
+
+<p align="center">
+<a href="YOUR_WHATSAPP_LINK_HERE"><img src="https://img.shields.io/badge/WhatsApp-25D366?style=for-the-badge&logo=whatsapp&logoColor=white" alt="WhatsApp"/></a>
+<a href="YOUR_FACEBOOK_LINK_HERE"><img src="https://img.shields.io/badge/Facebook-1877F2?style=for-the-badge&logo=facebook&logoColor=white" alt="Facebook"/></a>
+<a href="YOUR_YOUTUBE_LINK_HERE"><img src="https://img.shields.io/badge/YouTube-FF0000?style=for-the-badge&logo=youtube&logoColor=white" alt="YouTube"/></a>
+</p>
+
+<p align="center">
+<a href="YOUR_TIKTOK_LINK_HERE"><img src="https://img.shields.io/badge/TikTok-000000?style=for-the-badge&logo=tiktok&logoColor=white" alt="TikTok"/></a>
+<a href="YOUR_TELEGRAM_LINK_HERE"><img src="https://img.shields.io/badge/Telegram-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white" alt="Telegram"/></a>
+<a href="mailto:YOUR_EMAIL_HERE"><img src="https://img.shields.io/badge/Email-D14836?style=for-the-badge&logo=gmail&logoColor=white" alt="Email"/></a>
+</p>
+
+<div align="center">
+
+**💬 Discutons de votre projet !**
+
+<img src="https://user-images.githubusercontent.com/74038190/212284158-e840e285-664b-44d7-b79b-e264b5e54825.gif" width="400">
+
+</div>
+
 ---
 
 **Made with ❤️ by [el_cid](https://github.com/el_cid)**
