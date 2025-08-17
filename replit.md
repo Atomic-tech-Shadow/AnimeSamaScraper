@@ -25,6 +25,7 @@ API Node.js serverless avancée qui scrape le site anime-sama.fr en temps réel 
   - `/api/embed` - Embed player
 
 ## Recent Changes
+- **2025-08-17**: Removed /api/index.js to maintain exactly 12 functions for Vercel Hobby plan compatibility
 - **2025-08-17**: Removed /health endpoint as requested by user
 - **2025-08-17**: Migrated from Replit Agent to standard Replit environment
 - **2025-08-17**: Fixed duplicate episodes bug in `/api/recent` endpoint by implementing proper deduplication logic
