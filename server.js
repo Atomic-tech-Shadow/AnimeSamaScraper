@@ -82,16 +82,6 @@ app.get('/api/episode/:animeId/:season/:ep', (req, res) => {
 });
 app.get('/api/embed', require('./api/embed.js'));
 
-// Health check endpoint
-app.get('/health', (req, res) => {
-    res.json({ 
-        status: 'OK', 
-        timestamp: new Date().toISOString(),
-        uptime: process.uptime(),
-        environment: process.env.NODE_ENV || 'development'
-    });
-});
-
 // 404 handler
 app.use((req, res) => {
     res.status(404).json({
