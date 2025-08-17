@@ -33,6 +33,7 @@ API Node.js serverless avancée qui scrape le site anime-sama.fr en temps réel 
 - **2025-08-17**: Added smart random page exploration system - explores up to 50 different random pages without repetition, auto-resets for infinite variety
 - **2025-08-17**: Optimized cache duration to 5 minutes and improved page range detection to reduce empty page requests and server load
 - **2025-08-17**: Verified anime-sama.fr catalogue contains 38 pages maximum, optimized random page selection to pages 1-38 for 100% valid content
+- **2025-08-17**: Upgraded to version 2.0.0 and cleaned up documentation (removed API_DOCUMENTATION.md, FRONTEND_EXAMPLES.md, LANGUAGE_SELECTOR_GUIDE.md, QUICK_START.md)
 
 ## User Preferences
 - Language: French preferred for communication
