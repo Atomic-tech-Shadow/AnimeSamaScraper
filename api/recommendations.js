@@ -7,8 +7,8 @@ let recommendationsCache = {
     isUpdating: false
 };
 
-// Cache duration in milliseconds (30 seconds for demo, but can be configured)
-const CACHE_DURATION = 30 * 1000; // 30 seconds
+// Cache duration in milliseconds (5 minutes for production use)
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 // Smart page rotation system
 let exploredPages = new Set();
@@ -26,8 +26,9 @@ function getRandomUnexploredPage() {
     let randomPage;
     let attempts = 0;
     do {
-        // Generate random page between 1 and estimated total pages
-        randomPage = Math.floor(Math.random() * Math.max(100, totalPagesDiscovered * 2)) + 1;
+        // Generate random page between 1 and a more realistic range (since we found valid content up to page 36)
+        const maxRange = Math.max(50, totalPagesDiscovered + 10);
+        randomPage = Math.floor(Math.random() * maxRange) + 1;
         attempts++;
     } while (exploredPages.has(randomPage) && attempts < 20);
     

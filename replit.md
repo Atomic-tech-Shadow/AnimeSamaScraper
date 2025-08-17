@@ -23,7 +23,8 @@ API Node.js serverless qui scrape le site anime-sama.fr en temps réel pour four
 - **2025-08-17**: Added double layer deduplication (button-level and episode-level) to prevent duplicate entries
 - **2025-08-17**: Added new `/api/recommendations` endpoint to scrape catalogue page for anime recommendations (filters out scans)
 - **2025-08-17**: Implemented intelligent randomization system for recommendations with double shuffle (cache-level + request-level)
-- **2025-08-17**: Added smart random page exploration system - explores up to 50 different random pages (1-100+) without repetition, auto-resets for infinite variety
+- **2025-08-17**: Added smart random page exploration system - explores up to 50 different random pages without repetition, auto-resets for infinite variety
+- **2025-08-17**: Optimized cache duration to 5 minutes and improved page range detection to reduce empty page requests and server load
 
 ## User Preferences
 - Language: French preferred for communication
