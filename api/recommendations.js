@@ -1,27 +1,36 @@
 const { scrapeAnimesama } = require('../utils/scraper');
 
-// Get anime recommendations from catalogue page
-async function getRecommendations(req, res) {
+// Cache system for recommendations
+let recommendationsCache = {
+    data: [],
+    lastUpdated: null,
+    isUpdating: false
+};
+
+// Cache duration in milliseconds (30 seconds for demo, but can be configured)
+const CACHE_DURATION = 30 * 1000; // 30 seconds
+
+// Background refresh function
+async function refreshRecommendationsCache() {
+    if (recommendationsCache.isUpdating) {
+        console.log('🔄 Cache refresh already in progress, skipping...');
+        return;
+    }
+    
     try {
-        console.log('🎯 Récupération des recommandations depuis le catalogue...');
+        recommendationsCache.isUpdating = true;
+        console.log('🔄 Starting background refresh of recommendations cache...');
         
-        // Scrape the catalogue page
         const $ = await scrapeAnimesama('https://anime-sama.fr/catalogue/');
-        
         const recommendations = [];
         const seenAnimes = new Set();
         
-        // Extract ALL cards and filter properly
-        console.log('🔍 Searching for anime cards...');
-        
-        // More flexible approach - find all cards containing catalogue links
         $('a[href*="/catalogue/"]').each((index, element) => {
             const $link = $(element);
             const href = $link.attr('href');
             
             if (!href || !href.includes('/catalogue/')) return;
             
-            // Ensure full URL
             const fullUrl = href.startsWith('http') ? href : `https://anime-sama.fr${href}`;
             const urlParts = fullUrl.split('/');
             const catalogueIndex = urlParts.findIndex(part => part === 'catalogue');
@@ -30,41 +39,27 @@ async function getRecommendations(req, res) {
             
             const animeId = urlParts[catalogueIndex + 1];
             
-            // Skip if it's just the catalogue root or already seen
             if (!animeId || animeId === '' || seenAnimes.has(animeId)) return;
             
-            // Get the parent card or the link itself
             const $card = $link.closest('.shrink-0') || $link;
-            
-            // Check for scan indicators in the card text
             const cardText = $card.text().toLowerCase();
             const isScans = cardText.includes('scans') || 
                            cardText.includes('manga') ||
                            cardText.includes('manhwa') ||
                            cardText.includes('manhua');
             
-            // Log what we're processing
-            console.log(`📋 Processing: ${animeId} | Text includes Scans: ${isScans}`);
-            
-            // Skip scans
-            if (isScans) {
-                console.log(`🚫 Skipping scan: ${animeId}`);
-                return;
-            }
+            if (isScans) return;
             
             seenAnimes.add(animeId);
             
-            // Extract title from the h1 element in the card
             let title = $card.find('h1').text().trim();
             
-            // Fallback title extraction methods
             if (!title) {
                 title = $card.find('.title, .name').text().trim() ||
                        $link.attr('title') || 
                        $card.find('img').attr('alt');
             }
             
-            // If no title found, construct from anime ID
             if (!title || title.length < 3) {
                 title = animeId.replace(/-/g, ' ')
                               .split(' ')
@@ -72,8 +67,7 @@ async function getRecommendations(req, res) {
                               .join(' ');
             }
             
-            // Clean up title (remove hashtag and extra formatting)
-            title = title.replace(/^#/, '') // Remove leading hashtag
+            title = title.replace(/^#/, '')
                         .replace(/\s+/g, ' ')
                         .replace(/\n/g, ' ')
                         .replace(/\t/g, ' ')
@@ -84,16 +78,13 @@ async function getRecommendations(req, res) {
                         .replace(/\s*\[FIN\]\s*/gi, '')
                         .trim();
             
-            // Extract image from the card
             const $img = $card.find('img.imageCarteHorizontale').first();
             let image = $img.attr('src') || $img.attr('data-src');
             
-            // Use the standard CDN pattern for anime images if no image found
             if (!image || !image.includes('http')) {
                 image = `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${animeId}.jpg`;
             }
             
-            // Extract genres from the card
             const genreElements = $card.find('p.text-gray-300.font-medium.text-xs');
             let genres = [];
             genreElements.each((i, el) => {
@@ -103,10 +94,7 @@ async function getRecommendations(req, res) {
                 }
             });
             
-            // Content type is always anime (since we filtered scans)
             const contentType = 'anime';
-            
-            // Default language info
             const languages = ['VOSTFR'];
             
             recommendations.push({
@@ -122,14 +110,60 @@ async function getRecommendations(req, res) {
             });
         });
         
-        // Remove duplicates based on anime ID and sort by title
+        // Remove duplicates and sort
         const uniqueRecommendations = recommendations
             .filter((anime, index, self) => 
                 index === self.findIndex(a => a.id === anime.id)
             )
             .sort((a, b) => a.title.localeCompare(b.title));
         
-        console.log(`✅ ${uniqueRecommendations.length} recommandations extraites du catalogue`);
+        // Update cache
+        recommendationsCache.data = uniqueRecommendations;
+        recommendationsCache.lastUpdated = new Date();
+        recommendationsCache.isUpdating = false;
+        
+        console.log(`✅ Cache refreshed: ${uniqueRecommendations.length} animes loaded at ${recommendationsCache.lastUpdated.toISOString()}`);
+        
+    } catch (error) {
+        console.error('❌ Error refreshing cache:', error.message);
+        recommendationsCache.isUpdating = false;
+    }
+}
+
+// Schedule automatic cache refresh
+function scheduleNextRefresh() {
+    setTimeout(() => {
+        refreshRecommendationsCache().then(() => {
+            scheduleNextRefresh(); // Schedule next refresh
+        });
+    }, CACHE_DURATION);
+}
+
+// Initialize cache on first load
+if (recommendationsCache.data.length === 0) {
+    refreshRecommendationsCache().then(() => {
+        scheduleNextRefresh();
+    });
+}
+
+// Get anime recommendations from catalogue page
+async function getRecommendations(req, res) {
+    try {
+        // Check if cache needs refresh
+        const now = new Date();
+        const cacheAge = recommendationsCache.lastUpdated ? 
+            now.getTime() - recommendationsCache.lastUpdated.getTime() : 
+            Infinity;
+        
+        // If cache is empty or older than CACHE_DURATION, refresh it
+        if (recommendationsCache.data.length === 0 || cacheAge > CACHE_DURATION) {
+            console.log('🔄 Cache expired or empty, refreshing...');
+            await refreshRecommendationsCache();
+        } else {
+            console.log(`💾 Using cached data (age: ${Math.round(cacheAge / 1000)}s, next refresh in: ${Math.round((CACHE_DURATION - cacheAge) / 1000)}s)`);
+        }
+        
+        const uniqueRecommendations = recommendationsCache.data;
         
         // Pagination support
         const page = parseInt(req.query.page) || 1;
@@ -154,7 +188,15 @@ async function getRecommendations(req, res) {
                 extractedAt: new Date().toISOString(),
                 source: 'anime-sama.fr/catalogue/',
                 totalFound: uniqueRecommendations.length,
-                filtered: 'Animes only (scans excluded)'
+                filtered: 'Animes only (scans excluded)',
+                cacheInfo: {
+                    lastUpdated: recommendationsCache.lastUpdated?.toISOString(),
+                    cacheAge: recommendationsCache.lastUpdated ? 
+                        Math.round((new Date().getTime() - recommendationsCache.lastUpdated.getTime()) / 1000) : 0,
+                    nextRefreshIn: recommendationsCache.lastUpdated ? 
+                        Math.max(0, Math.round((CACHE_DURATION - (new Date().getTime() - recommendationsCache.lastUpdated.getTime())) / 1000)) : 0,
+                    cacheDuration: CACHE_DURATION / 1000
+                }
             }
         });
         
