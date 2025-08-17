@@ -10,6 +10,10 @@ let recommendationsCache = {
 // Cache duration in milliseconds (30 seconds for demo, but can be configured)
 const CACHE_DURATION = 30 * 1000; // 30 seconds
 
+// Page rotation system
+let currentPage = 1;
+const MAX_PAGES = 10; // We'll check how many pages exist
+
 // Background refresh function
 async function refreshRecommendationsCache() {
     if (recommendationsCache.isUpdating) {
@@ -19,9 +23,10 @@ async function refreshRecommendationsCache() {
     
     try {
         recommendationsCache.isUpdating = true;
-        console.log('🔄 Starting background refresh of recommendations cache...');
+        console.log(`🔄 Starting background refresh of recommendations cache from page ${currentPage}...`);
         
-        const $ = await scrapeAnimesama('https://anime-sama.fr/catalogue/');
+        // Scrape current page
+        const $ = await scrapeAnimesama(`https://anime-sama.fr/catalogue/?page=${currentPage}`);
         const recommendations = [];
         const seenAnimes = new Set();
         
@@ -127,7 +132,11 @@ async function refreshRecommendationsCache() {
         recommendationsCache.lastUpdated = new Date();
         recommendationsCache.isUpdating = false;
         
-        console.log(`✅ Cache refreshed: ${uniqueRecommendations.length} animes loaded at ${recommendationsCache.lastUpdated.toISOString()}`);
+        console.log(`✅ Cache refreshed: ${uniqueRecommendations.length} animes loaded from page ${currentPage} at ${recommendationsCache.lastUpdated.toISOString()}`);
+        
+        // Rotate to next page for next refresh
+        currentPage = currentPage >= MAX_PAGES ? 1 : currentPage + 1;
+        console.log(`🔄 Next refresh will use page ${currentPage}`);
         
     } catch (error) {
         console.error('❌ Error refreshing cache:', error.message);
@@ -208,7 +217,10 @@ async function getRecommendations(req, res) {
                         Math.round((new Date().getTime() - recommendationsCache.lastUpdated.getTime()) / 1000) : 0,
                     nextRefreshIn: recommendationsCache.lastUpdated ? 
                         Math.max(0, Math.round((CACHE_DURATION - (new Date().getTime() - recommendationsCache.lastUpdated.getTime())) / 1000)) : 0,
-                    cacheDuration: CACHE_DURATION / 1000
+                    cacheDuration: CACHE_DURATION / 1000,
+                    currentPage: currentPage === 1 ? MAX_PAGES : currentPage - 1, // Show the page that was just loaded
+                    nextPage: currentPage,
+                    totalPages: MAX_PAGES
                 }
             }
         });
