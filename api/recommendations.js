@@ -11,10 +11,13 @@ async function getRecommendations(req, res) {
         const recommendations = [];
         const seenAnimes = new Set();
         
-        // Extract all anime links from catalogue page
+        // Extract ALL cards and filter properly
+        console.log('🔍 Searching for anime cards...');
+        
+        // More flexible approach - find all cards containing catalogue links
         $('a[href*="/catalogue/"]').each((index, element) => {
-            const $el = $(element);
-            const href = $el.attr('href');
+            const $link = $(element);
+            const href = $link.attr('href');
             
             if (!href || !href.includes('/catalogue/')) return;
             
@@ -30,29 +33,36 @@ async function getRecommendations(req, res) {
             // Skip if it's just the catalogue root or already seen
             if (!animeId || animeId === '' || seenAnimes.has(animeId)) return;
             
-            // Check if it's an anime and not a scan
-            const pathSegments = urlParts.slice(catalogueIndex + 1);
+            // Get the parent card or the link itself
+            const $card = $link.closest('.shrink-0') || $link;
             
-            // Skip if it contains scan-related keywords
-            const isScans = pathSegments.some(segment => 
-                segment.toLowerCase().includes('scan') ||
-                segment.toLowerCase().includes('manga') ||
-                segment.toLowerCase().includes('manhwa') ||
-                segment.toLowerCase().includes('manhua')
-            );
+            // Check for scan indicators in the card text
+            const cardText = $card.text().toLowerCase();
+            const isScans = cardText.includes('scans') || 
+                           cardText.includes('manga') ||
+                           cardText.includes('manhwa') ||
+                           cardText.includes('manhua');
             
-            if (isScans) return;
+            // Log what we're processing
+            console.log(`📋 Processing: ${animeId} | Text includes Scans: ${isScans}`);
             
-            // Only include anime entries (should have specific structure)
-            if (pathSegments.length < 2) return; // Must have at least anime/season structure
+            // Skip scans
+            if (isScans) {
+                console.log(`🚫 Skipping scan: ${animeId}`);
+                return;
+            }
             
             seenAnimes.add(animeId);
             
-            // Extract title from element or construct from ID
-            let title = $el.find('h3').text().trim() || 
-                       $el.find('.title, .name').text().trim() ||
-                       $el.attr('title') || 
-                       $el.find('img').attr('alt');
+            // Extract title from the h1 element in the card
+            let title = $card.find('h1').text().trim();
+            
+            // Fallback title extraction methods
+            if (!title) {
+                title = $card.find('.title, .name').text().trim() ||
+                       $link.attr('title') || 
+                       $card.find('img').attr('alt');
+            }
             
             // If no title found, construct from anime ID
             if (!title || title.length < 3) {
@@ -62,8 +72,9 @@ async function getRecommendations(req, res) {
                               .join(' ');
             }
             
-            // Clean up title
-            title = title.replace(/\s+/g, ' ')
+            // Clean up title (remove hashtag and extra formatting)
+            title = title.replace(/^#/, '') // Remove leading hashtag
+                        .replace(/\s+/g, ' ')
                         .replace(/\n/g, ' ')
                         .replace(/\t/g, ' ')
                         .replace(/\s*VF\s*/gi, '')
@@ -73,44 +84,30 @@ async function getRecommendations(req, res) {
                         .replace(/\s*\[FIN\]\s*/gi, '')
                         .trim();
             
-            // Extract image
-            const $img = $el.find('img').first();
+            // Extract image from the card
+            const $img = $card.find('img.imageCarteHorizontale').first();
             let image = $img.attr('src') || $img.attr('data-src');
             
-            // Use the standard CDN pattern for anime images
+            // Use the standard CDN pattern for anime images if no image found
             if (!image || !image.includes('http')) {
                 image = `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${animeId}.jpg`;
             }
             
-            // Determine content type and season info
-            const seasonPath = pathSegments[1];
-            let contentType = 'anime';
-            let season = null;
-            
-            if (seasonPath) {
-                if (seasonPath.toLowerCase().includes('film')) {
-                    contentType = 'film';
-                } else if (seasonPath.match(/saison-?(\d+)/i)) {
-                    const seasonMatch = seasonPath.match(/saison-?(\d+)/i);
-                    season = seasonMatch ? parseInt(seasonMatch[1]) : null;
+            // Extract genres from the card
+            const genreElements = $card.find('p.text-gray-300.font-medium.text-xs');
+            let genres = [];
+            genreElements.each((i, el) => {
+                const text = $(el).text().trim();
+                if (text && text !== 'Anime' && text !== 'Scans' && !text.includes('http')) {
+                    genres.push(text);
                 }
-            }
+            });
             
-            // Get available languages from the URL structure
-            const languages = [];
-            if (pathSegments.length > 2) {
-                const langPath = pathSegments[2];
-                if (langPath) {
-                    if (langPath.toLowerCase().includes('vostfr')) languages.push('VOSTFR');
-                    if (langPath.toLowerCase().includes('vf')) languages.push('VF');
-                    if (langPath.toLowerCase().includes('va')) languages.push('VA');
-                }
-            }
+            // Content type is always anime (since we filtered scans)
+            const contentType = 'anime';
             
-            // Default to VOSTFR if no languages detected
-            if (languages.length === 0) {
-                languages.push('VOSTFR');
-            }
+            // Default language info
+            const languages = ['VOSTFR'];
             
             recommendations.push({
                 id: animeId,
@@ -118,7 +115,7 @@ async function getRecommendations(req, res) {
                 image: image,
                 url: fullUrl,
                 contentType: contentType,
-                season: season,
+                genres: genres.length > 0 ? genres : ['Genre non spécifié'],
                 languages: languages,
                 category: 'recommendation',
                 extractedFrom: 'Catalogue Page'
