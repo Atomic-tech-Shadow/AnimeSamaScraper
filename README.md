@@ -1,6 +1,21 @@
-# Anime-Sama API v2.0
+<div align="center">
 
-Une API Node.js serverless avancée qui scrape intelligemment le site anime-sama.fr en temps réel pour fournir des données d'anime via des endpoints JSON optimisés. Compatible avec Vercel et prêt pour le déploiement en production.
+# 🎌 Anime-Sama API v2.0
+
+<img src="https://readme-typing-svg.herokuapp.com?font=Fira+Code&pause=1000&color=F75C7E&center=true&vCenter=true&width=435&lines=Real-time+Anime+Scraping+API;Powered+by+el_cid;Production+Ready;Smart+Recommendations" alt="Typing SVG" />
+
+[![Version](https://img.shields.io/badge/version-2.0.0-blue.svg?style=for-the-badge)]()
+[![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg?style=for-the-badge&logo=node.js)]()
+[![License](https://img.shields.io/badge/license-MIT-yellow.svg?style=for-the-badge)]()
+[![Status](https://img.shields.io/badge/status-active-success.svg?style=for-the-badge)]()
+
+**Une API Node.js serverless avancée qui scrape intelligemment le site anime-sama.fr en temps réel pour fournir des données d'anime via des endpoints JSON optimisés.**
+
+**Compatible avec Vercel et prêt pour le déploiement en production 🚀**
+
+</div>
+
+---
 
 ## 📄 Licence
 
@@ -22,27 +37,102 @@ La licence MIT est parfaite pour un projet open-source comme celui-ci qui vise �
 
 © 2025 el_cid - Tous droits réservés
 
-## 🚀 Fonctionnalités v2.0
+</details>
 
-### Core Features
-- **Recherche d'anime** - Trouve des anime par nom avec correspondance floue
-- **Épisodes récents** - Sans doublons grâce au système de déduplication avancé
-- **Planning** - Récupère les planning des anime
-- **Détails d'anime** - Informations complètes sur un anime spécifique
-- **Saisons et épisodes** - Navigation dans la structure des contenus
-- **Lecteur intégré** - Génère des pages HTML pour l'intégration de lecteurs vidéo
-- **Protection anti-bot** - Rotation des User-Agent et délais aléatoires
-- **CORS activé** - Compatible avec tous les frontends web
+---
 
-### Advanced v2.0 Features
-- **🎯 Smart Recommendations** - Exploration aléatoire intelligente de tout le catalogue (38 pages)
-- **⚡ Advanced Caching** - Cache optimisé de 5 minutes pour performances optimales
-- **🔄 Zero Duplication** - Système anti-répétition double couche (cache + requête)
-- **📊 Complete Coverage** - Découvre ~1500-2000 animes de tout le site
-- **🎲 Intelligent Randomization** - Mélange aléatoire à chaque appel pour variété maximale
-- **🌐 Production Ready** - Système respectueux du serveur avec exploration efficace
+<div align="center">
 
-## 📋 Endpoints API
+## 📊 Statistiques du Projet
+
+<img src="https://github-readme-stats.vercel.app/api?username=el_cid&show_icons=true&theme=radical" alt="Stats" />
+
+### 🚀 Quick Start
+
+<img src="https://user-images.githubusercontent.com/74038190/212284115-f47cd8ff-2ffb-4b04-b5bf-4d1c14c0247f.gif" width="100">
+
+</div>
+
+```bash
+# Clone le repository
+git clone https://github.com/your-username/anime-sama-api.git
+
+# Installe les dépendances
+npm install
+
+# Lance le serveur
+npm start
+```
+
+<div align="center">
+
+### 🌟 Contribuer
+
+**Si ce projet vous aide, donnez-lui une ⭐ !**
+
+<img src="https://user-images.githubusercontent.com/74038190/216649417-9acc58df-9186-4132-ad43-819a57babb67.gif" width="200">
+
+---
+
+**Made with ❤️ by [el_cid](https://github.com/el_cid)**
+
+<img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&height=100&section=footer" />
+
+</div>
+
+<div align="center">
+
+## ⭐ Fonctionnalités v2.0
+
+<img src="https://user-images.githubusercontent.com/74038190/212284100-561aa473-3905-4a80-b561-0d28506553ee.gif" width="700">
+
+</div>
+
+<table>
+<tr>
+<td width="50%">
+
+### 🎯 Core Features
+```diff
++ 🔍 Recherche d'anime intelligente
++ 📺 Épisodes récents sans doublons  
++ 📅 Planning des anime
++ 📖 Détails complets d'anime
++ 🎬 Saisons et épisodes
++ 🎮 Lecteur intégré
++ 🛡️ Protection anti-bot
++ 🌐 CORS activé
+```
+
+</td>
+<td width="50%">
+
+### ⚡ Advanced v2.0 Features
+```diff
++ 🎯 Smart Recommendations System
++ ⚡ Advanced Caching (5min)
++ 🔄 Zero Duplication Technology
++ 📊 Complete Catalog Coverage
++ 🎲 Intelligent Randomization
++ 🌐 Production Ready Architecture
++ 📈 ~1500-2000 Animes Discovery
++ 🎪 38 Pages Smart Exploration
+```
+
+</td>
+</tr>
+</table>
+
+<div align="center">
+
+## 🛠️ Endpoints API
+
+<img src="https://user-images.githubusercontent.com/74038190/212284087-bbe7e430-757e-4901-90bf-4cd2ce3e1852.gif" width="100">
+
+</div>
+
+<details>
+<summary>📖 Click to expand all endpoints</summary>
 
 ### 🔍 Recherche
 ```http
