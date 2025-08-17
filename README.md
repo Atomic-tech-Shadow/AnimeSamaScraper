@@ -6,8 +6,27 @@
 
 [![Version](https://img.shields.io/badge/version-2.0.0-blue.svg?style=for-the-badge)]()
 [![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg?style=for-the-badge&logo=node.js)]()
+[![Express](https://img.shields.io/badge/Express.js-4.x-black.svg?style=for-the-badge&logo=express)]()
 [![License](https://img.shields.io/badge/license-MIT-yellow.svg?style=for-the-badge)]()
 [![Status](https://img.shields.io/badge/status-active-success.svg?style=for-the-badge)]()
+
+### 🛠️ Technologies Stack
+
+<p align="center">
+<img src="https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black" />
+<img src="https://img.shields.io/badge/Node.js-43853D?style=for-the-badge&logo=node.js&logoColor=white" />
+<img src="https://img.shields.io/badge/Express.js-404D59?style=for-the-badge&logo=express&logoColor=white" />
+<img src="https://img.shields.io/badge/Axios-5A29E4?style=for-the-badge&logo=axios&logoColor=white" />
+<img src="https://img.shields.io/badge/Cheerio-E88C1A?style=for-the-badge&logo=cheerio&logoColor=white" />
+</p>
+
+<p align="center">
+<img src="https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white" />
+<img src="https://img.shields.io/badge/Replit-667881?style=for-the-badge&logo=replit&logoColor=white" />
+<img src="https://img.shields.io/badge/REST_API-02569B?style=for-the-badge&logo=api&logoColor=white" />
+<img src="https://img.shields.io/badge/JSON-000000?style=for-the-badge&logo=json&logoColor=white" />
+<img src="https://img.shields.io/badge/CORS-FF6B6B?style=for-the-badge&logo=cors&logoColor=white" />
+</p>
 
 **Une API Node.js serverless avancée qui scrape intelligemment le site anime-sama.fr en temps réel pour fournir des données d'anime via des endpoints JSON optimisés.**
 
@@ -46,6 +65,37 @@ La licence MIT est parfaite pour un projet open-source comme celui-ci qui vise �
 ## 📊 Statistiques du Projet
 
 <img src="https://github-readme-stats.vercel.app/api?username=el_cid&show_icons=true&theme=radical" alt="Stats" />
+
+### 💻 Langages et Outils
+
+<p align="center">
+<img src="https://github-readme-stats.vercel.app/api/top-langs/?username=el_cid&layout=compact&theme=radical" alt="Top Languages" />
+</p>
+
+<table align="center">
+<tr>
+<td align="center" width="20%">
+<img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/javascript/javascript-original.svg" width="50" height="50"/>
+<br><strong>JavaScript</strong>
+</td>
+<td align="center" width="20%">
+<img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/nodejs/nodejs-original.svg" width="50" height="50"/>
+<br><strong>Node.js</strong>
+</td>
+<td align="center" width="20%">
+<img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/express/express-original.svg" width="50" height="50"/>
+<br><strong>Express</strong>
+</td>
+<td align="center" width="20%">
+<img src="https://user-images.githubusercontent.com/74038190/212257468-1e9a91f1-b626-4baa-b15d-5c385b7de912.gif" width="50" height="50"/>
+<br><strong>API REST</strong>
+</td>
+<td align="center" width="20%">
+<img src="https://user-images.githubusercontent.com/74038190/212257467-871d32b7-e401-42e8-a166-fcfd7baa4c6b.gif" width="50" height="50"/>
+<br><strong>Web Scraping</strong>
+</td>
+</tr>
+</table>
 
 ### 🚀 Quick Start
 
