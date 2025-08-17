@@ -26,8 +26,8 @@ function getRandomUnexploredPage() {
     let randomPage;
     let attempts = 0;
     do {
-        // Generate random page between 1 and 40 (realistic range for anime-sama catalogue)
-        randomPage = Math.floor(Math.random() * 40) + 1;
+        // Generate random page between 1 and 38 (verified range for anime-sama catalogue)
+        randomPage = Math.floor(Math.random() * 38) + 1;
         attempts++;
     } while (exploredPages.has(randomPage) && attempts < 20);
     
