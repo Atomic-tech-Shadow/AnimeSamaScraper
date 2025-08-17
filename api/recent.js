@@ -21,11 +21,19 @@ module.exports = async (req, res) => {
         const $ = await scrapeAnimesama('https://anime-sama.fr/');
         
         const recentEpisodes = [];
+        const seenEpisodes = new Set(); // Pour éviter les doublons
         
         // Extract from bg-cyan-600 buttons
+        const processedButtons = new Set(); // Pour éviter de traiter le même bouton plusieurs fois
+        
         $('button.bg-cyan-600').each((index, element) => {
             const $button = $(element);
             const buttonText = $button.text().trim();
+            
+            // Créer un identifiant unique pour ce bouton basé sur le texte et la position
+            const buttonId = `${index}-${buttonText}`;
+            if (processedButtons.has(buttonId)) return;
+            processedButtons.add(buttonId);
             
             // Find parent link
             const $container = $button.closest('a[href*="/catalogue/"]') || 
@@ -51,6 +59,11 @@ module.exports = async (req, res) => {
             const animeId = catalogueIndex >= 0 ? urlParts[catalogueIndex + 1] : null;
             
             if (!animeId || !episodeNumber) return;
+            
+            // Create unique identifier to prevent duplicates
+            const uniqueKey = `${animeId}-s${seasonNumber}-e${episodeNumber}-${isVFCrunchyroll ? 'VF' : 'VOSTFR'}`;
+            if (seenEpisodes.has(uniqueKey)) return;
+            seenEpisodes.add(uniqueKey);
             
             // Get anime title
             let animeTitle = $container.find('strong, h1, h2, h3').first().text().trim();
