@@ -10,9 +10,30 @@ let recommendationsCache = {
 // Cache duration in milliseconds (30 seconds for demo, but can be configured)
 const CACHE_DURATION = 30 * 1000; // 30 seconds
 
-// Page rotation system
-let currentPage = 1;
-const MAX_PAGES = 10; // We'll check how many pages exist
+// Smart page rotation system
+let exploredPages = new Set();
+let totalPagesDiscovered = 0;
+const MAX_PAGES_TO_EXPLORE = 50; // Explore up to 50 different pages before resetting
+
+// Function to get a random unexplored page
+function getRandomUnexploredPage() {
+    // If we've explored too many pages, reset the system
+    if (exploredPages.size >= MAX_PAGES_TO_EXPLORE) {
+        console.log('🔄 Resetting explored pages to discover new content...');
+        exploredPages.clear();
+    }
+    
+    let randomPage;
+    let attempts = 0;
+    do {
+        // Generate random page between 1 and estimated total pages
+        randomPage = Math.floor(Math.random() * Math.max(100, totalPagesDiscovered * 2)) + 1;
+        attempts++;
+    } while (exploredPages.has(randomPage) && attempts < 20);
+    
+    exploredPages.add(randomPage);
+    return randomPage;
+}
 
 // Background refresh function
 async function refreshRecommendationsCache() {
@@ -23,10 +44,11 @@ async function refreshRecommendationsCache() {
     
     try {
         recommendationsCache.isUpdating = true;
-        console.log(`🔄 Starting background refresh of recommendations cache from page ${currentPage}...`);
+        const targetPage = getRandomUnexploredPage();
+        console.log(`🎯 Starting background refresh from random page ${targetPage} (explored: ${exploredPages.size}/${MAX_PAGES_TO_EXPLORE})...`);
         
-        // Scrape current page
-        const $ = await scrapeAnimesama(`https://anime-sama.fr/catalogue/?page=${currentPage}`);
+        // Scrape target page
+        const $ = await scrapeAnimesama(`https://anime-sama.fr/catalogue/?page=${targetPage}`);
         const recommendations = [];
         const seenAnimes = new Set();
         
@@ -132,11 +154,13 @@ async function refreshRecommendationsCache() {
         recommendationsCache.lastUpdated = new Date();
         recommendationsCache.isUpdating = false;
         
-        console.log(`✅ Cache refreshed: ${uniqueRecommendations.length} animes loaded from page ${currentPage} at ${recommendationsCache.lastUpdated.toISOString()}`);
+        // Check if this page had content to estimate total pages
+        if (uniqueRecommendations.length > 0) {
+            totalPagesDiscovered = Math.max(totalPagesDiscovered, targetPage);
+        }
         
-        // Rotate to next page for next refresh
-        currentPage = currentPage >= MAX_PAGES ? 1 : currentPage + 1;
-        console.log(`🔄 Next refresh will use page ${currentPage}`);
+        console.log(`✅ Cache refreshed: ${uniqueRecommendations.length} animes loaded from page ${targetPage} at ${recommendationsCache.lastUpdated.toISOString()}`);
+        console.log(`📊 Discovery stats: Total pages found: ${totalPagesDiscovered}, Pages explored: ${exploredPages.size}/${MAX_PAGES_TO_EXPLORE}`);
         
     } catch (error) {
         console.error('❌ Error refreshing cache:', error.message);
@@ -218,9 +242,11 @@ async function getRecommendations(req, res) {
                     nextRefreshIn: recommendationsCache.lastUpdated ? 
                         Math.max(0, Math.round((CACHE_DURATION - (new Date().getTime() - recommendationsCache.lastUpdated.getTime())) / 1000)) : 0,
                     cacheDuration: CACHE_DURATION / 1000,
-                    currentPage: currentPage === 1 ? MAX_PAGES : currentPage - 1, // Show the page that was just loaded
-                    nextPage: currentPage,
-                    totalPages: MAX_PAGES
+                    lastPageLoaded: [...exploredPages].pop() || 1,
+                    pagesExplored: exploredPages.size,
+                    maxPagesToExplore: MAX_PAGES_TO_EXPLORE,
+                    totalPagesDiscovered: totalPagesDiscovered,
+                    explorationProgress: `${exploredPages.size}/${MAX_PAGES_TO_EXPLORE}`
                 }
             }
         });
