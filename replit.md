@@ -10,6 +10,7 @@ API Node.js serverless qui scrape le site anime-sama.fr en temps réel pour four
   - `/api/search` - Search anime by query
   - `/api/recent` - Get recent episodes (fixed duplicate issue)
   - `/api/planning` - Get planning data
+  - `/api/recommendations` - Get anime recommendations from catalogue (animes only, no scans)
   - `/api/anime/:id` - Get anime details
   - `/api/seasons/:animeId` - Get seasons
   - `/api/episodes/:animeId` - Get episodes
@@ -20,6 +21,7 @@ API Node.js serverless qui scrape le site anime-sama.fr en temps réel pour four
 - **2025-08-17**: Migrated from Replit Agent to standard Replit environment
 - **2025-08-17**: Fixed duplicate episodes bug in `/api/recent` endpoint by implementing proper deduplication logic
 - **2025-08-17**: Added double layer deduplication (button-level and episode-level) to prevent duplicate entries
+- **2025-08-17**: Added new `/api/recommendations` endpoint to scrape catalogue page for anime recommendations (filters out scans)
 
 ## User Preferences
 - Language: French preferred for communication

@@ -28,6 +28,7 @@ app.get('/', (req, res) => {
             search: '/api/search?query=naruto',
             recent: '/api/recent',
             planning: '/api/planning',
+            recommendations: '/api/recommendations?page=1&limit=50',
             animeDetails: '/api/anime/:id',
             seasons: '/api/seasons/:animeId',
             episodes: '/api/episodes/:animeId?season=1&language=VOSTFR',
@@ -40,6 +41,7 @@ app.get('/', (req, res) => {
             searchAnime: 'GET /api/search?query=black%20butler',
             getRecent: 'GET /api/recent',
             getPlanning: 'GET /api/planning (jour actuel) ou ?day=all&filter=anime',
+            getRecommendations: 'GET /api/recommendations?page=1&limit=50',
             getAnimeDetails: 'GET /api/anime/black-butler',
             getSeasons: 'GET /api/seasons/black-butler',
             getEpisodes: 'GET /api/episodes/black-butler?season=1&language=VOSTFR',
@@ -54,6 +56,7 @@ app.get('/api/search', require('./api/search.js'));
 app.get('/api/recent', require('./api/recent.js'));
 app.get('/api/planning', require('./api/planning.js'));
 app.get('/api/popular', require('./api/popular.js'));
+app.get('/api/recommendations', require('./api/recommendations.js'));
 app.get('/api/anime/:id', (req, res) => {
     req.query.id = req.params.id;
     require('./api/anime/[id].js')(req, res);
@@ -98,6 +101,7 @@ app.use((req, res) => {
             '/api/search?query=anime_name',
             '/api/recent',
             '/api/planning',
+            '/api/recommendations?page=1&limit=50',
             '/api/anime/:id',
             '/api/seasons/:animeId',
             '/api/episodes/:animeId',
