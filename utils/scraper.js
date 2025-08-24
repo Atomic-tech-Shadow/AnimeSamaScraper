@@ -1091,6 +1091,8 @@ async function getAnimeEpisodes(animeId, season = 1, language = 'VOSTFR') {
         
         const episodes = [];
         
+        let maxEpisodes = 0; // Declare here so it's accessible throughout the try block
+        
         try {
             // Use axios directly to get the JavaScript file (raw text)
             const response = await axios.get(episodesJsUrl, {
@@ -1130,7 +1132,6 @@ async function getAnimeEpisodes(animeId, season = 1, language = 'VOSTFR') {
                 }
                 
                 // Find the maximum number of episodes across all servers
-                let maxEpisodes = 0;
                 servers.forEach(urls => {
                     maxEpisodes = Math.max(maxEpisodes, urls.length);
                 });
@@ -1173,6 +1174,94 @@ async function getAnimeEpisodes(animeId, season = 1, language = 'VOSTFR') {
                         available: streamingSources.length > 0
                     });
                 }
+            }
+            
+            // After successfully parsing episodes.js, also check the HTML page for additional episodes
+            // that might not be reflected in the episodes.js file yet
+            try {
+                const $ = await scrapeAnimesama(seasonUrl);
+                
+                // Look for episode buttons or links that might indicate more episodes than in episodes.js
+                const episodeSelectors = [
+                    'button[onclick*="episode"], a[href*="episode"]',
+                    '.episode, .ep, [class*="episode"], [class*="ep"]',
+                    'select option[value*="episode"]'
+                ];
+                
+                let maxFoundEpisode = maxEpisodes;
+                
+                episodeSelectors.forEach(selector => {
+                    $(selector).each((index, element) => {
+                        const $el = $(element);
+                        const text = $el.text() || $el.attr('onclick') || $el.attr('href') || $el.attr('value') || '';
+                        
+                        // Look for episode numbers in various formats
+                        const episodeMatches = text.match(/(?:épisode|episode|ep\.?)\s*(\d+)/i);
+                        if (episodeMatches) {
+                            const foundEpisode = parseInt(episodeMatches[1]);
+                            if (foundEpisode > maxFoundEpisode) {
+                                maxFoundEpisode = foundEpisode;
+                            }
+                        }
+                    });
+                });
+                
+                // If we found episodes beyond what's in episodes.js, add them
+                if (maxFoundEpisode > maxEpisodes) {
+                    console.log(`Found additional episodes up to ${maxFoundEpisode} for ${animeId} (episodes.js only had ${maxEpisodes})`);
+                    
+                    for (let episodeNum = maxEpisodes + 1; episodeNum <= maxFoundEpisode; episodeNum++) {
+                        episodes.push({
+                            number: episodeNum,
+                            title: `Épisode ${episodeNum}`,
+                            url: `${seasonUrl}episode-${episodeNum}`,
+                            streamingSources: [], // Will be empty for now, but episode exists
+                            language: language.toUpperCase(),
+                            season: parseInt(season),
+                            available: true // Set to true since we found it on the page
+                        });
+                    }
+                }
+            } catch (htmlCheckError) {
+                console.log('Could not check HTML page for additional episodes:', htmlCheckError.message);
+            }
+            
+            // Final check: look at recent episodes to see if there are newer episodes for this anime
+            try {
+                const recentEpisodes = await getRecentEpisodes();
+                
+                const animeRecentEpisodes = recentEpisodes.filter(ep => 
+                    ep.animeId === animeId && 
+                    ep.season === parseInt(season) &&
+                    ep.language.toUpperCase() === language.toUpperCase()
+                );
+                
+                // Find the highest episode number in recent episodes
+                let maxRecentEpisode = 0;
+                animeRecentEpisodes.forEach(ep => {
+                    if (ep.episode > maxRecentEpisode) {
+                        maxRecentEpisode = ep.episode;
+                    }
+                });
+                
+                // If recent episodes show a higher episode number than what we found, add the missing episodes
+                if (maxRecentEpisode > episodes.length) {
+                    console.log(`✅ Found episode ${maxRecentEpisode} in recent releases for ${animeId}, adding missing episodes`);
+                    
+                    for (let episodeNum = episodes.length + 1; episodeNum <= maxRecentEpisode; episodeNum++) {
+                        episodes.push({
+                            number: episodeNum,
+                            title: `Épisode ${episodeNum}`,
+                            url: `${seasonUrl}episode-${episodeNum}`,
+                            streamingSources: [], // Will be populated when the episode page is accessed
+                            language: language.toUpperCase(),
+                            season: parseInt(season),
+                            available: true
+                        });
+                    }
+                }
+            } catch (recentCheckError) {
+                console.log('Could not check recent episodes for additional episodes:', recentCheckError.message);
             }
             
         } catch (jsError) {
@@ -1551,186 +1640,117 @@ async function getRecentEpisodes() {
         const recentEpisodes = [];
         const seenEpisodes = new Set();
         
-        // Extract daily sections: "Sorties du Lundi", "Sorties du Mardi", etc.
-        const dailySections = [
-            'Sorties du Lundi',
-            'Sorties du Mardi', 
-            'Sorties du Mercredi',
-            'Sorties du Jeudi',
-            'Sorties du Vendredi',
-            'Sorties du Samedi',
-            'Sorties du Dimanche'
-        ];
+        // Use the same logic as api/recent.js - extract from bg-cyan-600 buttons
+        const processedButtons = new Set();
         
-        dailySections.forEach((sectionTitle, dayIndex) => {
-            // Find the section header
-            $('h2').each((index, element) => {
-                const $header = $(element);
-                if ($header.text().trim() === sectionTitle) {
-                    
-                    // Get all anime cards in this section until next h2
-                    let $currentElement = $header.next();
-                    while ($currentElement.length && !$currentElement.is('h2')) {
-                        
-                        // Look for anime cards/links in this element and its children
-                        $currentElement.find('a[href*="/catalogue/"]').each((cardIndex, linkElement) => {
-                            const $link = $(linkElement);
-                            const href = $link.attr('href');
-                            
-                            if (!href || !href.includes('/catalogue/')) return;
-                            
-                            // Extract anime information from the link structure
-                            const fullUrl = href.startsWith('http') ? href : `https://anime-sama.fr${href}`;
-                            const urlParts = fullUrl.split('/');
-                            
-                            // Expected structure: /catalogue/anime-name/season/language/
-                            const catalogueIndex = urlParts.findIndex(part => part === 'catalogue');
-                            if (catalogueIndex === -1 || catalogueIndex + 3 >= urlParts.length) return;
-                            
-                            const animeId = urlParts[catalogueIndex + 1];
-                            const seasonPath = urlParts[catalogueIndex + 2]; 
-                            const language = urlParts[catalogueIndex + 3];
-                            
-                            // Extract anime title from the card
-                            let title = $link.find('strong, h3, .title').first().text().trim();
-                            if (!title) {
-                                // Fallback to link text
-                                title = $link.text().replace(/\s+/g, ' ').trim();
-                                // Remove unwanted parts
-                                title = title.replace(/^\s*\*\*|\*\*\s*$/g, '');
-                                title = title.replace(/\s*\*\s*\*\s*\*/g, '');
-                                title = title.split('\n')[0].trim();
-                            }
-                            
-                            // Skip if no valid title
-                            if (!title || title.length < 2) return;
-                            
-                            // Extract release time
-                            let releaseTime = null;
-                            const timeText = $link.text();
-                            const timeMatch = timeText.match(/(\d{1,2}h\d{2})/);
-                            if (timeMatch) {
-                                releaseTime = timeMatch[1];
-                            }
-                            
-                            // Check for postponement indicators
-                            const isPostponed = timeText.includes('Reporté') || timeText.includes('reporté');
-                            
-                            // Extract image
-                            const $img = $link.find('img').first();
-                            let image = $img.attr('src') || $img.attr('data-src');
-                            if (image && !image.startsWith('http')) {
-                                image = `https://anime-sama.fr${image}`;
-                            }
-                            
-                            // Determine content type
-                            let contentType = 'anime';
-                            if (seasonPath && seasonPath.toLowerCase().includes('scan')) {
-                                contentType = 'scan';
-                            } else if (seasonPath && seasonPath.toLowerCase().includes('film')) {
-                                contentType = 'film';
-                            } else if (seasonPath && seasonPath.toLowerCase().includes('oav')) {
-                                contentType = 'oav';
-                            }
-                            
-                            // Create episode identifier to avoid duplicates
-                            const episodeId = `${animeId}-${seasonPath}-${language}`;
-                            if (seenEpisodes.has(episodeId)) return;
-                            seenEpisodes.add(episodeId);
-                            
-                            // Create language metadata
-                            const languageInfo = LANGUAGE_SYSTEM[language.toLowerCase()] || {
-                                code: language.toLowerCase(),
-                                name: language.toUpperCase(),
-                                fullName: `Version ${language.toUpperCase()}`,
-                                flag: 'unknown',
-                                priority: 99
-                            };
-                            
-                            recentEpisodes.push({
-                                animeId: animeId,
-                                title: title,
-                                image: image,
-                                url: fullUrl,
-                                dayOfWeek: sectionTitle,
-                                dayIndex: dayIndex,
-                                releaseTime: releaseTime,
-                                isPostponed: isPostponed,
-                                season: seasonPath,
-                                language: languageInfo,
-                                contentType: contentType,
-                                isNew: true,
-                                extractedAt: new Date().toISOString()
-                            });
-                        });
-                        
-                        $currentElement = $currentElement.next();
-                    }
+        $('button.bg-cyan-600').each((index, element) => {
+            const $button = $(element);
+            const buttonText = $button.text().trim();
+            
+            // Créer un identifiant unique pour ce bouton basé sur le texte et la position
+            const buttonId = `${index}-${buttonText}`;
+            if (processedButtons.has(buttonId)) return;
+            processedButtons.add(buttonId);
+            
+            // Find parent link
+            const $container = $button.closest('a[href*="/catalogue/"]') || 
+                              $button.parent().find('a[href*="/catalogue/"]') ||
+                              $button.siblings('a[href*="/catalogue/"]');
+            
+            const href = $container.attr('href');
+            if (!href || !href.includes('/catalogue/')) return;
+            
+            // Parse button text
+            const isFinale = buttonText.includes('[FIN]');
+            const isVFCrunchyroll = buttonText.includes('VF Crunchyroll');
+            const isVFNetflix = buttonText.includes('VF Netflix');
+            
+            const episodeMatch = buttonText.match(/Episode\s*(\d+)/i);
+            const seasonMatch = buttonText.match(/Saison\s*(\d+)/i);
+            
+            let seasonNumber = seasonMatch ? parseInt(seasonMatch[1]) : 1;
+            let episodeNumber = episodeMatch ? parseInt(episodeMatch[1]) : null;
+            
+            // Extract anime ID from URL
+            const urlParts = href.split('/');
+            const catalogueIndex = urlParts.indexOf('catalogue');
+            const animeId = catalogueIndex >= 0 ? urlParts[catalogueIndex + 1] : null;
+            
+            if (!animeId || !episodeNumber) return;
+            
+            // Detect language from adjacent language buttons or URL path
+            let detectedLanguage = 'VOSTFR'; // default
+            
+            // Check URL path for language hints
+            if (href.includes('/vf/') || href.includes('/vf1/') || href.includes('/vf2/')) {
+                detectedLanguage = 'VF';
+            } else if (href.includes('/vostfr/')) {
+                detectedLanguage = 'VOSTFR';
+            } else if (href.includes('/va/')) {
+                detectedLanguage = 'VA';
+            }
+            
+            // Override with button text detection for specific cases
+            if (isVFCrunchyroll) {
+                detectedLanguage = 'VF';
+            } else if (isVFNetflix) {
+                detectedLanguage = 'VF';
+            }
+            
+            // Look for language buttons in the same container
+            const $languageButtons = $container.find('button.bg-blue-600, button.bg-green-600');
+            $languageButtons.each((i, langBtn) => {
+                const langText = $(langBtn).text().trim();
+                if (langText === 'VF' || langText.includes('VF')) {
+                    detectedLanguage = 'VF';
+                } else if (langText === 'VOSTFR' || langText.includes('VOSTFR')) {
+                    detectedLanguage = 'VOSTFR';
+                } else if (langText === 'VA' || langText.includes('VA')) {
+                    detectedLanguage = 'VA';
                 }
+            });
+            
+            // Create unique identifier to prevent duplicates
+            const uniqueKey = `${animeId}-s${seasonNumber}-e${episodeNumber}-${detectedLanguage}`;
+            if (seenEpisodes.has(uniqueKey)) return;
+            seenEpisodes.add(uniqueKey);
+            
+            // Get anime title
+            let animeTitle = $container.find('strong, h1, h2, h3').first().text().trim();
+            if (!animeTitle) {
+                animeTitle = animeId.replace(/-/g, ' ')
+                                   .split(' ')
+                                   .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                                   .join(' ');
+            }
+            
+            // Clean title
+            animeTitle = animeTitle.replace(/\s+/g, ' ').trim();
+            
+            // Get image
+            const $img = $container.find('img').first();
+            let image = $img.attr('src') || $img.attr('data-src');
+            if (image && !image.startsWith('http')) {
+                image = image.startsWith('//') ? `https:${image}` : `https://anime-sama.fr${image}`;
+            }
+            
+            recentEpisodes.push({
+                animeId: animeId,
+                animeTitle: animeTitle,
+                season: seasonNumber,
+                episode: episodeNumber,
+                language: detectedLanguage,
+                isFinale: isFinale,
+                isVFCrunchyroll: isVFCrunchyroll,
+                url: href.startsWith('http') ? href : `https://anime-sama.fr${href}`,
+                image: image || `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${animeId}.jpg`,
+                badgeInfo: buttonText,
+                addedAt: new Date().toISOString(),
+                type: isFinale ? 'finale' : 'episode'
             });
         });
         
-        // If we have episodes from the daily sections, use them, otherwise fallback to homepage content
-        if (recentEpisodes.length === 0) {
-            $('a[href*="/catalogue/"]').slice(0, 15).each((index, element) => {
-                const $el = $(element);
-                const link = $el.attr('href');
-                
-                if (!link || link.includes('/planning') || link.includes('/aide')) return;
-                
-                const urlParts = link.split('/');
-                const catalogueIndex = urlParts.findIndex(part => part === 'catalogue');
-                if (catalogueIndex === -1 || catalogueIndex + 1 >= urlParts.length) return;
-                
-                let animeId = urlParts[catalogueIndex + 1];
-                if (animeId.endsWith('/')) animeId = animeId.slice(0, -1);
-                
-                const episodeKey = `${animeId}-fallback`;
-                if (!seenEpisodes.has(episodeKey)) {
-                    seenEpisodes.add(episodeKey);
-                    
-                    let title = $el.text().trim().split('\n')[0];
-                    if (!title || title.length < 3) {
-                        title = animeId.replace(/-/g, ' ')
-                                      .split(' ')
-                                      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-                                      .join(' ');
-                    }
-                    
-                    const image = $el.find('img').attr('src') || $el.find('img').attr('data-src');
-                    
-                    recentEpisodes.push({
-                        animeId: animeId,
-                        title: title,
-                        image: image ? (image.startsWith('http') ? image : `https://anime-sama.fr${image}`) : null,
-                        url: link.startsWith('http') ? link : `https://anime-sama.fr${link}`,
-                        dayOfWeek: 'Variable',
-                        dayIndex: 0,
-                        releaseTime: null,
-                        isPostponed: false,
-                        season: 'saison1',
-                        language: LANGUAGE_SYSTEM.vostfr,
-                        contentType: 'anime',
-                        isNew: false,
-                        extractedAt: new Date().toISOString()
-                    });
-                }
-            });
-        }
-        
-        // Sort by day order and then by release time 
-        recentEpisodes.sort((a, b) => {
-            if (a.dayIndex !== b.dayIndex) {
-                return a.dayIndex - b.dayIndex;
-            }
-            // Sort by release time if same day
-            if (a.releaseTime && b.releaseTime) {
-                return a.releaseTime.localeCompare(b.releaseTime);
-            }
-            return 0;
-        });
-        
-        return recentEpisodes.slice(0, 30); // Return top 30 recent episodes with enhanced data
+        return recentEpisodes;
         
     } catch (error) {
         console.error('Error getting recent episodes:', error.message);
