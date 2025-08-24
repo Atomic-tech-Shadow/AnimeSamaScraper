@@ -64,12 +64,12 @@ La licence MIT est parfaite pour un projet open-source comme celui-ci qui vise �
 
 ## 📊 Statistiques du Projet
 
-<img src="https://github-readme-stats.vercel.app/api?username=el_cid&show_icons=true&theme=radical" alt="Stats" />
+<img src="https://github-readme-stats.vercel.app/api?username=Atomic-tech-Shadow &show_icons=true&theme=radical" alt="Stats" />
 
 ### 💻 Langages et Outils
 
 <p align="center">
-<img src="https://github-readme-stats.vercel.app/api/top-langs/?username=el_cid&layout=compact&theme=radical" alt="Top Languages" />
+<img src="https://github-readme-stats.vercel.app/api/top-langs/?username=Atomic-tech-Shadow &layout=compact&theme=radical" alt="Top Languages" />
 </p>
 
 <table align="center">
