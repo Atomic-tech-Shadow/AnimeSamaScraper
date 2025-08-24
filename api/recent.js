@@ -46,6 +46,7 @@ module.exports = async (req, res) => {
             // Parse button text
             const isFinale = buttonText.includes('[FIN]');
             const isVFCrunchyroll = buttonText.includes('VF Crunchyroll');
+            const isVFNetflix = buttonText.includes('VF Netflix');
             
             const episodeMatch = buttonText.match(/Episode\s*(\d+)/i);
             const seasonMatch = buttonText.match(/Saison\s*(\d+)/i);
@@ -60,8 +61,40 @@ module.exports = async (req, res) => {
             
             if (!animeId || !episodeNumber) return;
             
+            // Detect language from adjacent language buttons or URL path
+            let detectedLanguage = 'VOSTFR'; // default
+            
+            // Check URL path for language hints
+            if (href.includes('/vf/') || href.includes('/vf1/') || href.includes('/vf2/')) {
+                detectedLanguage = 'VF';
+            } else if (href.includes('/vostfr/')) {
+                detectedLanguage = 'VOSTFR';
+            } else if (href.includes('/va/')) {
+                detectedLanguage = 'VA';
+            }
+            
+            // Override with button text detection for specific cases
+            if (isVFCrunchyroll) {
+                detectedLanguage = 'VF';
+            } else if (isVFNetflix) {
+                detectedLanguage = 'VF';
+            }
+            
+            // Look for language buttons in the same container
+            const $languageButtons = $container.find('button.bg-blue-600, button.bg-green-600');
+            $languageButtons.each((i, langBtn) => {
+                const langText = $(langBtn).text().trim();
+                if (langText === 'VF' || langText.includes('VF')) {
+                    detectedLanguage = 'VF';
+                } else if (langText === 'VOSTFR' || langText.includes('VOSTFR')) {
+                    detectedLanguage = 'VOSTFR';
+                } else if (langText === 'VA' || langText.includes('VA')) {
+                    detectedLanguage = 'VA';
+                }
+            });
+            
             // Create unique identifier to prevent duplicates
-            const uniqueKey = `${animeId}-s${seasonNumber}-e${episodeNumber}-${isVFCrunchyroll ? 'VF' : 'VOSTFR'}`;
+            const uniqueKey = `${animeId}-s${seasonNumber}-e${episodeNumber}-${detectedLanguage}`;
             if (seenEpisodes.has(uniqueKey)) return;
             seenEpisodes.add(uniqueKey);
             
@@ -89,7 +122,7 @@ module.exports = async (req, res) => {
                 animeTitle: animeTitle,
                 season: seasonNumber,
                 episode: episodeNumber,
-                language: isVFCrunchyroll ? 'VF' : 'VOSTFR',
+                language: detectedLanguage,
                 isFinale: isFinale,
                 isVFCrunchyroll: isVFCrunchyroll,
                 url: href.startsWith('http') ? href : `https://anime-sama.fr${href}`,
