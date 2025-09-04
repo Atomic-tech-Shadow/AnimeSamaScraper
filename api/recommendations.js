@@ -196,7 +196,28 @@ async function getRecommendations(req, res) {
         // If cache is empty or older than CACHE_DURATION, refresh it
         if (recommendationsCache.data.length === 0 || cacheAge > CACHE_DURATION) {
             console.log('🔄 Cache expired or empty, refreshing...');
-            await refreshRecommendationsCache();
+            
+            // If already updating, wait for it to complete
+            if (recommendationsCache.isUpdating) {
+                console.log('⏳ Cache refresh in progress, waiting...');
+                // Wait for the cache to be updated (max 30 seconds)
+                const maxWaitTime = 30000; // 30 seconds
+                const startTime = Date.now();
+                
+                while (recommendationsCache.isUpdating && (Date.now() - startTime) < maxWaitTime) {
+                    await new Promise(resolve => setTimeout(resolve, 100)); // Wait 100ms between checks
+                }
+                
+                // If still updating after max wait time, continue with empty cache
+                if (recommendationsCache.isUpdating) {
+                    console.log('⚠️ Cache refresh took too long, proceeding with current data');
+                } else {
+                    console.log('✅ Cache refresh completed during wait');
+                }
+            } else {
+                // Start the refresh if not already updating
+                await refreshRecommendationsCache();
+            }
         } else {
             console.log(`💾 Using cached data (age: ${Math.round(cacheAge / 1000)}s, next refresh in: ${Math.round((CACHE_DURATION - cacheAge) / 1000)}s)`);
         }
