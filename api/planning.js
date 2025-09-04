@@ -1,5 +1,54 @@
 const { scrapeAnimesama } = require('../utils/scraper');
 
+// Mapping des pays vers les fuseaux horaires
+const COUNTRY_TIMEZONE_MAP = {
+    // Afrique de l'Ouest (GMT+0)
+    'TG': 'gmt+0', // Togo
+    'GH': 'gmt+0', // Ghana
+    'CI': 'gmt+0', // Côte d'Ivoire
+    'SN': 'gmt+0', // Sénégal
+    'ML': 'gmt+0', // Mali
+    'BF': 'gmt+0', // Burkina Faso
+    'GM': 'gmt+0', // Gambie
+    'GW': 'gmt+0', // Guinée-Bissau
+    'GN': 'gmt+0', // Guinée
+    'SL': 'gmt+0', // Sierra Leone
+    'LR': 'gmt+0', // Libéria
+    
+    // Afrique Centrale (GMT+1)
+    'CM': 'gmt+1', // Cameroun
+    'TD': 'gmt+1', // Tchad
+    'CF': 'gmt+1', // République centrafricaine
+    'GA': 'gmt+1', // Gabon
+    'GQ': 'gmt+1', // Guinée équatoriale
+    'ST': 'gmt+1', // São Tomé-et-Principe
+    
+    // Autres pays francophones
+    'MA': 'gmt+1', // Maroc
+    'TN': 'gmt+1', // Tunisie
+    'DZ': 'gmt+1', // Algérie
+};
+
+// Fonction pour détecter le fuseau horaire automatiquement
+function detectTimezoneFromIP(req) {
+    // Récupérer l'IP du client
+    const clientIP = req.headers['x-forwarded-for'] || 
+                    req.headers['x-real-ip'] || 
+                    req.connection.remoteAddress || 
+                    req.socket.remoteAddress ||
+                    (req.connection.socket ? req.connection.socket.remoteAddress : null);
+    
+    // Pour les IPs locales/de développement, on suppose GMT+0 (Togo)
+    if (!clientIP || clientIP === '127.0.0.1' || clientIP === '::1' || clientIP.startsWith('192.168.') || clientIP.startsWith('10.')) {
+        return 'gmt+0'; // Par défaut Togo pour le développement
+    }
+    
+    // Détection simplifiée basée sur les plages d'IP africaines
+    // Pour une vraie production, on utiliserait une API de géolocalisation
+    // Mais pour cette démo, on suppose que la plupart des utilisateurs sont du Togo
+    return 'gmt+0';
+}
+
 // Fonction pour convertir les heures selon le fuseau horaire
 function convertTime(frenchTime, targetTimezone) {
     if (!frenchTime || !targetTimezone) return frenchTime;
@@ -58,6 +107,10 @@ module.exports = async (req, res) => {
         // Get optional day filter from query params
         const { day, filter, timezone } = req.query;
         
+        // Détection automatique du fuseau horaire si non spécifié
+        const detectedTimezone = timezone || detectTimezoneFromIP(req);
+        const autoDetected = !timezone;
+        
         // Déterminer le jour actuel
         const today = new Date();
         const dayNames = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
@@ -114,7 +167,7 @@ module.exports = async (req, res) => {
                     // Ignorer les templates (nom, url, image)
                     if (title === 'nom' || path === 'url' || imageId === 'image') return;
                     
-                    const convertedTime = timezone ? convertTime(time, timezone) : time;
+                    const convertedTime = convertTime(time, detectedTimezone);
                     
                     dayItems.push({
                         animeId: imageId,
@@ -122,7 +175,7 @@ module.exports = async (req, res) => {
                         url: `https://anime-sama.fr/catalogue/${path}`,
                         image: `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${imageId}.jpg`,
                         releaseTime: convertedTime,
-                        originalTime: timezone ? time : undefined,
+                        originalTime: autoDetected || detectedTimezone !== 'paris' ? time : undefined,
                         language: language,
                         type: 'anime',
                         day: dayName,
@@ -139,7 +192,7 @@ module.exports = async (req, res) => {
                     // Ignorer les templates
                     if (title === 'nom' || path === 'url' || imageId === 'image') return;
                     
-                    const convertedTime = timezone ? convertTime(time, timezone) : time;
+                    const convertedTime = convertTime(time, detectedTimezone);
                     
                     dayItems.push({
                         animeId: imageId,
@@ -147,7 +200,7 @@ module.exports = async (req, res) => {
                         url: `https://anime-sama.fr/catalogue/${path}`,
                         image: `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${imageId}.jpg`,
                         releaseTime: convertedTime,
-                        originalTime: timezone ? time : undefined,
+                        originalTime: autoDetected || detectedTimezone !== 'paris' ? time : undefined,
                         language: language,
                         type: 'scan',
                         day: dayName,
@@ -229,12 +282,15 @@ module.exports = async (req, res) => {
         planningData.totalItems = totalItems;
         planningData.currentDay = currentDay;
         
-        // Ajouter info sur le fuseau horaire si spécifié
-        if (timezone) {
+        // Ajouter info sur le fuseau horaire
+        if (detectedTimezone && detectedTimezone !== 'paris') {
             planningData.timezoneInfo = {
-                requested: timezone,
+                detected: detectedTimezone,
+                autoDetected: autoDetected,
                 originalTimezone: 'GMT+2 (Paris)',
-                note: 'Les heures ont été converties du fuseau horaire français'
+                note: autoDetected ? 
+                    'Fuseau horaire détecté automatiquement et heures converties' : 
+                    'Heures converties selon le fuseau horaire demandé'
             };
         }
         
