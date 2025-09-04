@@ -1,5 +1,43 @@
 const { scrapeAnimesama } = require('../utils/scraper');
 
+// Fonction pour convertir les heures selon le fuseau horaire
+function convertTime(frenchTime, targetTimezone) {
+    if (!frenchTime || !targetTimezone) return frenchTime;
+    
+    // Parser l'heure française (format: "15h45" ou "15:45")
+    const timeMatch = frenchTime.match(/(\d{1,2})[h:](\d{2})/);
+    if (!timeMatch) return frenchTime;
+    
+    let hours = parseInt(timeMatch[1]);
+    const minutes = timeMatch[2];
+    
+    // Convertir selon le fuseau horaire cible
+    switch(targetTimezone.toLowerCase()) {
+        case 'gmt':
+        case 'utc':
+        case 'gmt+0':
+        case 'togo':
+            // France (GMT+2 en été, GMT+1 en hiver) vers GMT+0
+            const now = new Date();
+            const isWinter = now.getMonth() < 2 || now.getMonth() > 9; // Approximation hiver/été
+            const offset = isWinter ? -1 : -2; // GMT+1 en hiver, GMT+2 en été
+            hours += offset;
+            break;
+        case 'gmt+1':
+        case 'west-africa':
+            hours -= 1; // GMT+2 vers GMT+1
+            break;
+        default:
+            return frenchTime; // Pas de conversion
+    }
+    
+    // Gérer les heures négatives/supérieures à 24
+    if (hours < 0) hours += 24;
+    if (hours >= 24) hours -= 24;
+    
+    return `${hours.toString().padStart(2, '0')}h${minutes}`;
+}
+
 module.exports = async (req, res) => {
     // Enable CORS
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -18,7 +56,7 @@ module.exports = async (req, res) => {
 
     try {
         // Get optional day filter from query params
-        const { day, filter } = req.query;
+        const { day, filter, timezone } = req.query;
         
         // Déterminer le jour actuel
         const today = new Date();
@@ -76,12 +114,15 @@ module.exports = async (req, res) => {
                     // Ignorer les templates (nom, url, image)
                     if (title === 'nom' || path === 'url' || imageId === 'image') return;
                     
+                    const convertedTime = timezone ? convertTime(time, timezone) : time;
+                    
                     dayItems.push({
                         animeId: imageId,
                         title: title.trim(),
                         url: `https://anime-sama.fr/catalogue/${path}`,
                         image: `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${imageId}.jpg`,
-                        releaseTime: time,
+                        releaseTime: convertedTime,
+                        originalTime: timezone ? time : undefined,
                         language: language,
                         type: 'anime',
                         day: dayName,
@@ -98,12 +139,15 @@ module.exports = async (req, res) => {
                     // Ignorer les templates
                     if (title === 'nom' || path === 'url' || imageId === 'image') return;
                     
+                    const convertedTime = timezone ? convertTime(time, timezone) : time;
+                    
                     dayItems.push({
                         animeId: imageId,
                         title: title.trim(),
                         url: `https://anime-sama.fr/catalogue/${path}`,
                         image: `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${imageId}.jpg`,
-                        releaseTime: time,
+                        releaseTime: convertedTime,
+                        originalTime: timezone ? time : undefined,
                         language: language,
                         type: 'scan',
                         day: dayName,
@@ -184,6 +228,15 @@ module.exports = async (req, res) => {
         const totalItems = Object.values(planningData.days).reduce((sum, day) => sum + day.count, 0);
         planningData.totalItems = totalItems;
         planningData.currentDay = currentDay;
+        
+        // Ajouter info sur le fuseau horaire si spécifié
+        if (timezone) {
+            planningData.timezoneInfo = {
+                requested: timezone,
+                originalTimezone: 'GMT+2 (Paris)',
+                note: 'Les heures ont été converties du fuseau horaire français'
+            };
+        }
         
         res.status(200).json(planningData);
         
