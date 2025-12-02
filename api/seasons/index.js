@@ -27,8 +27,15 @@ module.exports = async (req, res) => {
             });
         }
 
-        // Get episodes for specific season
-        const episodes = await getAnimeEpisodes(animeId.trim(), season, language);
+        const SCRAPE_TIMEOUT = 45000; // 45 seconds for Playwright scraping
+        
+        // Get episodes for specific season with timeout
+        const episodes = await Promise.race([
+            getAnimeEpisodes(animeId.trim(), season, language),
+            new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Season episodes request timeout')), SCRAPE_TIMEOUT)
+            )
+        ]);
 
         // Return episodes with server info
         res.status(200).json({

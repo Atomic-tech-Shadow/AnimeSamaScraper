@@ -18,8 +18,15 @@ module.exports = async (req, res) => {
     }
 
     try {
-        // Scraper la page d'accueil pour extraire les sections Classiques et Pépites
-        const $ = await scrapeAnimesama('https://anime-sama.org/');
+        const SCRAPE_TIMEOUT = 60000; // 60 seconds for popular page
+        
+        // Scraper la page d'accueil pour extraire les sections Classiques et Pépites avec timeout
+        const $ = await Promise.race([
+            scrapeAnimesama('https://anime-sama.org/'),
+            new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Popular page scraping timeout')), SCRAPE_TIMEOUT)
+            )
+        ]);
         
         const popularAnime = {
             classiques: [],

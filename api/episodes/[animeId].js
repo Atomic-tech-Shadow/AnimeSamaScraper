@@ -36,6 +36,8 @@ module.exports = async (req, res) => {
         let episodes;
         let contentType;
         
+        const SCRAPE_TIMEOUT = 45000; // 45 seconds for Playwright scraping
+        
         if (isScanRequest) {
             // For scans, try to get the correct language from seasons data first
             let scanLanguage = language;
@@ -59,7 +61,7 @@ module.exports = async (req, res) => {
             episodes = await Promise.race([
                 getMangaChapters(animeId.trim(), season, scanLanguage),
                 new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error('Manga chapters request timeout')), 8000)
+                    setTimeout(() => reject(new Error('Manga chapters request timeout')), SCRAPE_TIMEOUT)
                 )
             ]);
             contentType = 'manga';
@@ -68,14 +70,15 @@ module.exports = async (req, res) => {
             episodes = await Promise.race([
                 getAnimeEpisodes(animeId.trim(), season, language),
                 new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error('Episodes request timeout')), 8000)
+                    setTimeout(() => reject(new Error('Episodes request timeout')), SCRAPE_TIMEOUT)
                 )
             ]);
             contentType = 'anime';
         }
 
         // Return episodes/chapters
-        res.status(200).json({
+        console.log(`📤 Sending ${episodes.length} episodes for ${animeId} S${season}`);
+        const response = {
             success: true,
             animeId: animeId.trim(),
             season: season,
@@ -83,7 +86,10 @@ module.exports = async (req, res) => {
             contentType: contentType,
             count: episodes.length,
             episodes: episodes
-        });
+        };
+        console.log(`📤 Response prepared, sending now...`);
+        res.status(200).json(response);
+        console.log(`✅ Response sent successfully`);
 
     } catch (error) {
         console.error('Episodes API error:', error);
