@@ -1,86 +1,45 @@
 const { scrapeAnimesama } = require('../utils/scraper');
 
-// Mapping des pays vers les fuseaux horaires
-const COUNTRY_TIMEZONE_MAP = {
-    // Afrique de l'Ouest (GMT+0)
-    'TG': 'gmt+0', // Togo
-    'GH': 'gmt+0', // Ghana
-    'CI': 'gmt+0', // Côte d'Ivoire
-    'SN': 'gmt+0', // Sénégal
-    'ML': 'gmt+0', // Mali
-    'BF': 'gmt+0', // Burkina Faso
-    'GM': 'gmt+0', // Gambie
-    'GW': 'gmt+0', // Guinée-Bissau
-    'GN': 'gmt+0', // Guinée
-    'SL': 'gmt+0', // Sierra Leone
-    'LR': 'gmt+0', // Libéria
-    
-    // Afrique Centrale (GMT+1)
-    'CM': 'gmt+1', // Cameroun
-    'TD': 'gmt+1', // Tchad
-    'CF': 'gmt+1', // République centrafricaine
-    'GA': 'gmt+1', // Gabon
-    'GQ': 'gmt+1', // Guinée équatoriale
-    'ST': 'gmt+1', // São Tomé-et-Principe
-    
-    // Autres pays francophones
-    'MA': 'gmt+1', // Maroc
-    'TN': 'gmt+1', // Tunisie
-    'DZ': 'gmt+1', // Algérie
-};
-
-// Fonction pour détecter le fuseau horaire automatiquement
 function detectTimezoneFromIP(req) {
-    // Récupérer l'IP du client
     const clientIP = req.headers['x-forwarded-for'] || 
                     req.headers['x-real-ip'] || 
-                    req.connection.remoteAddress || 
-                    req.socket.remoteAddress ||
-                    (req.connection.socket ? req.connection.socket.remoteAddress : null);
+                    req.connection?.remoteAddress || 
+                    req.socket?.remoteAddress;
     
-    // Pour les IPs locales/de développement, on suppose GMT+0 (Togo)
-    if (!clientIP || clientIP === '127.0.0.1' || clientIP === '::1' || clientIP.startsWith('192.168.') || clientIP.startsWith('10.')) {
-        return 'gmt+0'; // Par défaut Togo pour le développement
+    if (!clientIP || clientIP === '127.0.0.1' || clientIP === '::1' || 
+        clientIP.startsWith('192.168.') || clientIP.startsWith('10.')) {
+        return 'gmt+0';
     }
-    
-    // Détection simplifiée basée sur les plages d'IP africaines
-    // Pour une vraie production, on utiliserait une API de géolocalisation
-    // Mais pour cette démo, on suppose que la plupart des utilisateurs sont du Togo
     return 'gmt+0';
 }
 
-// Fonction pour convertir les heures selon le fuseau horaire
 function convertTime(frenchTime, targetTimezone) {
-    if (!frenchTime || !targetTimezone) return frenchTime;
+    if (!frenchTime || !targetTimezone || frenchTime === '?') return frenchTime;
     
-    // Parser l'heure française (format: "15h45" ou "15:45")
     const timeMatch = frenchTime.match(/(\d{1,2})[h:](\d{2})/);
     if (!timeMatch) return frenchTime;
     
     let hours = parseInt(timeMatch[1]);
     const minutes = timeMatch[2];
     
-    // Convertir selon le fuseau horaire cible
     switch(targetTimezone.toLowerCase()) {
         case 'gmt':
         case 'utc':
         case 'gmt+0':
         case 'togo':
-            // France (GMT+2 en été, GMT+1 en hiver) vers GMT+0
             const now = new Date();
-            const isWinter = now.getMonth() < 2 || now.getMonth() > 9; // Approximation hiver/été
-            const offset = isWinter ? -1 : -2; // GMT+1 en hiver, GMT+2 en été
+            const isWinter = now.getMonth() < 2 || now.getMonth() > 9;
+            const offset = isWinter ? -1 : -2;
             hours += offset;
             break;
         case 'gmt+1':
         case 'west-africa':
-            hours -= 1; // GMT+2 vers GMT+1
+            hours -= 1;
             break;
         default:
-            return frenchTime; // Pas de conversion
+            return frenchTime;
     }
     
-    // Gérer les heures négatives/supérieures à 24
     if (hours < 0) hours += 24;
     if (hours >= 24) hours -= 24;
     
@@ -88,36 +47,31 @@ function convertTime(frenchTime, targetTimezone) {
 }
 
 module.exports = async (req, res) => {
-    // Enable CORS
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-    // Handle preflight requests
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
     }
 
-    // Only allow GET requests
     if (req.method !== 'GET') {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
     try {
-        // Get optional day filter from query params
         const { day, filter, timezone } = req.query;
         
-        // Détection automatique du fuseau horaire si non spécifié
         const detectedTimezone = timezone || detectTimezoneFromIP(req);
         const autoDetected = !timezone;
         
-        // Déterminer le jour actuel
         const today = new Date();
         const dayNames = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
         const currentDay = dayNames[today.getDay()];
         
-        // Scraper la page planning dédiée
         const $ = await scrapeAnimesama('https://anime-sama.org/planning');
+        
+        console.log('🔍 Extraction du planning depuis anime-sama.org/planning...');
         
         const planningData = {
             success: true,
@@ -125,111 +79,144 @@ module.exports = async (req, res) => {
             days: {}
         };
         
-        // Jours de la semaine en français
-        const daysOfWeek = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+        const daysOfWeek = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
+        const daysFrench = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
         
-        // Extraire les appels cartePlanningAnime depuis le JavaScript
-        const pageHtml = $.html();
-        const planningMatches = pageHtml.match(/cartePlanningAnime\([^)]+\)/g);
-        const scanMatches = pageHtml.match(/cartePlanningScan\([^)]+\)/g);
-        
-        // Mapper les indices de scripts aux jours (basé sur l'ordre observé)
-        const scriptToDayMap = {
-            8: 'lundi',      // Script 8 = Lundi
-            9: 'mardi',      // Script 9 = Mardi  
-            10: 'mercredi',  // Script 10 = Mercredi
-            11: 'jeudi',     // Script 11 = Jeudi
-            12: 'vendredi',  // Script 12 = Vendredi
-            13: 'samedi',    // Script 13 = Samedi
-            14: 'dimanche'   // Script 14 = Dimanche
-        };
-        
-        // Parser les appels cartePlanningAnime par script/jour
-        $('script').each((scriptIndex, script) => {
-            const content = $(script).html();
-            if (!content || !content.includes('cartePlanningAnime')) return;
-            
-            const dayKey = scriptToDayMap[scriptIndex];
-            if (!dayKey) return;
-            
-            const dayName = daysOfWeek.find(d => d.toLowerCase() === dayKey);
-            if (!dayName) return;
-            
-            const dayItems = [];
-            const lines = content.split('\n');
-            
-            lines.forEach(line => {
-                // Parser cartePlanningAnime
-                const animeMatch = line.match(/cartePlanningAnime\("([^"]+)",\s*"([^"]+)",\s*"([^"]+)",\s*"([^"]+)",\s*"([^"]*)",\s*"([^"]+)"\)/);
-                if (animeMatch) {
-                    const [, title, path, imageId, time, status, language] = animeMatch;
-                    
-                    // Ignorer les templates (nom, url, image)
-                    if (title === 'nom' || path === 'url' || imageId === 'image') return;
-                    
-                    const convertedTime = convertTime(time, detectedTimezone);
-                    
-                    dayItems.push({
-                        animeId: imageId,
-                        title: title.trim(),
-                        url: `https://anime-sama.org/catalogue/${path}`,
-                        image: `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${imageId}.jpg`,
-                        releaseTime: convertedTime,
-                        originalTime: autoDetected || detectedTimezone !== 'paris' ? time : undefined,
-                        language: language,
-                        type: 'anime',
-                        day: dayName,
-                        isReported: status.includes('Retardé') || status.includes('Reporté'),
-                        status: status || 'scheduled'
-                    });
-                }
-                
-                // Parser cartePlanningScan
-                const scanMatch = line.match(/cartePlanningScan\("([^"]+)",\s*"([^"]+)",\s*"([^"]+)",\s*"([^"]+)",\s*"([^"]*)",\s*"([^"]+)"\)/);
-                if (scanMatch) {
-                    const [, title, path, imageId, time, status, language] = scanMatch;
-                    
-                    // Ignorer les templates
-                    if (title === 'nom' || path === 'url' || imageId === 'image') return;
-                    
-                    const convertedTime = convertTime(time, detectedTimezone);
-                    
-                    dayItems.push({
-                        animeId: imageId,
-                        title: title.trim(),
-                        url: `https://anime-sama.org/catalogue/${path}`,
-                        image: `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${imageId}.jpg`,
-                        releaseTime: convertedTime,
-                        originalTime: autoDetected || detectedTimezone !== 'paris' ? time : undefined,
-                        language: language,
-                        type: 'scan',
-                        day: dayName,
-                        isReported: status.includes('Retardé') || status.includes('Reporté'),
-                        status: status || 'scheduled'
-                    });
-                }
-            });
-            
+        daysOfWeek.forEach((dayKey, index) => {
             planningData.days[dayKey] = {
-                day: dayName,
-                count: dayItems.length,
-                items: dayItems
+                day: daysFrench[index],
+                count: 0,
+                items: []
             };
         });
         
-        // Initialiser les jours vides
-        daysOfWeek.forEach(dayName => {
-            const dayKey = dayName.toLowerCase();
-            if (!planningData.days[dayKey]) {
-                planningData.days[dayKey] = {
-                    day: dayName,
-                    count: 0,
-                    items: []
-                };
+        const pageHtml = $.html();
+        const dayPositions = [];
+        
+        daysOfWeek.forEach(dayKey => {
+            const dayFrench = daysFrench[daysOfWeek.indexOf(dayKey)];
+            const regex = new RegExp(`##\\s*${dayFrench}|<h2[^>]*>\\s*${dayFrench}|>\\s*${dayFrench}\\s*<\\/`, 'gi');
+            let match;
+            while ((match = regex.exec(pageHtml)) !== null) {
+                dayPositions.push({ day: dayKey, position: match.index });
             }
         });
         
-        // Si un jour spécifique est demandé
+        dayPositions.sort((a, b) => a.position - b.position);
+        console.log('📅 Jours détectés:', dayPositions.map(d => d.day).join(', '));
+        
+        function getDayForPosition(pos) {
+            let currentDay = 'dimanche';
+            for (const dp of dayPositions) {
+                if (dp.position > pos) break;
+                currentDay = dp.day;
+            }
+            return currentDay;
+        }
+        
+        $('a[href*="/catalogue/"]').each((index, element) => {
+            const $link = $(element);
+            const href = $link.attr('href');
+            
+            if (!href || !href.includes('/catalogue/')) return;
+            
+            const hasSeasonOrScan = href.includes('/saison') || href.includes('/scan');
+            if (!hasSeasonOrScan) return;
+            
+            const cardText = $link.text().trim();
+            
+            const urlParts = href.split('/');
+            const catalogueIndex = urlParts.indexOf('catalogue');
+            if (catalogueIndex === -1) return;
+            
+            const animeId = urlParts[catalogueIndex + 1];
+            if (!animeId || animeId === '') return;
+            
+            let language = 'VOSTFR';
+            const $flag = $link.find('img[src*="flag_"]');
+            if ($flag.length) {
+                const flagSrc = $flag.attr('src') || '';
+                if (flagSrc.includes('flag_fr')) language = 'VF';
+                else if (flagSrc.includes('flag_jp')) language = 'VOSTFR';
+                else if (flagSrc.includes('flag_cn')) language = 'VCN';
+                else if (flagSrc.includes('flag_kr')) language = 'VKR';
+            }
+            if (href.includes('/vf/') || href.includes('/vf1/')) language = 'VF';
+            else if (href.includes('/vj/')) language = 'VJ';
+            
+            let contentType = 'anime';
+            if (href.includes('/scan/') || cardText.toLowerCase().includes('scans')) {
+                contentType = 'scan';
+            }
+            
+            const timeMatch = cardText.match(/(\d{1,2}h\d{2})/);
+            const releaseTime = timeMatch ? timeMatch[1] : '?';
+            
+            let title = '';
+            const $strong = $link.find('strong').first();
+            if ($strong.length) {
+                title = $strong.text().trim();
+            }
+            if (!title) {
+                title = animeId.replace(/-/g, ' ')
+                    .split(' ')
+                    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                    .join(' ');
+            }
+            
+            const seasonMatch = cardText.match(/Saison\s*(\d+)/i);
+            const seasonNumber = seasonMatch ? parseInt(seasonMatch[1]) : 1;
+            
+            let image = `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${animeId}.jpg`;
+            const $img = $link.find('img[src*="/contenu/"]').first();
+            if ($img.length) {
+                image = $img.attr('src');
+            }
+            
+            const isReported = cardText.toLowerCase().includes('reporté') || cardText.toLowerCase().includes('retardé');
+            
+            const elementHtml = $.html(element);
+            const elementPosition = pageHtml.indexOf(elementHtml);
+            let daySection = getDayForPosition(elementPosition);
+            
+            const convertedTime = convertTime(releaseTime, detectedTimezone);
+            
+            const item = {
+                animeId: animeId,
+                title: title,
+                url: href.startsWith('http') ? href : `https://anime-sama.org${href}`,
+                image: image,
+                releaseTime: convertedTime,
+                originalTime: autoDetected && releaseTime !== '?' ? releaseTime : undefined,
+                language: language,
+                type: contentType,
+                season: seasonNumber,
+                isReported: isReported,
+                status: isReported ? 'reporté' : 'scheduled'
+            };
+            
+            if (planningData.days[daySection]) {
+                const exists = planningData.days[daySection].items.some(
+                    existing => existing.animeId === animeId && existing.language === language
+                );
+                if (!exists) {
+                    planningData.days[daySection].items.push(item);
+                    planningData.days[daySection].count++;
+                }
+            }
+        });
+        
+        Object.keys(planningData.days).forEach(dayKey => {
+            planningData.days[dayKey].items.sort((a, b) => {
+                if (a.releaseTime === '?' && b.releaseTime !== '?') return 1;
+                if (a.releaseTime !== '?' && b.releaseTime === '?') return -1;
+                return a.releaseTime.localeCompare(b.releaseTime);
+            });
+        });
+        
+        const totalItems = Object.values(planningData.days).reduce((sum, day) => sum + day.count, 0);
+        console.log(`✅ Planning extrait: ${totalItems} items au total`);
+        
         if (day && day.toLowerCase() !== 'all' && planningData.days[day.toLowerCase()]) {
             return res.status(200).json({
                 success: true,
@@ -239,7 +226,6 @@ module.exports = async (req, res) => {
             });
         }
         
-        // Par défaut, retourner seulement le jour actuel (sauf si day=all)
         if (!day || day.toLowerCase() !== 'all') {
             const todayData = planningData.days[currentDay];
             if (todayData) {
@@ -252,7 +238,6 @@ module.exports = async (req, res) => {
             }
         }
         
-        // Filtrer par type si demandé
         if (filter) {
             Object.keys(planningData.days).forEach(dayKey => {
                 planningData.days[dayKey].items = planningData.days[dayKey].items.filter(item => {
@@ -276,13 +261,9 @@ module.exports = async (req, res) => {
             });
         }
         
-        // Si on arrive ici, c'est que day=all ou le jour actuel n'existe pas
-        // Calculer les totaux
-        const totalItems = Object.values(planningData.days).reduce((sum, day) => sum + day.count, 0);
-        planningData.totalItems = totalItems;
+        planningData.totalItems = Object.values(planningData.days).reduce((sum, day) => sum + day.count, 0);
         planningData.currentDay = currentDay;
         
-        // Ajouter info sur le fuseau horaire
         if (detectedTimezone && detectedTimezone !== 'paris') {
             planningData.timezoneInfo = {
                 detected: detectedTimezone,
