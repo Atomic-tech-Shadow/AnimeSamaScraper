@@ -37,8 +37,10 @@ module.exports = async (req, res) => {
             const animeId = urlParts[catalogueIndex + 1];
             if (!animeId || animeId === '') return;
             
-            const hasSeasonInfo = href.includes('/saison') || href.includes('/scan');
+            const hasSeasonInfo = href.includes('/saison');
             if (!hasSeasonInfo) return;
+            
+            if (href.includes('/scan')) return;
             
             let language = 'VOSTFR';
             if (href.includes('/vf/') || href.includes('/vf1/') || href.includes('/vf2/')) {
@@ -57,10 +59,11 @@ module.exports = async (req, res) => {
                 else if (flagSrc.includes('flag_cn')) language = 'VCN';
             }
             
-            let contentType = 'anime';
-            if (href.includes('/scan/') || cardText.toLowerCase().includes('scans')) {
-                contentType = 'scan';
+            if (cardText.toLowerCase().includes('scans') || cardText.toLowerCase().includes('scan')) {
+                return;
             }
+            
+            const contentType = 'anime';
             
             const seasonMatch = href.match(/saison(\d+)/i);
             const seasonNumber = seasonMatch ? parseInt(seasonMatch[1]) : 1;
