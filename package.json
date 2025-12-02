@@ -13,7 +13,8 @@
     "axios": "^1.11.0",
     "cheerio": "^1.1.2",
     "cors": "^2.8.5",
-    "express": "^4.21.2"
+    "express": "^4.21.2",
+    "playwright": "^1.57.0"
   },
   "description": "Une API Node.js serverless qui scrape le site anime-sama.fr en temps réel pour fournir des données d'anime via des endpoints JSON. Compatible avec Vercel et prêt pour le déploiement."
 }

@@ -1,6 +1,7 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
 const { cleanTitleWithFallback } = require('./title-cleaner');
+const { scrapeWithPlaywright, scrapeWithRetry } = require('./playwright-scraper');
 
 // User-Agent rotation for anti-bot protection
 const USER_AGENTS = [
@@ -11,7 +12,7 @@ const USER_AGENTS = [
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:89.0) Gecko/20100101 Firefox/89.0'
 ];
 
-// Enhanced language system mapping based on anime-sama.fr structure
+// Enhanced language system mapping based on anime-sama.org structure
 const LANGUAGE_SYSTEM = {
     'vostfr': { 
         code: 'vostfr', 
@@ -78,7 +79,7 @@ const LANGUAGE_SYSTEM = {
     }
 };
 
-// Server name mapping based on anime-sama.fr streaming sources
+// Server name mapping based on anime-sama.org streaming sources
 const SERVER_MAPPING = {
     'sibnet.ru': 'Sibnet',
     'sendvid.com': 'SendVid', 
@@ -109,10 +110,10 @@ function randomDelay(min = 100, max = 300) {
 // Main scraping function
 async function scrapeAnimesama(url, options = {}) {
     try {
-        await randomDelay(); // Random delay before request
+        await randomDelay();
         
         const response = await axios.get(url, {
-            timeout: 5000, // 5 second timeout for better performance
+            timeout: 5000,
             headers: {
                 'User-Agent': getRandomUserAgent(),
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
@@ -126,18 +127,52 @@ async function scrapeAnimesama(url, options = {}) {
 
         return cheerio.load(response.data);
     } catch (error) {
+        if (error.response && error.response.status === 403) {
+            console.log('🔄 Cloudflare detected, switching to Playwright...');
+            try {
+                const result = await scrapeWithRetry(url, { 
+                    waitFor: 'networkidle',
+                    timeout: 30000 
+                });
+                if (result.success && result.html) {
+                    console.log('✅ Playwright bypass successful!');
+                    return cheerio.load(result.html);
+                }
+            } catch (playwrightError) {
+                console.error('❌ Playwright fallback failed:', playwrightError.message);
+            }
+        }
         console.error('Scraping error:', error.message);
         throw new Error(`Failed to scrape ${url}: ${error.message}`);
     }
 }
 
-// Search anime by query using the real search API from anime-sama.fr
+async function scrapeWithPlaywrightDirect(url, options = {}) {
+    try {
+        console.log('🚀 Using Playwright directly for:', url);
+        const result = await scrapeWithRetry(url, {
+            waitFor: options.waitFor || 'networkidle',
+            timeout: options.timeout || 30000,
+            waitForSelector: options.waitForSelector
+        });
+        
+        if (result.success && result.html) {
+            return cheerio.load(result.html);
+        }
+        throw new Error('Failed to get page content');
+    } catch (error) {
+        console.error('Playwright scraping error:', error.message);
+        throw new Error(`Failed to scrape ${url} with Playwright: ${error.message}`);
+    }
+}
+
+// Search anime by query using the real search API from anime-sama.org
 async function searchAnime(query) {
     try {
         await randomDelay(); // Anti-bot delay
         
         // Use the real search API endpoint that the website uses
-        const response = await axios.post('https://anime-sama.fr/template-php/defaut/fetch.php', 
+        const response = await axios.post('https://anime-sama.org/template-php/defaut/fetch.php', 
             `query=${encodeURIComponent(query)}`,
             {
                 timeout: 8000,
@@ -149,8 +184,8 @@ async function searchAnime(query) {
                     'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
                     'X-Requested-With': 'XMLHttpRequest',
                     'Connection': 'keep-alive',
-                    'Referer': 'https://anime-sama.fr/',
-                    'Origin': 'https://anime-sama.fr'
+                    'Referer': 'https://anime-sama.org/',
+                    'Origin': 'https://anime-sama.org'
                 }
             }
         );
@@ -168,7 +203,7 @@ async function searchAnime(query) {
             if (!link || !link.includes('/catalogue/')) return;
             
             // Ensure full URL
-            const fullUrl = link.startsWith('http') ? link : `https://anime-sama.fr${link}`;
+            const fullUrl = link.startsWith('http') ? link : `https://anime-sama.org${link}`;
             
             // Extract anime ID from URL
             const urlParts = fullUrl.split('/');
@@ -216,7 +251,7 @@ async function searchAnime(query) {
                 results.push({
                     id: animeId,
                     title: title,
-                    image: image ? (image.startsWith('http') ? image : `https://anime-sama.fr${image}`) : null,
+                    image: image ? (image.startsWith('http') ? image : `https://anime-sama.org${image}`) : null,
                     url: fullUrl
                 });
             }
@@ -239,7 +274,7 @@ async function searchAnime(query) {
 
 // Fallback search function using homepage content
 async function fallbackHomepageSearch(query) {
-    const $ = await scrapeAnimesama('https://anime-sama.fr');
+    const $ = await scrapeAnimesama('https://anime-sama.org');
     const results = [];
     const queryLower = query.toLowerCase();
     const seenTitles = new Set();
@@ -250,7 +285,7 @@ async function fallbackHomepageSearch(query) {
         const link = $el.attr('href');
         
         // Skip general catalogue links
-        if (!link || link === 'https://anime-sama.fr/catalogue' || link.split('/').length < 5) return;
+        if (!link || link === 'https://anime-sama.org/catalogue' || link.split('/').length < 5) return;
         
         // Extract anime ID from URL
         const urlParts = link.split('/');
@@ -304,8 +339,8 @@ async function fallbackHomepageSearch(query) {
             results.push({
                 id: animeId,
                 title: title,
-                image: image ? (image.startsWith('http') ? image : `https://anime-sama.fr${image}`) : null,
-                url: `https://anime-sama.fr/catalogue/${animeId}`
+                image: image ? (image.startsWith('http') ? image : `https://anime-sama.org${image}`) : null,
+                url: `https://anime-sama.org/catalogue/${animeId}`
             });
         }
     });
@@ -316,7 +351,7 @@ async function fallbackHomepageSearch(query) {
 // Get trending anime with 100% AUTHENTIC data from homepage daily release sections
 async function getTrendingAnime() {
     try {
-        const $ = await scrapeAnimesama('https://anime-sama.fr');
+        const $ = await scrapeAnimesama('https://anime-sama.org');
         
         const trending = [];
         const seenAnimes = new Set();
@@ -337,7 +372,7 @@ async function getTrendingAnime() {
             const href = $animeLink.attr('href');
             if (!href || !href.includes('/catalogue/')) return;
             
-            const fullUrl = href.startsWith('http') ? href : `https://anime-sama.fr${href}`;
+            const fullUrl = href.startsWith('http') ? href : `https://anime-sama.org${href}`;
             const urlParts = fullUrl.split('/');
             const catalogueIndex = urlParts.findIndex(part => part === 'catalogue');
             
@@ -437,8 +472,8 @@ async function getTrendingAnime() {
                     trending.push({
                         id: animeId,
                         title: cleanedTitle,
-                        image: `https://anime-sama.fr/s2/img/animes/${animeId}.jpg`,
-                        url: `https://anime-sama.fr/catalogue/${animeId}`,
+                        image: `https://anime-sama.org/s2/img/animes/${animeId}.jpg`,
+                        url: `https://anime-sama.org/catalogue/${animeId}`,
                         contentType: 'anime',
                         language: languageInfo,
                         releaseTime: time,
@@ -488,8 +523,8 @@ async function getTrendingAnime() {
                 trending.push({
                     id: animeId,
                     title: title,
-                    image: image ? (image.startsWith('http') ? image : `https://anime-sama.fr${image}`) : null,
-                    url: `https://anime-sama.fr/catalogue/${animeId}`,
+                    image: image ? (image.startsWith('http') ? image : `https://anime-sama.org${image}`) : null,
+                    url: `https://anime-sama.org/catalogue/${animeId}`,
                     contentType: 'anime',
                     language: LANGUAGE_SYSTEM.vostfr,
                     releaseDay: null,
@@ -522,7 +557,7 @@ async function getTrendingAnime() {
 // Get anime details by ID
 async function getAnimeDetails(animeId) {
     try {
-        const url = `https://anime-sama.fr/catalogue/${animeId}/`;
+        const url = `https://anime-sama.org/catalogue/${animeId}/`;
         const $ = await scrapeAnimesama(url);
         
         // Check if we got a valid page
@@ -653,7 +688,7 @@ async function getAnimeDetails(animeId) {
             title: title,
             alternativeTitles: alternativeTitles || null,
             synopsis: synopsis,
-            image: image ? (image.startsWith('http') ? image : `https://anime-sama.fr${image}`) : null,
+            image: image ? (image.startsWith('http') ? image : `https://anime-sama.org${image}`) : null,
             genres: genres.length > 0 ? genres : ['Anime'],
             status: status,
             progressInfo: progressInfo || null,
@@ -723,7 +758,7 @@ async function getSeasonLanguages(animeId, seasonValue) {
     // Use Promise.allSettled for parallel requests instead of sequential
     const languageChecks = possibleLanguages.map(async (lang) => {
         try {
-            const episodesUrl = `https://anime-sama.fr/catalogue/${animeId}/${seasonValue}/${lang}/episodes.js`;
+            const episodesUrl = `https://anime-sama.org/catalogue/${animeId}/${seasonValue}/${lang}/episodes.js`;
             const response = await axios.get(episodesUrl, {
                 timeout: 2000, // Reduced timeout
                 headers: { 'User-Agent': getRandomUserAgent() },
@@ -760,7 +795,7 @@ async function getSeasonLanguages(animeId, seasonValue) {
 async function getAnimeSeasons(animeId) {
     try {
         // Scrape the anime's main page to get real seasons data
-        const $ = await scrapeAnimesama(`https://anime-sama.fr/catalogue/${animeId}/`);
+        const $ = await scrapeAnimesama(`https://anime-sama.org/catalogue/${animeId}/`);
         
         const seasons = [];
         const fullHtml = $.html();
@@ -865,7 +900,7 @@ async function getAnimeSeasons(animeId) {
                         value: seasonValue, // saison1, film, etc.
                         type: seasonType,
                         url: seasonUrl,
-                        fullUrl: `https://anime-sama.fr/catalogue/${animeId}/${seasonUrl}`,
+                        fullUrl: `https://anime-sama.org/catalogue/${animeId}/${seasonUrl}`,
                         languages: languages,
                         available: true,
                         contentType: 'anime'
@@ -922,7 +957,7 @@ async function getAnimeSeasons(animeId) {
                             value: scanValue, // scan, light-novel, etc.
                             type: scanType,
                             url: scanUrl,
-                            fullUrl: `https://anime-sama.fr/catalogue/${animeId}/${scanUrl}`,
+                            fullUrl: `https://anime-sama.org/catalogue/${animeId}/${scanUrl}`,
                             languages: languages,
                             available: true,
                             contentType: 'manga'
@@ -945,7 +980,7 @@ async function getAnimeSeasons(animeId) {
             
             // Check for various content types that might be missed
             if (href.includes('/scan/') || text.includes('scan')) {
-                const scanUrl = href.replace(`https://anime-sama.fr/catalogue/${animeId}/`, '');
+                const scanUrl = href.replace(`https://anime-sama.org/catalogue/${animeId}/`, '');
                 if (!seasons.find(s => s.url === scanUrl)) {
                     seasons.push({
                         number: 2100 + index,
@@ -960,7 +995,7 @@ async function getAnimeSeasons(animeId) {
                     });
                 }
             } else if (href.includes('/oav/') || text.includes('oav') || text.includes('ova')) {
-                const oavUrl = href.replace(`https://anime-sama.fr/catalogue/${animeId}/`, '');
+                const oavUrl = href.replace(`https://anime-sama.org/catalogue/${animeId}/`, '');
                 if (!seasons.find(s => s.url === oavUrl)) {
                     seasons.push({
                         number: 990 + index,
@@ -975,7 +1010,7 @@ async function getAnimeSeasons(animeId) {
                     });
                 }
             } else if (href.includes('/special/') || text.includes('spécial') || text.includes('special')) {
-                const specialUrl = href.replace(`https://anime-sama.fr/catalogue/${animeId}/`, '');
+                const specialUrl = href.replace(`https://anime-sama.org/catalogue/${animeId}/`, '');
                 if (!seasons.find(s => s.url === specialUrl)) {
                     seasons.push({
                         number: 980 + index,
@@ -1055,7 +1090,7 @@ async function getAnimeEpisodes(animeId, season = 1, language = 'VOSTFR') {
         
         const languageTests = languagesToTest.map(async (testLang) => {
             try {
-                const testUrl = `https://anime-sama.fr/catalogue/${animeId}/${seasonPath}/${testLang}/episodes.js`;
+                const testUrl = `https://anime-sama.org/catalogue/${animeId}/${seasonPath}/${testLang}/episodes.js`;
                 const testResponse = await axios.get(testUrl, {
                     timeout: 1500,
                     headers: { 'User-Agent': getRandomUserAgent() },
@@ -1084,7 +1119,7 @@ async function getAnimeEpisodes(animeId, season = 1, language = 'VOSTFR') {
             }
         }
         
-        const seasonUrl = `https://anime-sama.fr/catalogue/${animeId}/${seasonPath}/${languageCode}/`;
+        const seasonUrl = `https://anime-sama.org/catalogue/${animeId}/${seasonPath}/${languageCode}/`;
         
         // Try to get the episodes.js file for this specific anime/season
         const episodesJsUrl = `${seasonUrl}episodes.js`;
@@ -1308,7 +1343,7 @@ async function getAnimeEpisodes(animeId, season = 1, language = 'VOSTFR') {
     }
 }
 
-// Get episode streaming sources from episode URL or anime-sama.fr streaming URL
+// Get episode streaming sources from episode URL or anime-sama.org streaming URL
 async function getEpisodeSources(episodeUrl) {
     try {
         // Handle different URL formats
@@ -1318,10 +1353,10 @@ async function getEpisodeSources(episodeUrl) {
         const episodeIdMatch = episodeUrl.match(/^([a-z0-9-]+)-s(\d+)-e(\d+)$/i);
         if (episodeIdMatch) {
             const [, animeId, season, episode] = episodeIdMatch;
-            finalUrl = `https://anime-sama.fr/catalogue/${animeId}/saison${season}/vostfr/episode-${episode}`;
-        } else if (!episodeUrl.includes('anime-sama.fr')) {
+            finalUrl = `https://anime-sama.org/catalogue/${animeId}/saison${season}/vostfr/episode-${episode}`;
+        } else if (!episodeUrl.includes('anime-sama.org')) {
             // If it's a relative path, add the domain
-            finalUrl = `https://anime-sama.fr${episodeUrl}`;
+            finalUrl = `https://anime-sama.org${episodeUrl}`;
         }
         
         console.log(`Extracting streaming sources from: ${finalUrl}`);
@@ -1366,7 +1401,7 @@ async function extractFromEpisodePage(episodeUrl) {
         const episodeNumber = parseInt(episodePart.replace('episode-', ''));
         
         // Get the season's episodes.js file
-        const seasonUrl = `https://anime-sama.fr/catalogue/${animeId}/${seasonPath}/${language}/`;
+        const seasonUrl = `https://anime-sama.org/catalogue/${animeId}/${seasonPath}/${language}/`;
         const episodesJsUrl = `${seasonUrl}episodes.js`;
         
         console.log(`Getting episodes.js from: ${episodesJsUrl}`);
@@ -1526,7 +1561,7 @@ async function extractEpisodeStreamingSources(episodeUrl) {
             if (serverName && serverUrl) {
                 sources.push({
                     server: serverName,
-                    url: serverUrl.startsWith('http') ? serverUrl : `https://anime-sama.fr${serverUrl}`,
+                    url: serverUrl.startsWith('http') ? serverUrl : `https://anime-sama.org${serverUrl}`,
                     quality: $el.attr('data-quality') || 'HD',
                     type: 'streaming'
                 });
@@ -1560,12 +1595,12 @@ async function extractEpisodeStreamingSources(episodeUrl) {
     }
 }
 
-// Extract direct streaming sources from anime-sama.fr streaming URL
+// Extract direct streaming sources from anime-sama.org streaming URL
 async function extractDirectStreamingSources(streamingUrl) {
     try {
         const sources = [];
         
-        // Common streaming domains used by anime-sama.fr
+        // Common streaming domains used by anime-sama.org
         const streamingDomains = [
             'sibnet.ru',
             'sendvid.com', 
@@ -1635,7 +1670,7 @@ async function extractDirectStreamingSources(streamingUrl) {
 // Enhanced recent episodes extraction with 100% AUTHENTIC data from daily release sections
 async function getRecentEpisodes() {
     try {
-        const $ = await scrapeAnimesama('https://anime-sama.fr');
+        const $ = await scrapeAnimesama('https://anime-sama.org');
         
         const recentEpisodes = [];
         const seenEpisodes = new Set();
@@ -1731,7 +1766,7 @@ async function getRecentEpisodes() {
             const $img = $container.find('img').first();
             let image = $img.attr('src') || $img.attr('data-src');
             if (image && !image.startsWith('http')) {
-                image = image.startsWith('//') ? `https:${image}` : `https://anime-sama.fr${image}`;
+                image = image.startsWith('//') ? `https:${image}` : `https://anime-sama.org${image}`;
             }
             
             recentEpisodes.push({
@@ -1742,7 +1777,7 @@ async function getRecentEpisodes() {
                 language: detectedLanguage,
                 isFinale: isFinale,
                 isVFCrunchyroll: isVFCrunchyroll,
-                url: href.startsWith('http') ? href : `https://anime-sama.fr${href}`,
+                url: href.startsWith('http') ? href : `https://anime-sama.org${href}`,
                 image: image || `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${animeId}.jpg`,
                 badgeInfo: buttonText,
                 addedAt: new Date().toISOString(),
@@ -1761,7 +1796,7 @@ async function getRecentEpisodes() {
 // Get manga chapters for scans
 async function getMangaChapters(animeId, scanValue = 'scan', language = 'VF') {
     try {
-        const scanUrl = `https://anime-sama.fr/catalogue/${animeId}/${scanValue}/${language.toLowerCase()}/`;
+        const scanUrl = `https://anime-sama.org/catalogue/${animeId}/${scanValue}/${language.toLowerCase()}/`;
         console.log(`Getting manga chapters from: ${scanUrl}`);
         
         const $ = await scrapeAnimesama(scanUrl);
@@ -1771,7 +1806,7 @@ async function getMangaChapters(animeId, scanValue = 'scan', language = 'VF') {
         
         console.log('Analyzing page for chapter data...');
         
-        // Method 1: Look for eps variables in JavaScript (primary method for anime-sama.fr)
+        // Method 1: Look for eps variables in JavaScript (primary method for anime-sama.org)
         const epsVariables = [];
         let epsCount = 1;
         
@@ -1941,6 +1976,7 @@ async function getMangaChapters(animeId, scanValue = 'scan', language = 'VF') {
 
 module.exports = {
     scrapeAnimesama,
+    scrapeWithPlaywrightDirect,
     searchAnime,
     getTrendingAnime,
     getAnimeDetails,
