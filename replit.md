@@ -1,18 +1,21 @@
-# Anime-Sama API Project v2.0
+# Anime-Sama API Project v2.1
 
 ## Overview
 API Node.js serverless avancée qui scrape le site anime-sama.fr en temps réel pour fournir des données d'anime via des endpoints JSON. Compatible avec Vercel et Replit.
 
-## Version 2.0 Features
+## Version 2.1 Features (Playwright Integration)
+- **Playwright-First Scraping**: Utilisation de Playwright comme méthode principale de scraping (pas de fallback axios)
 - **Smart Recommendations System**: Exploration aléatoire intelligente de tout le catalogue (38 pages)
 - **Advanced Caching**: Cache optimisé de 5 minutes avec rotation automatique des pages
 - **Zero Duplication**: Système anti-répétition double couche (cache + requête)
 - **Complete Catalog Coverage**: Découverte de ~1500-2000 animes de tout le site
+- **Cloudflare Bypass**: Contournement automatique de la protection Cloudflare
 - **Production Ready**: Système respectueux du serveur avec exploration efficace
 
 ## Project Architecture
 - **Server**: Express.js server running on port 5000
-- **Dependencies**: axios, cheerio, cors, express
+- **Scraping Engine**: Playwright with System Chromium (Nix)
+- **Dependencies**: axios, cheerio, cors, express, playwright
 - **API Endpoints**:
   - `/api/search` - Search anime by query
   - `/api/recent` - Get recent episodes (fixed duplicate issue)
@@ -25,6 +28,11 @@ API Node.js serverless avancée qui scrape le site anime-sama.fr en temps réel 
   - `/api/embed` - Embed player
 
 ## Recent Changes
+- **2025-12-02**: Upgraded to v2.1 - Complete Playwright integration as primary scraping method
+- **2025-12-02**: Modified utils/playwright-scraper.js with specialized functions: scrapeToCheerio, postWithPlaywright, fetchJavaScriptFile, checkUrlExists
+- **2025-12-02**: Modified utils/scraper.js to use Playwright for all scraping operations (searchAnime, getAnimeDetails, getTrendingAnime, etc.)
+- **2025-12-02**: Configured Playwright to use System Chromium via Nix for better compatibility
+- **2025-12-02**: Added system dependencies for Chromium: glib, nss, gtk3, mesa, etc.
 - **2025-08-17**: Removed /api/index.js to maintain exactly 12 functions for Vercel Hobby plan compatibility
 - **2025-08-17**: Removed /health endpoint as requested by user
 - **2025-08-17**: Migrated from Replit Agent to standard Replit environment

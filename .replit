@@ -2,7 +2,7 @@ modules = ["nodejs-20"]
 
 [nix]
 channel = "stable-25_05"
-packages = ["jq"]
+packages = ["jq", "glib", "nss", "nspr", "atk", "at-spi2-atk", "cups", "libdrm", "gtk3", "pango", "cairo", "gdk-pixbuf", "xorg.libX11", "xorg.libXcomposite", "xorg.libXdamage", "xorg.libXext", "xorg.libXfixes", "xorg.libXrandr", "xorg.libxcb", "mesa", "alsa-lib", "dbus", "expat", "libxkbcommon", "chromium"]
 
 [workflows]
 runButton = "Project"
@@ -20,20 +20,20 @@ args = "Anime API Server"
 name = "Anime API Server"
 author = "agent"
 
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "npm start"
-waitForPort = 5000
-
 [workflows.workflow.metadata]
 outputType = "webview"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "node server.js"
+waitForPort = 5000
 
 [[ports]]
 localPort = 5000
 externalPort = 80
 
 [[ports]]
-localPort = 32947
+localPort = 36285
 externalPort = 3000
 
 [agent]
