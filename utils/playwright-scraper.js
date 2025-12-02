@@ -34,12 +34,8 @@ async function getBrowser() {
             '--disable-dev-shm-usage',
             '--disable-accelerated-2d-canvas',
             '--no-first-run',
-            '--no-zygote',
-            '--single-process',
             '--disable-gpu',
-            '--disable-blink-features=AutomationControlled',
-            '--disable-web-security',
-            '--disable-features=IsolateOrigins,site-per-process'
+            '--disable-blink-features=AutomationControlled'
         ]
     });
 
