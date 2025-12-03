@@ -28,6 +28,7 @@ async function getBrowser() {
     const launchOptions = {
         headless: true,
         args: [
+            '--single-process',
             '--no-sandbox',
             '--disable-setuid-sandbox',
             '--disable-dev-shm-usage',
