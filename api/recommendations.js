@@ -168,21 +168,7 @@ async function refreshRecommendationsCache() {
     }
 }
 
-// Schedule automatic cache refresh
-function scheduleNextRefresh() {
-    setTimeout(() => {
-        refreshRecommendationsCache().then(() => {
-            scheduleNextRefresh(); // Schedule next refresh
-        });
-    }, CACHE_DURATION);
-}
-
-// Initialize cache on first load
-if (recommendationsCache.data.length === 0) {
-    refreshRecommendationsCache().then(() => {
-        scheduleNextRefresh();
-    });
-}
+// Cache is now loaded on-demand only (no automatic background refresh)
 
 // Get anime recommendations from catalogue page
 async function getRecommendations(req, res) {
