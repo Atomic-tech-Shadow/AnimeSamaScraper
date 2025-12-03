@@ -11,8 +11,11 @@ yarn-error.log*
 .env.test.local
 .env.production.local
 
-# Vercel
-.vercel
+# Replit
+.replit
+replit.nix
+.cache/
+.config/
 
 # Runtime data
 pids

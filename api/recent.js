@@ -1,25 +1,11 @@
 const { scrapeAnimesama } = require('../utils/scraper');
 
 module.exports = async (req, res) => {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-    if (req.method === 'OPTIONS') {
-        return res.status(200).end();
-    }
-
-    if (req.method !== 'GET') {
-        return res.status(405).json({ error: 'Method not allowed' });
-    }
-
     try {
         const $ = await scrapeAnimesama('https://anime-sama.org/');
         
         const recentEpisodes = [];
         const seenItems = new Set();
-        
-        console.log('🔍 Extraction des sorties récentes depuis la page d\'accueil...');
         
         $('a[href*="/catalogue/"]').each((index, element) => {
             const $link = $(element);
@@ -28,7 +14,6 @@ module.exports = async (req, res) => {
             if (!href || !href.includes('/catalogue/')) return;
             
             const cardText = $link.text().trim();
-            const $card = $link.closest('div') || $link;
             
             const urlParts = href.split('/');
             const catalogueIndex = urlParts.indexOf('catalogue');
@@ -63,8 +48,6 @@ module.exports = async (req, res) => {
                 return;
             }
             
-            const contentType = 'anime';
-            
             const seasonMatch = href.match(/saison(\d+)/i);
             const seasonNumber = seasonMatch ? parseInt(seasonMatch[1]) : 1;
             
@@ -97,35 +80,31 @@ module.exports = async (req, res) => {
             }
             
             recentEpisodes.push({
-                animeId: animeId,
-                title: title,
+                animeId,
+                title,
                 season: seasonNumber,
-                seasonName: seasonName,
-                language: language,
-                contentType: contentType,
-                releaseTime: releaseTime,
+                seasonName,
+                language,
+                contentType: 'anime',
+                releaseTime,
                 url: href.startsWith('http') ? href : `https://anime-sama.org${href}`,
-                image: image,
+                image,
                 addedAt: new Date().toISOString()
             });
         });
         
-        console.log(`✅ Trouvé ${recentEpisodes.length} sorties récentes`);
-        
-        res.status(200).json({
+        res.json({
             success: true,
             count: recentEpisodes.length,
             extractedAt: new Date().toISOString(),
-            recentEpisodes: recentEpisodes
+            recentEpisodes
         });
         
     } catch (error) {
         console.error('Recent episodes API error:', error);
-        
         res.status(500).json({
             error: 'Failed to fetch recent episodes',
-            message: 'Unable to retrieve recent episodes at this time. Please try again later.',
-            details: process.env.NODE_ENV === 'development' ? error.message : undefined
+            message: 'Impossible de récupérer les épisodes récents'
         });
     }
 };

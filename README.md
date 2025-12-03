@@ -21,16 +21,16 @@
 </p>
 
 <p align="center">
-<img src="https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white" />
-<img src="https://img.shields.io/badge/Replit-667881?style=for-the-badge&logo=replit&logoColor=white" />
+<img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" />
+<img src="https://img.shields.io/badge/Playwright-45ba4b?style=for-the-badge&logo=playwright&logoColor=white" />
 <img src="https://img.shields.io/badge/REST_API-02569B?style=for-the-badge&logo=api&logoColor=white" />
 <img src="https://img.shields.io/badge/JSON-000000?style=for-the-badge&logo=json&logoColor=white" />
 <img src="https://img.shields.io/badge/CORS-FF6B6B?style=for-the-badge&logo=cors&logoColor=white" />
 </p>
 
-**Une API Node.js serverless avancée qui scrape intelligemment le site anime-sama.fr en temps réel pour fournir des données d'anime via des endpoints JSON optimisés.**
+**Une API Node.js avancée qui scrape intelligemment le site anime-sama.org en temps réel pour fournir des données d'anime via des endpoints JSON optimisés.**
 
-**Compatible avec Vercel et prêt pour le déploiement en production 🚀**
+**Compatible Docker et prêt pour le déploiement en production 🚀**
 
 </div>
 
@@ -287,57 +287,64 @@ node server.js
 
 L'API sera accessible sur `http://localhost:5000`
 
-## ☁️ Déploiement sur Vercel
+## ☁️ Déploiement
 
-### Option 1: Déploiement via CLI
+### Option 1: Docker
 
-1. **Installer Vercel CLI**
+1. **Construire l'image Docker**
 ```bash
-npm install -g vercel
+docker build -t anime-sama-api .
 ```
 
-2. **Se connecter à Vercel**
+2. **Lancer le conteneur**
 ```bash
-vercel login
+docker run -p 3000:3000 anime-sama-api
 ```
 
-3. **Déployer le projet**
-```bash
-vercel deploy
-```
+### Option 2: Leapcell (Gratuit)
 
-### Option 2: Déploiement via Git
+1. Créer un compte sur [leapcell.io](https://leapcell.io)
+2. Importer le repository GitHub
+3. Leapcell détectera automatiquement le Dockerfile
+4. Configurer le port sur `3000`
 
-1. Connecter votre repository GitHub à Vercel
-2. Vercel détectera automatiquement la configuration
-3. Le déploiement se fera automatiquement à chaque push
+### Option 3: Railway / Render
+
+1. Connecter votre repository GitHub
+2. La plateforme détectera le Dockerfile
+3. Déploiement automatique à chaque push
 
 ## 🏗️ Architecture
 
 ### Structure des fichiers
 ```
 anime-sama-api/
-├── api/                    # Endpoints Vercel Functions
+├── api/                    # Handlers des endpoints
 │   ├── search.js          # Recherche d'anime
-│   ├── trending.js        # Tendances
+│   ├── recent.js          # Épisodes récents
+│   ├── planning.js        # Planning des sorties
+│   ├── popular.js         # Anime populaires
+│   ├── recommendations.js # Recommandations
 │   ├── anime/[id].js      # Détails d'anime
 │   ├── seasons/           # Gestion des saisons
 │   ├── episodes/          # Gestion des épisodes
 │   ├── episode/           # Sources d'épisodes
 │   └── embed.js           # Lecteur intégré
 ├── utils/
-│   └── scraper.js         # Utilitaires de scraping
-├── server.js              # Serveur Express (dev)
-├── vercel.json            # Configuration Vercel
+│   ├── scraper.js         # Utilitaires de scraping (Cheerio)
+│   └── playwright-scraper.js # Scraping avancé (Playwright)
+├── server.js              # Serveur Express
+├── Dockerfile             # Configuration Docker
 └── package.json           # Dépendances
 ```
 
 ### Technologies utilisées
 - **Node.js** - Runtime JavaScript
-- **Express.js** - Framework web (développement)
+- **Express.js** - Framework web
 - **Axios** - Client HTTP pour les requêtes
-- **Cheerio** - Parsing HTML côté serveur
-- **Vercel Functions** - Déploiement serverless
+- **Cheerio** - Parsing HTML statique
+- **Playwright** - Scraping de contenu dynamique
+- **Docker** - Containerisation
 
 ### Protection anti-bot
 - Rotation des User-Agent avec un pool de navigateurs communs
@@ -353,11 +360,12 @@ NODE_ENV=production          # Environment (development/production)
 PORT=5000                   # Port du serveur (optionnel)
 ```
 
-### Vercel.json
-Le fichier `vercel.json` est configuré pour :
-- Fonctions serverless avec timeout de 10 secondes
-- Headers CORS automatiques
-- Routage vers les endpoints API
+### Docker
+Le `Dockerfile` est configuré pour :
+- Image Node.js 20 avec dépendances Playwright
+- Installation automatique de Chromium
+- Port 3000 par défaut
+- Mode production optimisé
 
 ## 🚨 Limitations
 
