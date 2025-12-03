@@ -1,7 +1,7 @@
 #!/bin/sh
 
-# Install playwright and its dependencies (Chromium only for lighter deployment)
-npx -y playwright@1.50.1 install --with-deps chromium
-
-# Install node modules
+# Install node modules first
 npm install
+
+# Install playwright browsers matching the installed version
+npx playwright install --with-deps chromium

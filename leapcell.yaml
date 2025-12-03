@@ -3,3 +3,4 @@ startCommand: node server.js
 buildCommand: sh prepare_playwright_env.sh
 port: 8080
 memory: 2048mb
+cpu: 2
