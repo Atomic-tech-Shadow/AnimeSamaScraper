@@ -18,7 +18,7 @@ module.exports = async (req, res) => {
 
     try {
         // Scrape the homepage to get recent episodes
-        const $ = await scrapeAnimesama('https://anime-sama.fr/');
+        const $ = await scrapeAnimesama('https://anime-sama.eu/');
         
         const recentEpisodes = [];
         const seenEpisodes = new Set(); // Pour éviter les doublons
@@ -114,7 +114,7 @@ module.exports = async (req, res) => {
             const $img = $container.find('img').first();
             let image = $img.attr('src') || $img.attr('data-src');
             if (image && !image.startsWith('http')) {
-                image = image.startsWith('//') ? `https:${image}` : `https://anime-sama.fr${image}`;
+                image = image.startsWith('//') ? `https:${image}` : `https://anime-sama.eu${image}`;
             }
             
             recentEpisodes.push({
@@ -125,7 +125,7 @@ module.exports = async (req, res) => {
                 language: detectedLanguage,
                 isFinale: isFinale,
                 isVFCrunchyroll: isVFCrunchyroll,
-                url: href.startsWith('http') ? href : `https://anime-sama.fr${href}`,
+                url: href.startsWith('http') ? href : `https://anime-sama.eu${href}`,
                 image: image || `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${animeId}.jpg`,
                 badgeInfo: buttonText,
                 addedAt: new Date().toISOString(),

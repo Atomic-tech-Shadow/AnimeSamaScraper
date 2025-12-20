@@ -117,7 +117,7 @@ module.exports = async (req, res) => {
         const currentDay = dayNames[today.getDay()];
         
         // Scraper la page planning dédiée
-        const $ = await scrapeAnimesama('https://anime-sama.fr/planning');
+        const $ = await scrapeAnimesama('https://anime-sama.eu/planning');
         
         const planningData = {
             success: true,
@@ -172,7 +172,7 @@ module.exports = async (req, res) => {
                     dayItems.push({
                         animeId: imageId,
                         title: title.trim(),
-                        url: `https://anime-sama.fr/catalogue/${path}`,
+                        url: `https://anime-sama.eu/catalogue/${path}`,
                         image: `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${imageId}.jpg`,
                         releaseTime: convertedTime,
                         originalTime: autoDetected || detectedTimezone !== 'paris' ? time : undefined,
@@ -197,7 +197,7 @@ module.exports = async (req, res) => {
                     dayItems.push({
                         animeId: imageId,
                         title: title.trim(),
-                        url: `https://anime-sama.fr/catalogue/${path}`,
+                        url: `https://anime-sama.eu/catalogue/${path}`,
                         image: `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${imageId}.jpg`,
                         releaseTime: convertedTime,
                         originalTime: autoDetected || detectedTimezone !== 'paris' ? time : undefined,

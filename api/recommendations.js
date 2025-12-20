@@ -48,7 +48,7 @@ async function refreshRecommendationsCache() {
         console.log(`🎯 Starting background refresh from random page ${targetPage} (explored: ${exploredPages.size}/${MAX_PAGES_TO_EXPLORE})...`);
         
         // Scrape target page
-        const $ = await scrapeAnimesama(`https://anime-sama.fr/catalogue/?page=${targetPage}`);
+        const $ = await scrapeAnimesama(`https://anime-sama.eu/catalogue/?page=${targetPage}`);
         const recommendations = [];
         const seenAnimes = new Set();
         
@@ -58,7 +58,7 @@ async function refreshRecommendationsCache() {
             
             if (!href || !href.includes('/catalogue/')) return;
             
-            const fullUrl = href.startsWith('http') ? href : `https://anime-sama.fr${href}`;
+            const fullUrl = href.startsWith('http') ? href : `https://anime-sama.eu${href}`;
             const urlParts = fullUrl.split('/');
             const catalogueIndex = urlParts.findIndex(part => part === 'catalogue');
             
@@ -253,7 +253,7 @@ async function getRecommendations(req, res) {
             },
             metadata: {
                 extractedAt: new Date().toISOString(),
-                source: 'anime-sama.fr/catalogue/',
+                source: 'anime-sama.eu/catalogue/',
                 totalFound: uniqueRecommendations.length,
                 filtered: 'Animes only (scans excluded)',
                 cacheInfo: {

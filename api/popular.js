@@ -19,7 +19,7 @@ module.exports = async (req, res) => {
 
     try {
         // Scraper la page d'accueil pour extraire les sections Classiques et Pépites
-        const $ = await scrapeAnimesama('https://anime-sama.fr/');
+        const $ = await scrapeAnimesama('https://anime-sama.eu/');
         
         const popularAnime = {
             classiques: [],
@@ -61,14 +61,14 @@ module.exports = async (req, res) => {
                         const $img = $link.find('img').first();
                         let image = $img.attr('src') || $img.attr('data-src') || $img.attr('data-lazy');
                         if (image && !image.startsWith('http')) {
-                            image = image.startsWith('//') ? `https:${image}` : `https://anime-sama.fr${image}`;
+                            image = image.startsWith('//') ? `https:${image}` : `https://anime-sama.eu${image}`;
                         }
                         
                         targetArray.push({
                             id: animeId,
                             title: title,
                             image: image || `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${animeId}.jpg`,
-                            url: href.startsWith('http') ? href : `https://anime-sama.fr${href}`,
+                            url: href.startsWith('http') ? href : `https://anime-sama.eu${href}`,
                             category: sectionName.toLowerCase(),
                             extractedFrom: `Section ${sectionName} (${containerId})`
                         });
@@ -153,14 +153,14 @@ module.exports = async (req, res) => {
                                     const $img = $link.find('img').first();
                                     let image = $img.attr('src') || $img.attr('data-src');
                                     if (image && !image.startsWith('http')) {
-                                        image = image.startsWith('//') ? `https:${image}` : `https://anime-sama.fr${image}`;
+                                        image = image.startsWith('//') ? `https:${image}` : `https://anime-sama.eu${image}`;
                                     }
                                     
                                     popularAnime.pepites.push({
                                         id: animeId,
                                         title: title,
-                                        image: image || `https://anime-sama.fr/s2/img/animes/${animeId}.jpg`,
-                                        url: href.startsWith('http') ? href : `https://anime-sama.fr${href}`,
+                                        image: image || `https://anime-sama.eu/s2/img/animes/${animeId}.jpg`,
+                                        url: href.startsWith('http') ? href : `https://anime-sama.eu${href}`,
                                         category: 'pépite',
                                         extractedFrom: 'Section Découvrez des Pépites (détectée)'
                                     });
@@ -209,14 +209,14 @@ module.exports = async (req, res) => {
                                     const $img = $link.find('img').first();
                                     let image = $img.attr('src') || $img.attr('data-src');
                                     if (image && !image.startsWith('http')) {
-                                        image = image.startsWith('//') ? `https:${image}` : `https://anime-sama.fr${image}`;
+                                        image = image.startsWith('//') ? `https:${image}` : `https://anime-sama.eu${image}`;
                                     }
                                     
                                     popularAnime.pepites.push({
                                         id: animeId,
                                         title: title,
                                         image: image || `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${animeId}.jpg`,
-                                        url: href.startsWith('http') ? href : `https://anime-sama.fr${href}`,
+                                        url: href.startsWith('http') ? href : `https://anime-sama.eu${href}`,
                                         category: 'pépite',
                                         extractedFrom: 'Section Pépites'
                                     });
@@ -258,7 +258,7 @@ module.exports = async (req, res) => {
             },
             allPopular: allPopular,
             extractedAt: new Date().toISOString(),
-            source: 'anime-sama.fr sections Classiques et Pépites'
+            source: 'anime-sama.eu sections Classiques et Pépites'
         });
         
     } catch (error) {

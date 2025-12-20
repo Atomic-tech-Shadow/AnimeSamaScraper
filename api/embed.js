@@ -24,18 +24,18 @@ module.exports = async (req, res) => {
             return res.status(400).json({ 
                 error: 'URL parameter is required',
                 message: 'Please provide a URL to extract streaming sources from',
-                usage: 'Example: /api/embed?url=https://anime-sama.fr/catalogue/one-piece/saison1/vostfr/episode-1'
+                usage: 'Example: /api/embed?url=https://anime-sama.eu/catalogue/one-piece/saison1/vostfr/episode-1'
             });
         }
 
         // Decode URL
         const decodedUrl = decodeURIComponent(url);
 
-        // Validate that it's an anime-sama.fr URL or streaming URL
-        if (!decodedUrl.includes('anime-sama.fr') && !decodedUrl.match(/^https?:\/\//)) {
+        // Validate that it's an anime-sama.eu URL or streaming URL
+        if (!decodedUrl.includes('anime-sama.eu') && !decodedUrl.match(/^https?:\/\//)) {
             return res.status(400).json({
                 error: 'Invalid URL',
-                message: 'Please provide a valid anime-sama.fr URL or direct streaming URL'
+                message: 'Please provide a valid anime-sama.eu URL or direct streaming URL'
             });
         }
 
