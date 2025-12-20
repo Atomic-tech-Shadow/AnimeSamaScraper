@@ -21,123 +21,84 @@ module.exports = async (req, res) => {
         const $ = await scrapeAnimesama('https://anime-sama.eu/');
         
         const recentEpisodes = [];
-        const seenEpisodes = new Set(); // Pour éviter les doublons
+        const seenLinks = new Set();
         
-        // Extract from bg-cyan-600 buttons
-        const processedButtons = new Set(); // Pour éviter de traiter le même bouton plusieurs fois
-        
-        $('button.bg-cyan-600').each((index, element) => {
-            const $button = $(element);
-            const buttonText = $button.text().trim();
+        // Extract from anime/manga cards with season/episode info
+        $('a[href*="/catalogue/"]').each((index, element) => {
+            const $link = $(element);
+            const href = $link.attr('href');
             
-            // Créer un identifiant unique pour ce bouton basé sur le texte et la position
-            const buttonId = `${index}-${buttonText}`;
-            if (processedButtons.has(buttonId)) return;
-            processedButtons.add(buttonId);
+            if (!href || !href.includes('/catalogue/') || seenLinks.has(href)) {
+                return;
+            }
+            seenLinks.add(href);
             
-            // Find parent link
-            const $container = $button.closest('a[href*="/catalogue/"]') || 
-                              $button.parent().find('a[href*="/catalogue/"]') ||
-                              $button.siblings('a[href*="/catalogue/"]');
+            // Check if this card has season/episode info
+            const $card = $link.closest('.anime-card-premium, .card-base') || $link;
+            const $infoItems = $card.find('.info-item.episode');
             
-            const href = $container.attr('href');
-            if (!href || !href.includes('/catalogue/')) return;
+            if ($infoItems.length === 0) return;
             
-            // Parse button text
-            const isFinale = buttonText.includes('[FIN]');
-            const isVFCrunchyroll = buttonText.includes('VF Crunchyroll');
-            const isVFNetflix = buttonText.includes('VF Netflix');
-            
-            const episodeMatch = buttonText.match(/Episode\s*(\d+)/i);
-            const seasonMatch = buttonText.match(/Saison\s*(\d+)/i);
-            
-            let seasonNumber = seasonMatch ? parseInt(seasonMatch[1]) : 1;
-            let episodeNumber = episodeMatch ? parseInt(episodeMatch[1]) : null;
-            
-            // Extract anime ID from URL
+            // Extract anime ID and title
             const urlParts = href.split('/');
             const catalogueIndex = urlParts.indexOf('catalogue');
             const animeId = catalogueIndex >= 0 ? urlParts[catalogueIndex + 1] : null;
             
-            if (!animeId || !episodeNumber) return;
+            if (!animeId) return;
             
-            // Detect language from adjacent language buttons or URL path
-            let detectedLanguage = 'VOSTFR'; // default
-            
-            // Check URL path for language hints
-            if (href.includes('/vf/') || href.includes('/vf1/') || href.includes('/vf2/')) {
-                detectedLanguage = 'VF';
-            } else if (href.includes('/vostfr/')) {
-                detectedLanguage = 'VOSTFR';
-            } else if (href.includes('/va/')) {
-                detectedLanguage = 'VA';
-            }
-            
-            // Override with button text detection for specific cases
-            if (isVFCrunchyroll) {
-                detectedLanguage = 'VF';
-            } else if (isVFNetflix) {
-                detectedLanguage = 'VF';
-            }
-            
-            // Look for language buttons in the same container
-            const $languageButtons = $container.find('button.bg-blue-600, button.bg-green-600');
-            $languageButtons.each((i, langBtn) => {
-                const langText = $(langBtn).text().trim();
-                if (langText === 'VF' || langText.includes('VF')) {
-                    detectedLanguage = 'VF';
-                } else if (langText === 'VOSTFR' || langText.includes('VOSTFR')) {
-                    detectedLanguage = 'VOSTFR';
-                } else if (langText === 'VA' || langText.includes('VA')) {
-                    detectedLanguage = 'VA';
-                }
-            });
-            
-            // Create unique identifier to prevent duplicates
-            const uniqueKey = `${animeId}-s${seasonNumber}-e${episodeNumber}-${detectedLanguage}`;
-            if (seenEpisodes.has(uniqueKey)) return;
-            seenEpisodes.add(uniqueKey);
-            
-            // Get anime title
-            let animeTitle = $container.find('strong, h1, h2, h3').first().text().trim();
-            if (!animeTitle) {
-                animeTitle = animeId.replace(/-/g, ' ')
-                                   .split(' ')
-                                   .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-                                   .join(' ');
-            }
-            
-            // Clean title
-            animeTitle = animeTitle.replace(/\s+/g, ' ').trim();
+            // Get title from card
+            const $title = $card.find('.card-title');
+            const animeTitle = $title.length > 0 ? $title.text().trim() : animeId.replace(/-/g, ' ');
             
             // Get image
-            const $img = $container.find('img').first();
-            let image = $img.attr('src') || $img.attr('data-src');
-            if (image && !image.startsWith('http')) {
-                image = image.startsWith('//') ? `https:${image}` : `https://anime-sama.eu${image}`;
+            const $img = $card.find('.card-image');
+            const image = $img.attr('src') || $img.attr('data-src') || `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${animeId}.jpg`;
+            
+            // Extract season and language from URL
+            let season = 1;
+            let language = 'VOSTFR';
+            
+            if (href.includes('/saison')) {
+                const seasonMatch = href.match(/\/saison(\d+)/);
+                season = seasonMatch ? parseInt(seasonMatch[1]) : 1;
             }
+            
+            if (href.includes('/vf')) {
+                language = 'VF';
+            } else if (href.includes('/va')) {
+                language = 'VA';
+            }
+            
+            // Extract season info from card text
+            let seasonText = '';
+            $infoItems.each((i, item) => {
+                const text = $(item).text().trim();
+                if (text.includes('Saison') || text.includes('Partie')) {
+                    seasonText = text;
+                }
+            });
             
             recentEpisodes.push({
                 animeId: animeId,
                 animeTitle: animeTitle,
-                season: seasonNumber,
-                episode: episodeNumber,
-                language: detectedLanguage,
-                isFinale: isFinale,
-                isVFCrunchyroll: isVFCrunchyroll,
+                season: season,
+                language: language,
+                seasonInfo: seasonText,
                 url: href.startsWith('http') ? href : `https://anime-sama.eu${href}`,
-                image: image || `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${animeId}.jpg`,
-                badgeInfo: buttonText,
+                image: image,
                 addedAt: new Date().toISOString(),
-                type: isFinale ? 'finale' : 'episode'
+                type: 'recent'
             });
         });
+        
+        // Limit to 30 most recent
+        const limitedEpisodes = recentEpisodes.slice(0, 30);
         
         // Return recent episodes
         res.status(200).json({
             success: true,
-            count: recentEpisodes.length,
-            recentEpisodes: recentEpisodes
+            count: limitedEpisodes.length,
+            recentEpisodes: limitedEpisodes
         });
         
     } catch (error) {
