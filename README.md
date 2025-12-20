@@ -5,7 +5,8 @@
 <img src="https://readme-typing-svg.herokuapp.com?font=Fira+Code&pause=1000&color=F75C7E&center=true&vCenter=true&width=435&lines=Real-time+Anime+Scraping+API;Powered+by+el_cid;Production+Ready;Smart+Recommendations" alt="Typing SVG" />
 
 [![Version](https://img.shields.io/badge/version-2.0.0-blue.svg?style=for-the-badge)]()
-[![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg?style=for-the-badge&logo=node.js)]()
+[![Domain](https://img.shields.io/badge/domain-anime--sama.eu-green.svg?style=for-the-badge)]()
+[![Node.js](https://img.shields.io/badge/Node.js-20+-green.svg?style=for-the-badge&logo=node.js)]()
 [![Express](https://img.shields.io/badge/Express.js-4.x-black.svg?style=for-the-badge&logo=express)]()
 [![License](https://img.shields.io/badge/license-MIT-yellow.svg?style=for-the-badge)]()
 [![Status](https://img.shields.io/badge/status-active-success.svg?style=for-the-badge)]()
@@ -21,143 +22,24 @@
 </p>
 
 <p align="center">
-<img src="https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white" />
 <img src="https://img.shields.io/badge/Replit-667881?style=for-the-badge&logo=replit&logoColor=white" />
 <img src="https://img.shields.io/badge/REST_API-02569B?style=for-the-badge&logo=api&logoColor=white" />
 <img src="https://img.shields.io/badge/JSON-000000?style=for-the-badge&logo=json&logoColor=white" />
 <img src="https://img.shields.io/badge/CORS-FF6B6B?style=for-the-badge&logo=cors&logoColor=white" />
 </p>
 
-**Une API Node.js serverless avancée qui scrape intelligemment le site anime-sama.fr en temps réel pour fournir des données d'anime via des endpoints JSON optimisés.**
+**Une API Node.js avancée qui scrape intelligemment le site anime-sama.eu en temps réel pour fournir des données d'anime via des endpoints JSON optimisés.**
 
-**Compatible avec Vercel et prêt pour le déploiement en production 🚀**
-
-</div>
-
----
-
-## 📄 Licence
-
-Ce projet est sous licence **MIT** - voir le fichier [LICENSE](LICENSE) pour plus de détails.
-
-### Pourquoi la licence MIT ?
-
-- **🆓 Totalement gratuite** - Utilisation libre pour projets personnels et commerciaux
-- **🔧 Modification autorisée** - Tu peux adapter le code à tes besoins
-- **📤 Redistribution libre** - Partage et distribue sans restrictions
-- **⚖️ Simple et claire** - Pas de complications légales
-- **🏢 Compatible entreprise** - Peut être utilisée dans des projets commerciaux
-
-La licence MIT est parfaite pour un projet open-source comme celui-ci qui vise à être utilisé par la communauté des développeurs.
-
----
-
-**🚀 Powered by el_cid**
-
-© 2025 el_cid - Tous droits réservés
-
-</details>
-
----
-
-<div align="center">
-
-## 📊 Statistiques du Projet
-
-<img src="https://github-readme-stats.vercel.app/api?username=Atomic-tech-Shadow&show_icons=true&theme=radical" alt="Stats" />
-
-### 💻 Langages et Outils
-
-<p align="center">
-<img src="https://github-readme-stats.vercel.app/api/top-langs/?username=Atomic-tech-Shadow&layout=compact&theme=radical" alt="Top Languages" />
-</p>
-
-<table align="center">
-<tr>
-<td align="center" width="20%">
-<img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/javascript/javascript-original.svg" width="50" height="50"/>
-<br><strong>JavaScript</strong>
-</td>
-<td align="center" width="20%">
-<img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/nodejs/nodejs-original.svg" width="50" height="50"/>
-<br><strong>Node.js</strong>
-</td>
-<td align="center" width="20%">
-<img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/express/express-original.svg" width="50" height="50"/>
-<br><strong>Express</strong>
-</td>
-<td align="center" width="20%">
-<img src="https://user-images.githubusercontent.com/74038190/212257468-1e9a91f1-b626-4baa-b15d-5c385b7de912.gif" width="50" height="50"/>
-<br><strong>API REST</strong>
-</td>
-<td align="center" width="20%">
-<img src="https://user-images.githubusercontent.com/74038190/212257467-871d32b7-e401-42e8-a166-fcfd7baa4c6b.gif" width="50" height="50"/>
-<br><strong>Web Scraping</strong>
-</td>
-</tr>
-</table>
-
-### 🚀 Quick Start
-
-<img src="https://user-images.githubusercontent.com/74038190/212284115-f47cd8ff-2ffb-4b04-b5bf-4d1c14c0247f.gif" width="100">
-
-</div>
-
-```bash
-# Clone le repository
-git clone https://github.com/your-username/anime-sama-api.git
-
-# Installe les dépendances
-npm install
-
-# Lance le serveur
-npm start
-```
-
-<div align="center">
-
-### 🌟 Contribuer
-
-**Si ce projet vous aide, donnez-lui une ⭐ !**
-
-<img src="https://user-images.githubusercontent.com/74038190/216649417-9acc58df-9186-4132-ad43-819a57babb67.gif" width="200">
-
-### 📞 Contact & Réseaux Sociaux
-
-<p align="center">
-<a href="YOUR_WHATSAPP_LINK_HERE"><img src="https://img.shields.io/badge/WhatsApp-25D366?style=for-the-badge&logo=whatsapp&logoColor=white" alt="WhatsApp"/></a>
-<a href="YOUR_FACEBOOK_LINK_HERE"><img src="https://img.shields.io/badge/Facebook-1877F2?style=for-the-badge&logo=facebook&logoColor=white" alt="Facebook"/></a>
-<a href="YOUR_YOUTUBE_LINK_HERE"><img src="https://img.shields.io/badge/YouTube-FF0000?style=for-the-badge&logo=youtube&logoColor=white" alt="YouTube"/></a>
-</p>
-
-<p align="center">
-<a href="YOUR_TIKTOK_LINK_HERE"><img src="https://img.shields.io/badge/TikTok-000000?style=for-the-badge&logo=tiktok&logoColor=white" alt="TikTok"/></a>
-<a href="YOUR_TELEGRAM_LINK_HERE"><img src="https://img.shields.io/badge/Telegram-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white" alt="Telegram"/></a>
-<a href="mailto:YOUR_EMAIL_HERE"><img src="https://img.shields.io/badge/Email-D14836?style=for-the-badge&logo=gmail&logoColor=white" alt="Email"/></a>
-</p>
-
-<div align="center">
-
-**💬 Discutons de votre projet !**
-
-<img src="https://user-images.githubusercontent.com/74038190/212284158-e840e285-664b-44d7-b79b-e264b5e54825.gif" width="400">
+**11 endpoints complets et testés - Production Ready 🚀**
 
 </div>
 
 ---
-
-**Made with ❤️ by [el_cid](https://github.com/el_cid)**
-
-<img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&height=100&section=footer" />
-
-</div>
-
-<div align="center">
 
 ## ⭐ Fonctionnalités v2.0
 
+<div align="center">
 <img src="https://user-images.githubusercontent.com/74038190/212284100-561aa473-3905-4a80-b561-0d28506553ee.gif" width="700">
-
 </div>
 
 <table>
@@ -168,10 +50,11 @@ npm start
 ```diff
 + 🔍 Recherche d'anime intelligente
 + 📺 Épisodes récents sans doublons  
-+ 📅 Planning des anime
++ 📅 Planning des anime en temps réel
 + 📖 Détails complets d'anime
-+ 🎬 Saisons et épisodes
-+ 🎮 Lecteur intégré
++ 🎬 Saisons et épisodes avec sources
++ 💎 Système des Pépites intégré
++ 🎲 Recommandations intelligentes
 + 🛡️ Protection anti-bot
 + 🌐 CORS activé
 ```
@@ -186,27 +69,44 @@ npm start
 + 🔄 Zero Duplication Technology
 + 📊 Complete Catalog Coverage
 + 🎲 Intelligent Randomization
-+ 🌐 Production Ready Architecture
 + 📈 ~1500-2000 Animes Discovery
 + 🎪 38 Pages Smart Exploration
++ 🎭 Séparation Classiques/Pépites
 ```
 
 </td>
 </tr>
 </table>
 
+---
+
+## 🛠️ Endpoints API (11 endpoints complets)
+
 <div align="center">
-
-## 🛠️ Endpoints API
-
 <img src="https://user-images.githubusercontent.com/74038190/212284087-bbe7e430-757e-4901-90bf-4cd2ce3e1852.gif" width="100">
-
 </div>
 
 <details>
 <summary>📖 Click to expand all endpoints</summary>
 
-### 🔍 Recherche
+### 🏠 Root
+```http
+GET /
+```
+Documentation complète de l'API avec tous les endpoints disponibles.
+
+**Exemple de réponse :**
+```json
+{
+  "name": "Anime-Sama API",
+  "version": "2.0.0",
+  "description": "Real-time anime scraping API for anime-sama.eu",
+  "status": "running",
+  "endpoints": { ... }
+}
+```
+
+### 🔍 Recherche d'anime
 ```http
 GET /api/search?query=naruto
 ```
@@ -216,16 +116,40 @@ Recherche des anime par nom. Supporte la correspondance partielle et floue.
 ```json
 {
   "success": true,
-  "query": "black",
-  "count": 1,
-  "results": [
+  "query": "naruto",
+  "count": 5,
+  "animes": [
     {
-      "id": "black-butler",
-      "title": "Black Butler", 
-      "image": "https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/black-butler.jpg",
-      "url": "https://anime-sama.fr/catalogue/black-butler"
+      "id": "naruto",
+      "title": "Naruto",
+      "image": "https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/naruto.jpg",
+      "url": "https://anime-sama.eu/catalogue/naruto/"
     }
   ]
+}
+```
+
+### 📺 Anime populaires
+```http
+GET /api/popular
+```
+Récupère les anime populaires avec séparation Classiques/Pépites.
+
+**Exemple de réponse :**
+```json
+{
+  "success": true,
+  "totalCount": 30,
+  "categories": {
+    "classiques": {
+      "count": 15,
+      "anime": [...]
+    },
+    "pepites": {
+      "count": 15,
+      "anime": [...]
+    }
+  }
 }
 ```
 
@@ -233,37 +157,124 @@ Recherche des anime par nom. Supporte la correspondance partielle et floue.
 ```http
 GET /api/recent
 ```
-Récupère les épisodes récemment ajoutés sur le site.
+Récupère les 30 épisodes récemment ajoutés sur le site.
 
-### 🎬 Détails d'anime
+**Exemple de réponse :**
+```json
+{
+  "success": true,
+  "count": 30,
+  "recentEpisodes": [
+    {
+      "animeId": "naruto",
+      "animeTitle": "Naruto",
+      "season": 1,
+      "language": "VOSTFR",
+      "url": "https://anime-sama.eu/catalogue/naruto/saison1/vostfr/",
+      "image": "..."
+    }
+  ]
+}
+```
+
+### 📅 Planning des anime
+```http
+GET /api/planning?day=lundi
+```
+Récupère le planning des anime par jour (lundi, mardi, etc.).
+
+**Paramètres optionnels :**
+- `day` - jour spécifique (lundi, mardi, etc.)
+- `filter` - anime/scan/vf/vostfr
+- `timezone` - gmt+0, gmt+1, etc.
+
+### 🎬 Recommandations
+```http
+GET /api/recommendations?page=1&limit=50
+```
+Récupère les recommandations d'anime avec smart cache.
+
+### 🎭 Détails d'anime
 ```http
 GET /api/anime/:id
 ```
-Informations détaillées sur un anime spécifique (synopsis, genres, statut, etc.).
+Informations détaillées sur un anime spécifique.
 
-### 🎭 Saisons
+**Exemple :**
+```http
+GET /api/anime/naruto
+```
+
+### 📺 Saisons
 ```http
 GET /api/seasons/:animeId
 ```
 Liste les saisons disponibles pour un anime.
 
+**Exemple :**
+```http
+GET /api/seasons/naruto
+```
+
+**Exemple de réponse :**
+```json
+{
+  "success": true,
+  "title": "Naruto",
+  "count": 5,
+  "seasons": [
+    {
+      "number": 1,
+      "name": "Saison 1",
+      "languages": ["VOSTFR", "VF"],
+      "available": true
+    }
+  ]
+}
+```
+
 ### 📺 Épisodes
 ```http
 GET /api/episodes/:animeId?season=1&language=VOSTFR
 ```
-Liste les épisodes d'une saison spécifique.
+Liste les épisodes d'une saison spécifique avec sources streaming.
 
-### 🎮 Sources d'épisode
+**Exemple :**
 ```http
-GET /api/episode/:episodeId
+GET /api/episodes/naruto?season=1&language=VOSTFR
+```
+
+### 🎮 Sources d'épisode (Par ID)
+```http
+GET /api/episode-by-id/:episodeId
 ```
 Récupère les sources de streaming pour un épisode.
 
+**Exemple :**
+```http
+GET /api/episode-by-id/naruto-s1-e1
+```
+
+### 🎮 Sources d'épisode (Par numéro)
+```http
+GET /api/episode/:animeId/:season/:ep
+```
+Récupère les sources de streaming pour un épisode spécifique.
+
+**Exemple :**
+```http
+GET /api/episode/naruto/1/1
+```
+
 ### 🖥️ Lecteur intégré
 ```http
-GET /api/embed?url=https%3A%2F%2Fanime-sama.fr%2Fcatalogue%2Fblack-butler
+GET /api/embed?url=https%3A%2F%2Fanime-sama.eu%2Fcatalogue%2Fnaruto
 ```
-Génère une page HTML avec lecteur vidéo intégré.
+Récupère les sources de streaming depuis une URL anime-sama.eu.
+
+</details>
+
+---
 
 ## 🛠️ Installation locale
 
@@ -280,117 +291,124 @@ npm install
 
 3. **Démarrer le serveur de développement**
 ```bash
-npm run dev
-# ou
-node server.js
+npm start
 ```
 
 L'API sera accessible sur `http://localhost:5000`
 
-## ☁️ Déploiement sur Vercel
-
-### Option 1: Déploiement via CLI
-
-1. **Installer Vercel CLI**
-```bash
-npm install -g vercel
-```
-
-2. **Se connecter à Vercel**
-```bash
-vercel login
-```
-
-3. **Déployer le projet**
-```bash
-vercel deploy
-```
-
-### Option 2: Déploiement via Git
-
-1. Connecter votre repository GitHub à Vercel
-2. Vercel détectera automatiquement la configuration
-3. Le déploiement se fera automatiquement à chaque push
+---
 
 ## 🏗️ Architecture
 
 ### Structure des fichiers
 ```
 anime-sama-api/
-├── api/                    # Endpoints Vercel Functions
+├── api/                    # Endpoints API
 │   ├── search.js          # Recherche d'anime
-│   ├── trending.js        # Tendances
+│   ├── popular.js         # Anime populaires + pépites
+│   ├── recent.js          # Épisodes récents
+│   ├── planning.js        # Planning des anime
+│   ├── recommendations.js # Recommandations
 │   ├── anime/[id].js      # Détails d'anime
 │   ├── seasons/           # Gestion des saisons
 │   ├── episodes/          # Gestion des épisodes
 │   ├── episode/           # Sources d'épisodes
-│   └── embed.js           # Lecteur intégré
+│   ├── episode-by-id.js   # Sources par ID
+│   └── embed.js           # Extraction de sources
 ├── utils/
-│   └── scraper.js         # Utilitaires de scraping
-├── server.js              # Serveur Express (dev)
-├── vercel.json            # Configuration Vercel
-└── package.json           # Dépendances
+│   ├── scraper.js         # Utilitaires de scraping
+│   └── title-cleaner.js   # Nettoyage des titres
+├── server.js              # Serveur Express
+├── package.json           # Dépendances
+└── README.md             # Documentation
 ```
 
 ### Technologies utilisées
-- **Node.js** - Runtime JavaScript
-- **Express.js** - Framework web (développement)
+- **Node.js 20+** - Runtime JavaScript
+- **Express.js** - Framework web
 - **Axios** - Client HTTP pour les requêtes
 - **Cheerio** - Parsing HTML côté serveur
-- **Vercel Functions** - Déploiement serverless
+- **Cors** - Gestion CORS
 
 ### Protection anti-bot
-- Rotation des User-Agent avec un pool de navigateurs communs
-- Délais aléatoires entre les requêtes (500-1500ms)
+- Rotation des User-Agent avec un pool de navigateurs
+- Délais aléatoires entre les requêtes (100-300ms)
 - Headers HTTP réalistes pour imiter un navigateur
-- Timeout de 8 secondes pour éviter les connexions qui traînent
+- Timeout de 5 secondes pour éviter les connexions qui traînent
+
+---
 
 ## 🔧 Configuration
 
 ### Variables d'environnement
 ```env
 NODE_ENV=production          # Environment (development/production)
-PORT=5000                   # Port du serveur (optionnel)
+PORT=5000                   # Port du serveur
 ```
 
-### Vercel.json
-Le fichier `vercel.json` est configuré pour :
-- Fonctions serverless avec timeout de 10 secondes
-- Headers CORS automatiques
-- Routage vers les endpoints API
+---
 
 ## 🚨 Limitations
 
-- **Pas de cache** - Toutes les données sont récupérées en temps réel
-- **Dépendant du site source** - L'API dépend de la disponibilité d'anime-sama.fr
+- **Dépendant du site source** - L'API dépend de la disponibilité d'anime-sama.eu
 - **Rate limiting** - Délais implémentés pour éviter de surcharger le serveur cible
-- **URLs spécifiques** - L'embed n'accepte que les URLs anime-sama.fr pour la sécurité
+- **Structure HTML** - Peut nécessiter des mises à jour si la structure du site change
+- **Cache 5min** - Les recommandations sont cachées pour éviter les requêtes répétées
+
+---
 
 ## 📝 Exemples d'utilisation
 
 ### JavaScript/Fetch
 ```javascript
 // Rechercher des anime
-const response = await fetch('https://anime-sama-scraper.vercel.app/api/search?query=naruto');
+const response = await fetch('http://localhost:5000/api/search?query=naruto');
 const data = await response.json();
-console.log(data.results);
+console.log(data.animes);
 
 // Récupérer les épisodes récents
-const recent = await fetch('https://anime-sama-scraper.vercel.app/api/recent');
+const recent = await fetch('http://localhost:5000/api/recent');
 const recentData = await recent.json();
+console.log(recentData.recentEpisodes);
+
+// Récupérer les populaires avec pépites
+const popular = await fetch('http://localhost:5000/api/popular');
+const popularData = await popular.json();
+console.log(popularData.categories.classiques);
+console.log(popularData.categories.pepites);
 ```
 
 ### cURL
 ```bash
 # Recherche
-curl "https://anime-sama-scraper.vercel.app/api/search?query=black%20butler"
+curl "http://localhost:5000/api/search?query=naruto"
 
 # Épisodes récents
-curl "https://anime-sama-scraper.vercel.app/api/recent"
+curl "http://localhost:5000/api/recent"
 
-# Embed
-curl "https://anime-sama-scraper.vercel.app/api/embed?url=https%3A%2F%2Fanime-sama.fr%2Fcatalogue%2Fblack-butler"
+# Anime populaires
+curl "http://localhost:5000/api/popular"
+
+# Planning du jour
+curl "http://localhost:5000/api/planning"
+
+# Recommandations
+curl "http://localhost:5000/api/recommendations?page=1&limit=50"
+
+# Détails d'anime
+curl "http://localhost:5000/api/anime/naruto"
+
+# Saisons
+curl "http://localhost:5000/api/seasons/naruto"
+
+# Épisodes d'une saison
+curl "http://localhost:5000/api/episodes/naruto?season=1&language=VOSTFR"
+
+# Sources d'épisode
+curl "http://localhost:5000/api/episode/naruto/1/1"
 ```
+
+---
 
 ## 📄 Licence
 
@@ -398,4 +416,20 @@ MIT License - Voir le fichier LICENSE pour plus de détails.
 
 ## ⚠️ Avertissement
 
-Cette API est créée à des fins éducatives. Respectez les conditions d'utilisation du site anime-sama.fr et utilisez l'API de manière responsable.
+Cette API est créée à des fins éducatives. Respectez les conditions d'utilisation du site anime-sama.eu et utilisez l'API de manière responsable.
+
+---
+
+<div align="center">
+
+## 🌟 Contribuer
+
+**Si ce projet vous aide, donnez-lui une ⭐ !**
+
+**Made with ❤️ by [el_cid](https://github.com/el_cid)**
+
+© 2025 el_cid - Tous droits réservés
+
+<img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&height=100&section=footer" />
+
+</div>

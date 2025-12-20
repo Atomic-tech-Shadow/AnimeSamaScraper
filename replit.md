@@ -1,51 +1,89 @@
-# Anime-Sama API Project v2.0
+# Anime-Sama API v2.0 - Project Notes
 
-## Overview
-API Node.js serverless avancée qui scrape le site anime-sama.fr en temps réel pour fournir des données d'anime via des endpoints JSON. Compatible avec Vercel et Replit.
+## Project Overview
+**Anime-Sama API** is a real-time anime scraping API that fetches data from anime-sama.eu (migrated from anime-sama.fr). The API provides 11 complete endpoints for searching, retrieving, and streaming anime content.
 
-## Version 2.0 Features
-- **Smart Recommendations System**: Exploration aléatoire intelligente de tout le catalogue (38 pages)
-- **Advanced Caching**: Cache optimisé de 5 minutes avec rotation automatique des pages
-- **Zero Duplication**: Système anti-répétition double couche (cache + requête)
-- **Complete Catalog Coverage**: Découverte de ~1500-2000 animes de tout le site
-- **Production Ready**: Système respectueux du serveur avec exploration efficace
+## Current Status ✅
+- **Domain**: anime-sama.eu (Updated Dec 20, 2025)
+- **All 11 endpoints**: Fully tested and operational
+- **Latest update**: Popular endpoint now includes "Pépites" section
+- **Workflow status**: Running and healthy
 
-## Project Architecture
-- **Server**: Express.js server running on port 5000
-- **Dependencies**: axios, cheerio, cors, express
-- **API Endpoints**:
-  - `/api/search` - Search anime by query
-  - `/api/recent` - Get recent episodes (fixed duplicate issue)
-  - `/api/planning` - Get planning data
-  - `/api/recommendations` - Get anime recommendations from catalogue (animes only, no scans)
-  - `/api/anime/:id` - Get anime details
-  - `/api/seasons/:animeId` - Get seasons
-  - `/api/episodes/:animeId` - Get episodes
-  - `/api/episode-by-id/:episodeId` - Get episode sources
-  - `/api/embed` - Embed player
+## Key Features
+✅ Search anime by query
+✅ Trending anime with smart cache
+✅ Recent episodes (30 items)
+✅ Popular anime (15 Classiques + 15 Pépites)
+✅ Planning by day
+✅ Recommendations with rotation
+✅ Anime details with full metadata
+✅ Seasons and episodes
+✅ Streaming sources extraction
+✅ Embed player support
+✅ CORS enabled for all routes
 
-## Recent Changes
-- **2025-08-17**: Removed /api/index.js to maintain exactly 12 functions for Vercel Hobby plan compatibility
-- **2025-08-17**: Removed /health endpoint as requested by user
-- **2025-08-17**: Migrated from Replit Agent to standard Replit environment
-- **2025-08-17**: Fixed duplicate episodes bug in `/api/recent` endpoint by implementing proper deduplication logic
-- **2025-08-17**: Added double layer deduplication (button-level and episode-level) to prevent duplicate entries
-- **2025-08-17**: Added new `/api/recommendations` endpoint to scrape catalogue page for anime recommendations (filters out scans)
-- **2025-08-17**: Implemented intelligent randomization system for recommendations with double shuffle (cache-level + request-level)
-- **2025-08-17**: Added smart random page exploration system - explores up to 50 different random pages without repetition, auto-resets for infinite variety
-- **2025-08-17**: Optimized cache duration to 5 minutes and improved page range detection to reduce empty page requests and server load
-- **2025-08-17**: Verified anime-sama.fr catalogue contains 38 pages maximum, optimized random page selection to pages 1-38 for 100% valid content
-- **2025-08-17**: Upgraded to version 2.0.0 and cleaned up documentation (removed API_DOCUMENTATION.md, FRONTEND_EXAMPLES.md, LANGUAGE_SELECTOR_GUIDE.md, QUICK_START.md)
-- **2025-08-17**: Enhanced README.md with modern GitHub animations, badges, GIFs, and visual elements for better presentation
-- **2025-08-17**: Added comprehensive technologies stack section with badges, icons, and visual representation of all languages/tools used
-- **2025-08-17**: Added social media contact section with placeholders for WhatsApp, Facebook, YouTube, TikTok, Telegram, and Email
+## Tech Stack
+- Node.js 20+
+- Express.js 4.x
+- Axios (HTTP client)
+- Cheerio (HTML parsing)
+- Cors middleware
+
+## Recent Changes (December 20, 2025)
+
+### Domain Migration
+- Migrated from `anime-sama.fr` to `anime-sama.eu` across all files
+- Updated all scraping endpoints and URLs
+
+### Endpoint Fixes
+1. **Fixed `/api/recent`** - Updated HTML selectors to work with new site structure
+2. **Fixed `/api/popular`** - Now correctly extracts both classiques and pépites sections
+3. **Fixed `/api/anime/:id`** - Improved title extraction from meta tags
+4. **Fixed `/api/seasons/:animeId`** - Updated season extraction logic
+5. **Verified all endpoints** - 11 endpoints tested and working
+
+### Files Modified
+- server.js - Updated domain in examples
+- api/recent.js - Complete rewrite for new HTML structure
+- api/popular.js - Added containerPepites extraction
+- api/embed.js - Updated domain validation
+- api/planning.js - Updated all URLs
+- utils/scraper.js - Updated getAnimeDetails() function
+- README.md - Complete documentation update
+
+## API Endpoints
+1. `GET /` - Root documentation
+2. `GET /api/search?query=xxx` - Search anime
+3. `GET /api/popular` - Popular + Pépites
+4. `GET /api/recent` - Recent episodes
+5. `GET /api/planning` - Daily planning
+6. `GET /api/recommendations` - Smart recommendations
+7. `GET /api/anime/:id` - Anime details
+8. `GET /api/seasons/:animeId` - Seasons list
+9. `GET /api/episodes/:animeId` - Episodes with sources
+10. `GET /api/episode/:animeId/:season/:ep` - Episode sources
+11. `GET /api/embed?url=xxx` - Source extraction
+
+## Known Limitations
+- Depends on anime-sama.eu availability
+- Rate limited to avoid overloading source
+- Cache: 5 minutes for recommendations
+- HTML structure dependent (may need updates if site changes)
+
+## Workflow Configuration
+- **Name**: Anime API Server
+- **Command**: npm start
+- **Port**: 5000
+- **Status**: Running
 
 ## User Preferences
-- Language: French preferred for communication
-- Focus on data integrity and real-time scraping accuracy
+- Language: French
+- Focus: Fast, efficient implementation
+- Testing: Thorough endpoint verification
+- Documentation: Complete and bilingual
 
-## Known Issues
-None - all endpoints working correctly, duplicates resolved.
-
-## Deployment
-Ready for deployment on Replit or Vercel. Server configured to run on 0.0.0.0:5000 for Replit compatibility.
+## Next Steps (if needed)
+- Monitor anime-sama.eu for structure changes
+- Add rate limiting headers
+- Consider adding database caching
+- Implement webhook support
