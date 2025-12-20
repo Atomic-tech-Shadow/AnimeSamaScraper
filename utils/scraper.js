@@ -531,24 +531,24 @@ async function getAnimeDetails(animeId) {
             throw new Error('Anime page not found');
         }
         
-        // Extract title from specific elements
-        const title = $('#titreOeuvre').text().trim() || 
-                     $('meta[property="og:title"]').attr('content') || 
-                     $('title').text().split('|')[0].trim() ||
-                     animeId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        // Extract title - try multiple methods for new structure
+        let title = $('meta[property="og:title"]').attr('content') || 
+                   $('title').text().split('|')[0].trim() ||
+                   $('h1').first().text().trim() ||
+                   animeId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
         
-        // Extract alternative titles from titreAlter
-        const alternativeTitles = $('#titreAlter').text().trim();
+        // Extract alternative titles
+        const alternativeTitles = $('meta[property="og:site_name"]').attr('content') || '';
         
-        // Extract synopsis from meta description - full text
+        // Extract synopsis from meta description
         const synopsis = $('meta[name="description"]').attr('content') || 
                         $('meta[property="og:description"]').attr('content') ||
                         'Synopsis non disponible';
         
         // Extract image from meta or page elements
         const image = $('meta[property="og:image"]').attr('content') ||
-                     $('#coverOeuvre').attr('src') ||
-                     $('#imgOeuvre').attr('src');
+                     $('img[alt*="' + animeId + '"]').first().attr('src') ||
+                     `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${animeId}.jpg`;
         
         // Extract genres from the page using direct text search
         let genres = [];
