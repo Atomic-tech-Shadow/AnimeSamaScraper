@@ -43,10 +43,10 @@ module.exports = async (req, res) => {
                 
                 const $card = $link.closest('.anime-card-premium, .card-base, .shrink-0') || $link;
                 const $title = $card.find('.card-title');
-                const title = $title.length > 0 ? $title.text().trim() : animeId.replace(/-/g, ' ');
+                const title = $title.length > 0 ? $title.text().trim() : null;
                 
                 const $img = $card.find('.card-image');
-                const image = $img.attr('src') || $img.attr('data-src') || `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${animeId}.jpg`;
+                const image = $img.attr('src') || $img.attr('data-src') || null;
                 
                 popularAnime.pepites.push({
                     id: animeId,
@@ -80,10 +80,10 @@ module.exports = async (req, res) => {
             if ($card.closest('#containerPepites').length > 0) return;
             
             const $title = $card.find('.card-title');
-            const title = $title.length > 0 ? $title.text().trim() : animeId.replace(/-/g, ' ');
+            const title = $title.length > 0 ? $title.text().trim() : null;
             
             const $img = $card.find('.card-image');
-            const image = $img.attr('src') || $img.attr('data-src') || `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${animeId}.jpg`;
+            const image = $img.attr('src') || $img.attr('data-src') || null;
             
             popularAnime.classiques.push({
                 id: animeId,
