@@ -89,28 +89,27 @@ module.exports = async (req, res) => {
             const dayName = daysOfWeek[frenchDayNames.indexOf(dayKey)];
             
             // On cherche spécifiquement la section "Sorties du [Jour]" sur la home page
-            // Ces sections sont généralement des titres h1/h2 ou des divs avec une classe de titre
-            let $dayTitle = $(`h1:contains("Sorties du ${dayName}"), h2:contains("Sorties du ${dayName}"), h3:contains("Sorties du ${dayName}")`).first();
+            let $dayTitle = null;
+            $('h2').each((i, el) => {
+                const text = $(el).text().trim();
+                if (text.includes(`Sorties du ${dayName}`)) {
+                    $dayTitle = $(el);
+                    return false;
+                }
+            });
             
-            // Fallback: Recherche textuelle plus large si le sélecteur strict échoue
-            if ($dayTitle.length === 0) {
-                $('h1, h2, h3, div').each((i, el) => {
-                    const text = $(el).text().trim();
-                    if (text === `Sorties du ${dayName}`) {
-                        $dayTitle = $(el);
-                        return false;
-                    }
-                });
-            }
-
             let $container;
-            if ($dayTitle.length > 0) {
-                // Le conteneur des cartes est le premier div suivant le titre de la section
+            if ($dayTitle && $dayTitle.length > 0) {
+                // Le conteneur des cartes est le premier div suivant le titre h2
                 $container = $dayTitle.nextAll('div').first();
             }
             
-            // Si on ne trouve rien avec le titre, on ne remplit pas ce jour
-            // pour garantir qu'on ne cible que la section demandée
+            // Fallback sur l'ID de conteneur si le titre h2 n'est pas trouvé
+            if (!$container || $container.length === 0) {
+                const containerId = 'container' + (dayName === 'Dimanche' ? 'Dimanche' : dayName);
+                $container = $(`#${containerId}`);
+            }
+
             if (!$container || $container.length === 0) return;
             
             const items = [];
