@@ -55,12 +55,22 @@ module.exports = async (req, res) => {
                             .replace(/Genres.*$/i, '')
                             .replace(/Types.*$/i, '')
                             .replace(/Langues.*$/i, '')
+                            .replace(/Synopsis.*$/i, '')
                             .trim();
                 
-                // Take only first meaningful part if too long
-                if (title.length > 100) {
-                    const parts = title.split(/,|\s{2,}/);
-                    title = parts[0].trim();
+                // Take only first meaningful part (before duplicate titles)
+                if (title.includes(' ') && title.length > 20) {
+                    const words = title.split(' ');
+                    let cleanTitle = '';
+                    for (let w of words) {
+                        if (w.match(/^[A-Z][a-z]*$/) && cleanTitle && cleanTitle.split(' ').length >= 2) {
+                            // Check if this might be a duplicate
+                            if (cleanTitle.toLowerCase().includes(w.toLowerCase())) break;
+                        }
+                        cleanTitle += (cleanTitle ? ' ' : '') + w;
+                        if (cleanTitle.split(' ').length >= 4 && cleanTitle.length > 20) break;
+                    }
+                    title = cleanTitle.trim();
                 }
                 
                 if (!title || title.length < 2) {

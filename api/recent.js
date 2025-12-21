@@ -82,7 +82,23 @@ module.exports = async (req, res) => {
                                   .replace(/Saison\s*\d+.*$/i, '')
                                   .replace(/Partie\s*\d+.*$/i, '')
                                   .replace(/Genres.*$/i, '')
+                                  .replace(/Types.*$/i, '')
+                                  .replace(/Langues.*$/i, '')
+                                  .replace(/Synopsis.*$/i, '')
                                   .trim();
+            
+            // Take only first meaningful part (before duplicate or alternative titles)
+            if (animeTitle.includes(' ') && animeTitle.length > 20) {
+                const words = animeTitle.split(' ');
+                const stopWords = ['Genres', 'Types', 'Langues', 'Synopsis'];
+                let cleanTitle = '';
+                for (let w of words) {
+                    if (stopWords.some(sw => w.includes(sw))) break;
+                    cleanTitle += (cleanTitle ? ' ' : '') + w;
+                    if (cleanTitle.split(' ').length >= 4 && cleanTitle.length > 20) break;
+                }
+                animeTitle = cleanTitle.trim();
+            }
             
             if (!animeTitle || animeTitle.length < 2) {
                 animeTitle = animeId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
