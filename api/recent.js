@@ -56,25 +56,54 @@ module.exports = async (req, res) => {
             
             // Extract season and language from URL
             let season = 1;
+            let seasonPart = 1;
+            let episode = null;
             let language = 'VOSTFR';
             
+            // Extract season number and part/variant
             if (href.includes('/saison')) {
-                const seasonMatch = href.match(/\/saison(\d+)/);
-                season = seasonMatch ? parseInt(seasonMatch[1]) : 1;
+                const seasonMatch = href.match(/\/saison(\d+)(?:-(\d+))?/);
+                if (seasonMatch) {
+                    season = parseInt(seasonMatch[1]);
+                    // Extract part number if exists (e.g., saison1-2 means season 1 part 2)
+                    if (seasonMatch[2]) {
+                        seasonPart = parseInt(seasonMatch[2]);
+                    }
+                }
             }
             
+            // Extract language
             if (href.includes('/vf')) {
                 language = 'VF';
             } else if (href.includes('/va')) {
                 language = 'VA';
+            } else if (href.includes('/vkr')) {
+                language = 'VKR';
+            } else if (href.includes('/vcn')) {
+                language = 'VCN';
+            } else if (href.includes('/vqc')) {
+                language = 'VQC';
+            } else if (href.includes('/vf1')) {
+                language = 'VF1';
+            } else if (href.includes('/vf2')) {
+                language = 'VF2';
+            } else if (href.includes('/vj')) {
+                language = 'VJ';
             }
             
-            // Extract season info from card text
+            // Extract season and episode info from card text
             let seasonText = '';
+            let episodeText = '';
             $infoItems.each((i, item) => {
                 const text = $(item).text().trim();
                 if (text.includes('Saison') || text.includes('Partie')) {
                     seasonText = text;
+                    // Try to extract episode number from text
+                    const episodeMatch = text.match(/[Éé]pisode?\s*(\d+)/i);
+                    if (episodeMatch) {
+                        episode = parseInt(episodeMatch[1]);
+                        episodeText = episodeMatch[0];
+                    }
                 }
             });
             
@@ -82,8 +111,11 @@ module.exports = async (req, res) => {
                 animeId: animeId,
                 animeTitle: animeTitle,
                 season: season,
+                seasonPart: seasonPart,
+                episode: episode,
                 language: language,
                 seasonInfo: seasonText,
+                episodeInfo: episodeText,
                 url: href.startsWith('http') ? href : `https://anime-sama.eu${href}`,
                 image: image,
                 addedAt: new Date().toISOString(),
