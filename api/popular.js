@@ -97,69 +97,78 @@ module.exports = async (req, res) => {
             });
         }
         
-        // Extract Classiques from main page (skip pepites container)
-        $('a[href*="/catalogue/"]').each((index, link) => {
-            if (popularAnime.classiques.length >= 15) return false;
+        // Extract Classiques from containerClassiques
+        const $classiquesContainer = $('#containerClassiques');
+        if ($classiquesContainer.length > 0) {
+            $classiquesContainer.find('a[href*="/catalogue/"]').each((index, link) => {
+                if (popularAnime.classiques.length >= 15) return false;
+                
+                const $link = $(link);
+                const href = $link.attr('href');
+                
+                if (!href || !href.includes('/catalogue/')) return;
+                
+                const urlParts = href.split('/');
+                const catalogueIndex = urlParts.indexOf('catalogue');
+                const animeId = catalogueIndex >= 0 && catalogueIndex + 1 < urlParts.length
+                    ? urlParts[catalogueIndex + 1]
+                    : null;
+                
+                if (!animeId || seenIds.has(animeId)) return;
             
-            const $link = $(link);
-            const href = $link.attr('href');
-            
-            if (!href || !href.includes('/catalogue/')) return;
-            
-            const urlParts = href.split('/');
-            const catalogueIndex = urlParts.indexOf('catalogue');
-            const animeId = catalogueIndex >= 0 && catalogueIndex + 1 < urlParts.length
-                ? urlParts[catalogueIndex + 1]
-                : null;
-            
-            if (!animeId || seenIds.has(animeId)) return;
-            
-            // Skip if in pepites container
-            if ($link.closest('#containerPepites').length > 0) return;
-            
-            seenIds.add(animeId);
-            
-            // Clean title - extract just the main title
-            let title = $link.text().trim();
-            title = title.replace(/\n/g, ' ')
-                        .replace(/\s+/g, ' ')
-                        .replace(/(\d{1,2}h\d{2})/g, '')
-                        .replace(/(VOSTFR|VF|VCN|VA|VKR|VJ|VF1|VF2)/gi, '')
-                        .replace(/Saison\s*\d+.*$/i, '')
-                        .replace(/Partie\s*\d+.*$/i, '')
-                        .replace(/Genres.*$/i, '')
-                        .replace(/Types.*$/i, '')
-                        .replace(/Langues.*$/i, '')
-                        .trim();
-            
-            // Take only first meaningful part if too long
-            if (title.length > 100) {
-                const parts = title.split(/,|\s{2,}/);
-                title = parts[0].trim();
-            }
-            
-            if (!title || title.length < 2) {
-                title = animeId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-            }
-            
-            // Get image
-            const $img = $link.find('img').first();
-            let image = $img.attr('src');
-            
-            if (!image || !image.includes('statically')) {
-                image = `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${animeId}.jpg`;
-            } else if (image && !image.startsWith('http')) {
-                image = 'https:' + image;
-            }
-            
-            popularAnime.classiques.push({
-                id: animeId,
-                title: title,
-                image: image,
-                url: href.startsWith('http') ? href : `https://anime-sama.eu${href}`,
-                category: 'classique'
+                seenIds.add(animeId);
+                
+                // Clean title - extract just the main title
+                let title = $link.text().trim();
+                title = title.replace(/\n/g, ' ')
+                            .replace(/\s+/g, ' ')
+                            .replace(/(\d{1,2}h\d{2})/g, '')
+                            .replace(/(VOSTFR|VF|VCN|VA|VKR|VJ|VF1|VF2)/gi, '')
+                            .replace(/Saison\s*\d+.*$/i, '')
+                            .replace(/Partie\s*\d+.*$/i, '')
+                            .replace(/Genres.*$/i, '')
+                            .replace(/Types.*$/i, '')
+                            .replace(/Langues.*$/i, '')
+                            .replace(/Synopsis.*$/i, '')
+                            .trim();
+                
+                // Take only first meaningful part (before duplicate titles)
+                if (title.includes(' ') && title.length > 20) {
+                    const words = title.split(' ');
+                    let cleanTitle = '';
+                    for (let w of words) {
+                        if (w.match(/^[A-Z][a-z]*$/) && cleanTitle && cleanTitle.split(' ').length >= 2) {
+                            if (cleanTitle.toLowerCase().includes(w.toLowerCase())) break;
+                        }
+                        cleanTitle += (cleanTitle ? ' ' : '') + w;
+                        if (cleanTitle.split(' ').length >= 4 && cleanTitle.length > 20) break;
+                    }
+                    title = cleanTitle.trim();
+                }
+                
+                if (!title || title.length < 2) {
+                    title = animeId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                }
+                
+                // Get image
+                const $img = $link.find('img').first();
+                let image = $img.attr('src');
+                
+                if (!image || !image.includes('statically')) {
+                    image = `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${animeId}.jpg`;
+                } else if (image && !image.startsWith('http')) {
+                    image = 'https:' + image;
+                }
+                
+                popularAnime.classiques.push({
+                    id: animeId,
+                    title: title,
+                    image: image,
+                    url: href.startsWith('http') ? href : `https://anime-sama.eu${href}`,
+                    category: 'classique'
+                });
             });
-        });
+        }
         
         const allPopular = [...popularAnime.classiques, ...popularAnime.pepites];
         
