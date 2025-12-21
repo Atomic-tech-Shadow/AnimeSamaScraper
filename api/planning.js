@@ -9,40 +9,27 @@ const COUNTRY_TIMEZONE_MAP = {
 };
 
 function detectTimezoneFromIP(req) {
-    const clientIP = req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || 
-                    req.connection.remoteAddress || req.socket.remoteAddress ||
-                    (req.connection.socket ? req.connection.socket.remoteAddress : null);
-    if (!clientIP || clientIP === '127.0.0.1' || clientIP === '::1' || clientIP.startsWith('192.168.') || clientIP.startsWith('10.')) {
-        return 'gmt+0';
-    }
+    // Force GMT+0 by default as requested by the user
     return 'gmt+0';
 }
 
 function convertTime(frenchTime, targetTimezone) {
-    if (!frenchTime || !targetTimezone) return frenchTime;
+    if (!frenchTime) return frenchTime;
     const timeMatch = frenchTime.match(/(\d{1,2})[h:](\d{2})/);
     if (!timeMatch) return frenchTime;
     
     let hours = parseInt(timeMatch[1]);
     const minutes = timeMatch[2];
     
-    switch(targetTimezone.toLowerCase()) {
-        case 'gmt':
-        case 'utc':
-        case 'gmt+0':
-        case 'togo':
-            const now = new Date();
-            const isWinter = now.getMonth() < 2 || now.getMonth() > 9;
-            const offset = isWinter ? -1 : -2;
-            hours += offset;
-            break;
-        case 'gmt+1':
-        case 'west-africa':
-            hours -= 1;
-            break;
-        default:
-            return frenchTime;
-    }
+    // Anime-Sama is based on Paris time (CET/CEST)
+    // Paris is GMT+1 in winter and GMT+2 in summer
+    const now = new Date();
+    // Simplified DST check for France (standard approximation)
+    const isSummerTime = now.getMonth() > 2 && now.getMonth() < 10;
+    const parisOffset = isSummerTime ? 2 : 1;
+
+    // Convert to GMT (UTC+0)
+    hours -= parisOffset;
     
     if (hours < 0) hours += 24;
     if (hours >= 24) hours -= 24;
