@@ -4,17 +4,17 @@
 **Anime-Sama API** is a real-time anime scraping API that fetches data from anime-sama.eu (migrated from anime-sama.fr). The API provides 11 complete endpoints for searching, retrieving, and streaming anime content.
 
 ## Current Status ✅
-- **Domain**: anime-sama.eu (Updated Dec 20, 2025)
+- **Domain**: anime-sama.eu (Updated Dec 21, 2025)
 - **All 11 endpoints**: Fully tested and operational
-- **Latest update**: Popular endpoint now includes "Pépites" section
+- **Latest update**: Endpoints now scrape homepage sections ("Sorties du...", Recent episodes, Classiques, Pépites)
 - **Workflow status**: Running and healthy
 
 ## Key Features
 ✅ Search anime by query
 ✅ Trending anime with smart cache
-✅ Recent episodes (30 items)
-✅ Popular anime (15 Classiques + 15 Pépites)
-✅ Planning by day
+✅ Recent episodes from homepage (30 items)
+✅ Popular anime with Classiques & Pépites sections
+✅ Planning by day (Sorties du Dimanche/Lundi/etc.)
 ✅ Recommendations with rotation
 ✅ Anime details with full metadata
 ✅ Seasons and episodes
@@ -29,34 +29,37 @@
 - Cheerio (HTML parsing)
 - Cors middleware
 
-## Recent Changes (December 20, 2025)
+## Recent Changes (December 21, 2025)
 
-### Domain Migration
-- Migrated from `anime-sama.fr` to `anime-sama.eu` across all files
-- Updated all scraping endpoints and URLs
+### Homepage Scraping Optimization
+All main endpoints now scrape sections directly from homepage (https://anime-sama.eu):
 
-### Endpoint Fixes
-1. **Fixed `/api/recent`** - Updated HTML selectors to work with new site structure
-2. **Fixed `/api/popular`** - Now correctly extracts both classiques and pépites sections
-3. **Fixed `/api/anime/:id`** - Improved title extraction from meta tags
-4. **Fixed `/api/seasons/:animeId`** - Updated season extraction logic
-5. **Verified all endpoints** - 11 endpoints tested and working
+1. **`/api/planning`** - Scrapes "Sorties du Dimanche/Lundi/etc." sections
+   - Extracts release times, anime titles, languages, types
+   - Supports timezone conversion
+   - Filters by day/type/language
 
-### Files Modified
-- server.js - Updated domain in examples
-- api/recent.js - Complete rewrite for new HTML structure
-- api/popular.js - Added containerPepites extraction
-- api/embed.js - Updated domain validation
-- api/planning.js - Updated all URLs
-- utils/scraper.js - Updated getAnimeDetails() function
-- README.md - Complete documentation update
+2. **`/api/recent`** - Scrapes "dernière épisode ajouté" section
+   - Extracts latest episode information
+   - Includes season, episode number, language info
+   - Returns up to 30 recent episodes
+
+3. **`/api/popular`** - Scrapes "Classique" and "Pépites" sections
+   - Extracts both classic and hidden gem anime
+   - Organized by category
+   - 15 items per category
+
+### Files Modified (Dec 21, 2025)
+- `api/planning.js` - Complete rewrite to scrape "Sorties du..." sections
+- `api/recent.js` - Optimized to target homepage recent episodes section
+- `api/popular.js` - Enhanced with section-based scraping for Classiques & Pépites
 
 ## API Endpoints
 1. `GET /` - Root documentation
 2. `GET /api/search?query=xxx` - Search anime
-3. `GET /api/popular` - Popular + Pépites
+3. `GET /api/popular` - Popular anime (Classiques + Pépites)
 4. `GET /api/recent` - Recent episodes
-5. `GET /api/planning` - Daily planning
+5. `GET /api/planning` - Daily planning by release day
 6. `GET /api/recommendations` - Smart recommendations
 7. `GET /api/anime/:id` - Anime details
 8. `GET /api/seasons/:animeId` - Seasons list
@@ -80,7 +83,7 @@
 - Language: French
 - Focus: Fast, efficient implementation
 - Testing: Thorough endpoint verification
-- Documentation: Complete and bilingual
+- Documentation: Complete
 
 ## Next Steps (if needed)
 - Monitor anime-sama.eu for structure changes
