@@ -46,21 +46,21 @@ module.exports = async (req, res) => {
             
             if (!animeId) return;
             
-            // Get title from card
+            // Get title from card (no fallback)
             const $title = $card.find('.card-title');
-            const animeTitle = $title.length > 0 ? $title.text().trim() : animeId.replace(/-/g, ' ');
+            const animeTitle = $title.length > 0 ? $title.text().trim() : null;
             
-            // Get image
+            // Get image (no fallback)
             const $img = $card.find('.card-image');
-            const image = $img.attr('src') || $img.attr('data-src') || `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${animeId}.jpg`;
+            const image = $img.attr('src') || $img.attr('data-src') || null;
             
             // Extract season and language from URL
-            let season = 1;
-            let seasonPart = 1;
+            let season = null;
+            let seasonPart = null;
             let episode = null;
-            let language = 'VOSTFR';
+            let language = null;
             
-            // Extract season number and part/variant
+            // Extract season number and part/variant (only if found)
             if (href.includes('/saison')) {
                 const seasonMatch = href.match(/\/saison(\d+)(?:-(\d+))?/);
                 if (seasonMatch) {
@@ -68,12 +68,22 @@ module.exports = async (req, res) => {
                     // Extract part number if exists (e.g., saison1-2 means season 1 part 2)
                     if (seasonMatch[2]) {
                         seasonPart = parseInt(seasonMatch[2]);
+                    } else {
+                        seasonPart = 1;
                     }
                 }
             }
             
-            // Extract language
-            if (href.includes('/vf')) {
+            // Extract language (only if found in URL - check most specific first)
+            if (href.includes('/vostfr')) {
+                language = 'VOSTFR';
+            } else if (href.includes('/vj')) {
+                language = 'VJ';
+            } else if (href.includes('/vf2')) {
+                language = 'VF2';
+            } else if (href.includes('/vf1')) {
+                language = 'VF1';
+            } else if (href.includes('/vf')) {
                 language = 'VF';
             } else if (href.includes('/va')) {
                 language = 'VA';
@@ -83,17 +93,11 @@ module.exports = async (req, res) => {
                 language = 'VCN';
             } else if (href.includes('/vqc')) {
                 language = 'VQC';
-            } else if (href.includes('/vf1')) {
-                language = 'VF1';
-            } else if (href.includes('/vf2')) {
-                language = 'VF2';
-            } else if (href.includes('/vj')) {
-                language = 'VJ';
             }
             
             // Extract season and episode info from card text
-            let seasonText = '';
-            let episodeText = '';
+            let seasonText = null;
+            let episodeText = null;
             $infoItems.each((i, item) => {
                 const text = $(item).text().trim();
                 if (text.includes('Saison') || text.includes('Partie')) {
@@ -107,7 +111,8 @@ module.exports = async (req, res) => {
                 }
             });
             
-            recentEpisodes.push({
+            // Only add item if it has necessary data from the site
+            const item = {
                 animeId: animeId,
                 animeTitle: animeTitle,
                 season: season,
@@ -120,7 +125,9 @@ module.exports = async (req, res) => {
                 image: image,
                 addedAt: new Date().toISOString(),
                 type: 'recent'
-            });
+            };
+            
+            recentEpisodes.push(item);
         });
         
         // Limit to 30 most recent
