@@ -72,15 +72,20 @@ module.exports = async (req, res) => {
             
             // Extract season and episode
             const infoText = $link.find('.info-text').text().trim() || $link.text();
+            
+            // Extract Season
             const seasonMatch = href.match(/\/saison(\d+)/i) || infoText.match(/Saison\s*(\d+)/i);
             const season = seasonMatch ? parseInt(seasonMatch[1]) : 1;
             
-            const episodeMatch = infoText.match(/[Éé]pisode?\s*(\d+)/i);
-            const episode = episodeMatch ? parseInt(episodeMatch[1]) : null;
+            // Extract Episode
+            // Pattern 1: "Episode 1154"
+            // Pattern 2: "Saison 1 Episode 15"
+            const epMatch = infoText.match(/Episode\s*(\d+)/i);
+            const episode = epMatch ? parseInt(epMatch[1]) : null;
             
             // Language
             let language = 'VOSTFR';
-            const langBadge = $link.find('.language-badge-top img').attr('title');
+            const langBadge = $link.find('.language-badge-top img').attr('title') || $link.find('.language-badge-top img').attr('alt');
             if (langBadge) {
                 language = langBadge.toUpperCase();
             } else if (href.includes('/vf2') || infoText.includes('VF2')) {
@@ -100,7 +105,8 @@ module.exports = async (req, res) => {
                 url: href.startsWith('http') ? href : `https://anime-sama.eu${href}`,
                 image: image,
                 addedAt: new Date().toISOString(),
-                type: 'anime'
+                type: 'anime',
+                infoText: infoText // Added for debugging and clarity
             };
             
             recentEpisodes.push(item);
