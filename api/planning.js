@@ -83,15 +83,6 @@ module.exports = async (req, res) => {
         
         const daysOfWeek = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
         const frenchDayNames = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
-        const containerMap = {
-            'dimanche': 'containerDimanche',
-            'lundi': 'containerLundi',
-            'mardi': 'containerMardi',
-            'mercredi': 'containerMercredi',
-            'jeudi': 'containerJeudi',
-            'vendredi': 'containerVendredi',
-            'samedi': 'containerSamedi'
-        };
         
         // Initialize all days
         daysOfWeek.forEach(dayName => {
@@ -103,29 +94,49 @@ module.exports = async (req, res) => {
             };
         });
         
-        // Extract from containers by ID
+        // Extraction depuis la section "Sorties du jour"
+        // Sur anime-sama.eu, les sorties du jour sont dans des divs avec ID #containerLundi, #containerMardi, etc.
+        // mais l'utilisateur précise que la cible est la section "Sorties du..."
+        
         frenchDayNames.forEach(dayKey => {
-            const containerId = containerMap[dayKey];
             const dayName = daysOfWeek[frenchDayNames.indexOf(dayKey)];
             
-            const $container = $(`#${containerId}`);
-            if ($container.length === 0) return;
+            // On cherche le titre qui contient le jour (ex: "Sorties du Lundi")
+            const $dayTitle = $(`h1:contains("Sorties du ${dayName}"), h2:contains("Sorties du ${dayName}"), h3:contains("Sorties du ${dayName}")`).first();
+            
+            let $container;
+            if ($dayTitle.length > 0) {
+                // Le container est généralement le div suivant ou un parent contenant les cartes
+                $container = $dayTitle.nextAll('div').first();
+            } else {
+                // Fallback sur les IDs classiques si le titre n'est pas trouvé
+                const containerId = 'container' + dayName;
+                $container = $(`#${containerId}`);
+            }
+
+            if (!$container || $container.length === 0) return;
             
             const items = [];
             
+            // Les éléments sont des liens contenant /catalogue/
             $container.find('a[href*="/catalogue/"]').each((idx, el) => {
                 const $link = $(el);
                 const href = $link.attr('href');
                 
                 if (!href || !href.includes('/catalogue/')) return;
                 
-                const pathMatch = href.match(/\/catalogue\/([^/]+)/);
-                if (!pathMatch) return;
+                const urlParts = href.split('/');
+                const catalogueIndex = urlParts.indexOf('catalogue');
+                if (catalogueIndex === -1 || catalogueIndex + 1 >= urlParts.length) return;
                 
-                const animeId = pathMatch[1];
+                const animeId = urlParts[catalogueIndex + 1];
                 let title = $link.text().trim();
                 
-                // Clean title - remove hour, language, season info
+                // Extraction de l'heure si présente (format 12h30)
+                const timeMatch = title.match(/(\d{1,2}h\d{2})/);
+                let time = timeMatch ? timeMatch[1] : null;
+
+                // Nettoyage du titre
                 title = title.replace(/\n/g, ' ')
                            .replace(/\s+/g, ' ')
                            .replace(/(\d{1,2}h\d{2})/g, '')
@@ -138,34 +149,23 @@ module.exports = async (req, res) => {
                     title = animeId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
                 }
                 
-                // Get image
+                // Image
                 const $img = $link.find('img').first();
-                let image = $img.attr('src');
+                let image = $img.attr('src') || $img.attr('data-src');
                 
-                if (!image || !image.includes('statically')) {
+                if (!image) {
                     image = `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${animeId}.jpg`;
-                } else if (image && !image.startsWith('http')) {
-                    image = 'https:' + image;
+                } else if (!image.startsWith('http')) {
+                    image = image.startsWith('//') ? 'https:' + image : `https://anime-sama.eu${image}`;
                 }
                 
-                // Extract language from link text
+                // Langue
                 const linkText = $link.text();
                 let language = 'VOSTFR';
                 if (linkText.includes('VF')) language = 'VF';
-                else if (linkText.includes('VCN')) language = 'VCN';
-                else if (linkText.includes('VA')) language = 'VA';
-                else if (linkText.includes('VKR')) language = 'VKR';
-                else if (linkText.includes('VJ')) language = 'VJ';
                 
-                // Extract time
-                const timeMatch = linkText.match(/(\d{1,2}h\d{2})/);
-                let time = timeMatch ? timeMatch[1] : null;
-                
-                // Determine type
-                let type = 'anime';
-                if (href.includes('/scan/')) {
-                    type = 'scan';
-                }
+                // Type
+                let type = href.includes('/scan/') ? 'scan' : 'anime';
                 
                 const convertedTime = time ? convertTime(time, detectedTimezone) : time;
                 
