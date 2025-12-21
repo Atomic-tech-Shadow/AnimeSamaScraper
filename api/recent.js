@@ -77,9 +77,11 @@ module.exports = async (req, res) => {
             let animeTitle = $link.text().trim();
             animeTitle = animeTitle.replace(/\n/g, ' ')
                                   .replace(/\s+/g, ' ')
-                                  .replace(/(VOSTFR|VF|VCN|VA|VKR|VJ)/gi, '')
+                                  .replace(/(\d{1,2}h\d{2})/g, '')
+                                  .replace(/(VOSTFR|VF|VCN|VA|VKR|VJ|VF1|VF2)/gi, '')
                                   .replace(/Saison\s*\d+.*$/i, '')
                                   .replace(/Partie\s*\d+.*$/i, '')
+                                  .replace(/Genres.*$/i, '')
                                   .trim();
             
             if (!animeTitle || animeTitle.length < 2) {
