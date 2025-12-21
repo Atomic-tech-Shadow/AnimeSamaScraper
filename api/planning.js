@@ -88,15 +88,15 @@ module.exports = async (req, res) => {
         frenchDayNames.forEach(dayKey => {
             const dayName = daysOfWeek[frenchDayNames.indexOf(dayKey)];
             
-            // Correction du sélecteur pour cibler la section Sorties du...
-            // Sur anime-sama.eu, les titres sont souvent dans des divs avec des classes spécifiques
-            // On cherche le titre qui contient le jour
+            // On cherche spécifiquement la section "Sorties du [Jour]" sur la home page
+            // Ces sections sont généralement des titres h1/h2 ou des divs avec une classe de titre
             let $dayTitle = $(`h1:contains("Sorties du ${dayName}"), h2:contains("Sorties du ${dayName}"), h3:contains("Sorties du ${dayName}")`).first();
             
-            // Fallback: chercher dans tout le texte si contains ne marche pas bien avec le sélecteur
+            // Fallback: Recherche textuelle plus large si le sélecteur strict échoue
             if ($dayTitle.length === 0) {
-                $('h1, h2, h3, div.text-xl, div.font-bold').each((i, el) => {
-                    if ($(el).text().includes(`Sorties du ${dayName}`)) {
+                $('h1, h2, h3, div').each((i, el) => {
+                    const text = $(el).text().trim();
+                    if (text === `Sorties du ${dayName}`) {
                         $dayTitle = $(el);
                         return false;
                     }
@@ -105,21 +105,17 @@ module.exports = async (req, res) => {
 
             let $container;
             if ($dayTitle.length > 0) {
-                // Le container est le div suivant qui contient les éléments
+                // Le conteneur des cartes est le premier div suivant le titre de la section
                 $container = $dayTitle.nextAll('div').first();
             }
             
-            // Fallback ultime sur les IDs de conteneurs s'ils existent encore
-            if (!$container || $container.length === 0 || $container.find('a[href*="/catalogue/"]').length === 0) {
-                const containerId = 'container' + (dayName === 'Dimanche' ? 'Dimanche' : dayName);
-                $container = $(`#${containerId}`);
-            }
-
+            // Si on ne trouve rien avec le titre, on ne remplit pas ce jour
+            // pour garantir qu'on ne cible que la section demandée
             if (!$container || $container.length === 0) return;
             
             const items = [];
             
-            // Les éléments sont des liens contenant /catalogue/
+            // Extraction des liens de catalogue dans ce conteneur spécifique
             $container.find('a[href*="/catalogue/"]').each((idx, el) => {
                 const $link = $(el);
                 const href = $link.attr('href');
