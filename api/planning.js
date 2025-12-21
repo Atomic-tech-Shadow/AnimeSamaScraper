@@ -88,16 +88,30 @@ module.exports = async (req, res) => {
         frenchDayNames.forEach(dayKey => {
             const dayName = daysOfWeek[frenchDayNames.indexOf(dayKey)];
             
-            // On cherche le titre qui contient le jour (ex: "Sorties du Lundi")
-            const $dayTitle = $(`h1:contains("Sorties du ${dayName}"), h2:contains("Sorties du ${dayName}"), h3:contains("Sorties du ${dayName}")`).first();
+            // Correction du sélecteur pour cibler la section Sorties du...
+            // Sur anime-sama.eu, les titres sont souvent dans des divs avec des classes spécifiques
+            // On cherche le titre qui contient le jour
+            let $dayTitle = $(`h1:contains("Sorties du ${dayName}"), h2:contains("Sorties du ${dayName}"), h3:contains("Sorties du ${dayName}")`).first();
             
+            // Fallback: chercher dans tout le texte si contains ne marche pas bien avec le sélecteur
+            if ($dayTitle.length === 0) {
+                $('h1, h2, h3, div.text-xl, div.font-bold').each((i, el) => {
+                    if ($(el).text().includes(`Sorties du ${dayName}`)) {
+                        $dayTitle = $(el);
+                        return false;
+                    }
+                });
+            }
+
             let $container;
             if ($dayTitle.length > 0) {
-                // Le container est généralement le div suivant ou un parent contenant les cartes
+                // Le container est le div suivant qui contient les éléments
                 $container = $dayTitle.nextAll('div').first();
-            } else {
-                // Fallback sur les IDs classiques si le titre n'est pas trouvé
-                const containerId = 'container' + dayName;
+            }
+            
+            // Fallback ultime sur les IDs de conteneurs s'ils existent encore
+            if (!$container || $container.length === 0 || $container.find('a[href*="/catalogue/"]').length === 0) {
+                const containerId = 'container' + (dayName === 'Dimanche' ? 'Dimanche' : dayName);
                 $container = $(`#${containerId}`);
             }
 
