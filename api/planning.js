@@ -88,11 +88,13 @@ module.exports = async (req, res) => {
         frenchDayNames.forEach(dayKey => {
             const dayName = daysOfWeek[frenchDayNames.indexOf(dayKey)];
             
-            // On cherche spécifiquement la section "Sorties du [Jour]" sur la home page
+            // Sur la home page, les jours sont dans des h2
+            // On cherche le h2 qui contient "Sorties du [Jour]"
             let $dayTitle = null;
             $('h2').each((i, el) => {
                 const text = $(el).text().trim();
-                if (text.includes(`Sorties du ${dayName}`)) {
+                // Utilisation d'une regex plus permissive pour matcher "Sorties du Dimanche - 21/12"
+                if (text.match(new RegExp(`Sorties du ${dayName}`, 'i'))) {
                     $dayTitle = $(el);
                     return false;
                 }
@@ -100,12 +102,12 @@ module.exports = async (req, res) => {
             
             let $container;
             if ($dayTitle && $dayTitle.length > 0) {
-                // Le conteneur des cartes est le premier div suivant le titre h2
+                // Le conteneur est le div suivant
                 $container = $dayTitle.nextAll('div').first();
             }
             
-            // Fallback sur l'ID de conteneur si le titre h2 n'est pas trouvé
-            if (!$container || $container.length === 0) {
+            // Fallback sur les anciens IDs si la structure h2 n'est pas trouvée ou vide
+            if (!$container || $container.length === 0 || $container.find('a[href*="/catalogue/"]').length === 0) {
                 const containerId = 'container' + (dayName === 'Dimanche' ? 'Dimanche' : dayName);
                 $container = $(`#${containerId}`);
             }
@@ -114,60 +116,50 @@ module.exports = async (req, res) => {
             
             const items = [];
             
-            // Extraction des liens de catalogue dans ce conteneur spécifique
+            // Chaque carte est dans un lien a
             $container.find('a[href*="/catalogue/"]').each((idx, el) => {
                 const $link = $(el);
                 const href = $link.attr('href');
                 
                 if (!href || !href.includes('/catalogue/')) return;
                 
+                // Extraire l'ID de l'anime du href
                 const urlParts = href.split('/');
                 const catalogueIndex = urlParts.indexOf('catalogue');
-                if (catalogueIndex === -1 || catalogueIndex + 1 >= urlParts.length) return;
-                
                 const animeId = urlParts[catalogueIndex + 1];
-                let title = $link.text().trim();
                 
-                // Extraction de l'heure si présente (format 12h30)
-                const timeMatch = title.match(/(\d{1,2}h\d{2})/);
+                // Le titre est dans la balise ** (strong) ou le texte brut
+                let title = $link.find('strong').text().trim() || $link.find('b').text().trim();
+                
+                // L'heure est un texte brut après le titre (format 12h00)
+                const linkText = $link.text();
+                const timeMatch = linkText.match(/(\d{1,2}h\d{2})/);
                 let time = timeMatch ? timeMatch[1] : null;
 
-                // Nettoyage du titre
-                title = title.replace(/\n/g, ' ')
-                           .replace(/\s+/g, ' ')
-                           .replace(/(\d{1,2}h\d{2})/g, '')
-                           .replace(/(VOSTFR|VF|VCN|VA|VKR|VJ|VF1|VF2)/gi, '')
-                           .replace(/Saison\s*\d+.*$/i, '')
-                           .replace(/Partie\s*\d+.*$/i, '')
-                           .trim();
+                // Langue via l'image du drapeau
+                let language = 'VOSTFR';
+                const flagImg = $link.find('img[src*="flag_"]').attr('src') || '';
+                if (flagImg.includes('flag_fr')) language = 'VF';
+                else if (flagImg.includes('flag_cn')) language = 'VCN';
                 
-                if (!title || title.length < 2) {
-                    title = animeId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                // Type (Anime ou Scans)
+                let type = 'anime';
+                if (linkText.toLowerCase().includes('scans') || href.includes('/scan/')) {
+                    type = 'scan';
                 }
-                
+
                 // Image
                 const $img = $link.find('img').first();
                 let image = $img.attr('src') || $img.attr('data-src');
-                
                 if (!image) {
                     image = `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${animeId}.jpg`;
-                } else if (!image.startsWith('http')) {
-                    image = image.startsWith('//') ? 'https:' + image : `https://anime-sama.eu${image}`;
                 }
-                
-                // Langue
-                const linkText = $link.text();
-                let language = 'VOSTFR';
-                if (linkText.includes('VF')) language = 'VF';
-                
-                // Type
-                let type = href.includes('/scan/') ? 'scan' : 'anime';
-                
+
                 const convertedTime = time ? convertTime(time, detectedTimezone) : time;
                 
                 const item = {
                     animeId: animeId,
-                    title: title,
+                    title: title || animeId.replace(/-/g, ' '),
                     url: href.startsWith('http') ? href : `https://anime-sama.eu${href}`,
                     image: image,
                     releaseTime: convertedTime,
@@ -178,13 +170,7 @@ module.exports = async (req, res) => {
                     status: 'scheduled'
                 };
                 
-                const isDuplicate = items.some(it => 
-                    it.animeId === item.animeId && it.language === item.language
-                );
-                
-                if (!isDuplicate) {
-                    items.push(item);
-                }
+                items.push(item);
             });
             
             if (items.length > 0) {
