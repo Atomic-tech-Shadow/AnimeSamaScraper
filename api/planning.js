@@ -129,18 +129,40 @@ module.exports = async (req, res) => {
                 const animeId = urlParts[catalogueIndex + 1];
                 
                 // Le titre est dans la balise ** (strong) ou le texte brut
-                let title = $link.find('strong').text().trim() || $link.find('b').text().trim();
+                // On récupère le texte du strong s'il existe, sinon le texte du premier b
+                let $titleEl = $link.find('strong').first();
+                if ($titleEl.length === 0) $titleEl = $link.find('b').first();
                 
+                let title = $titleEl.text().trim();
+                
+                if (!title || title.toLowerCase() === 'anime' || title.toLowerCase() === 'scans') {
+                    // Fallback: Si le titre est juste "Anime" ou "Scans", c'est que le vrai titre est ailleurs
+                    // Souvent le titre est le texte suivant l'image du drapeau ou dans une autre balise
+                    const lines = $link.text().split('\n').map(t => t.trim()).filter(t => t.length > 0);
+                    // On cherche une ligne qui n'est pas "Anime", "Scans", ou une heure
+                    title = lines.find(t => 
+                        t.length > 2 && 
+                        !['anime', 'scans', 'vostfr', 'vf'].includes(t.toLowerCase()) && 
+                        !t.match(/\d{1,2}h\d{2}/)
+                    ) || title;
+                }
+
                 // L'heure est un texte brut après le titre (format 12h00)
                 const linkText = $link.text();
                 const timeMatch = linkText.match(/(\d{1,2}h\d{2})/);
                 let time = timeMatch ? timeMatch[1] : null;
+
+                // Nettoyage final du titre
+                if (title) {
+                    title = title.replace(/\d{1,2}h\d{2}/, '').trim();
+                }
 
                 // Langue via l'image du drapeau
                 let language = 'VOSTFR';
                 const flagImg = $link.find('img[src*="flag_"]').attr('src') || '';
                 if (flagImg.includes('flag_fr')) language = 'VF';
                 else if (flagImg.includes('flag_cn')) language = 'VCN';
+                else if (linkText.includes('VF')) language = 'VF';
                 
                 // Type (Anime ou Scans)
                 let type = 'anime';
