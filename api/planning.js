@@ -1,13 +1,6 @@
 const cheerio = require('cheerio');
 const { scrapeAnimesama } = require('../utils/scraper');
 
-const COUNTRY_TIMEZONE_MAP = {
-    'TG': 'gmt+0', 'GH': 'gmt+0', 'CI': 'gmt+0', 'SN': 'gmt+0', 'ML': 'gmt+0',
-    'BF': 'gmt+0', 'GM': 'gmt+0', 'GW': 'gmt+0', 'GN': 'gmt+0', 'SL': 'gmt+0', 'LR': 'gmt+0',
-    'CM': 'gmt+1', 'TD': 'gmt+1', 'CF': 'gmt+1', 'GA': 'gmt+1', 'GQ': 'gmt+1', 'ST': 'gmt+1',
-    'MA': 'gmt+1', 'TN': 'gmt+1', 'DZ': 'gmt+1',
-};
-
 function detectTimezoneFromIP(req) {
     // Force GMT+0 by default as requested by the user
     return 'gmt+0';
@@ -52,9 +45,7 @@ module.exports = async (req, res) => {
 
     try {
         const { day, filter, timezone } = req.query;
-        
         const detectedTimezone = timezone || detectTimezoneFromIP(req);
-        const autoDetected = !timezone;
         
         const today = new Date();
         const dayNames = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
@@ -68,225 +59,139 @@ module.exports = async (req, res) => {
             days: {}
         };
         
-        const daysOfWeek = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
-        const frenchDayNames = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
-        
-        // Initialize all days
-        daysOfWeek.forEach(dayName => {
-            const dayKey = dayName.toLowerCase();
-            planningData.days[dayKey] = {
-                day: dayName,
+        dayNames.forEach(d => {
+            planningData.days[d] = {
+                day: d.charAt(0).toUpperCase() + d.slice(1),
                 count: 0,
                 items: []
             };
         });
-        
-        // Extraction depuis la section "Sorties du jour"
-        // Sur anime-sama.eu, les sorties du jour sont dans des divs avec ID #containerLundi, #containerMardi, etc.
-        // mais l'utilisateur précise que la cible est la section "Sorties du..."
-        
-        frenchDayNames.forEach(dayKey => {
-            const dayName = daysOfWeek[frenchDayNames.indexOf(dayKey)];
+
+        const processLink = (dayKey, linkEl) => {
+            const $link = $(linkEl);
+            const href = $link.attr('href');
+            if (!href || !href.includes('/catalogue/')) return;
             
-            // Sur la home page, les jours sont dans des h2
-            // On cherche le h2 qui contient "Sorties du [Jour]"
-            let $dayTitle = null;
-            $('h2').each((i, el) => {
-                const text = $(el).text().trim();
-                // Utilisation d'une regex plus permissive pour matcher "Sorties du Dimanche - 21/12"
-                if (text.match(new RegExp(`Sorties du ${dayName}`, 'i'))) {
-                    $dayTitle = $(el);
-                    return false;
-                }
-            });
+            const urlParts = href.split('/');
+            const catalogueIndex = urlParts.indexOf('catalogue');
+            const animeId = urlParts[catalogueIndex + 1];
             
-            let $container;
-            if ($dayTitle && $dayTitle.length > 0) {
-                // Le conteneur est le div suivant
-                $container = $dayTitle.nextAll('div').first();
-            }
+            let title = $link.find('strong, b').first().text().trim();
+            const linkText = $link.text();
             
-            // Fallback sur les anciens IDs si la structure h2 n'est pas trouvée ou vide
-            if (!$container || $container.length === 0 || $container.find('a[href*="/catalogue/"]').length === 0) {
-                const containerId = 'container' + (dayName === 'Dimanche' ? 'Dimanche' : dayName);
-                $container = $(`#${containerId}`);
+            // Refined title extraction to ignore generic "Anime" or "Scans" labels
+            if (!title || ['anime', 'scans'].includes(title.toLowerCase())) {
+                const lines = linkText.split('\n').map(t => t.trim()).filter(t => t.length > 1);
+                title = lines.find(t => 
+                    !['anime', 'scans', 'vostfr', 'vf', 'vj', 'vcn'].includes(t.toLowerCase()) && 
+                    !t.match(/\d{1,2}h\d{2}/)
+                ) || title;
             }
 
-            if (!$container || $container.length === 0) return;
+            const timeMatch = linkText.match(/(\d{1,2}h\d{2})/);
+            let time = timeMatch ? timeMatch[1] : null;
+
+            let language = 'VOSTFR';
+            const flagImg = $link.find('img[src*="flag_"], img[src*="flag-"], img[src*="flag"]').attr('src') || '';
+            if (flagImg.includes('fr') || linkText.includes(' VF')) language = 'VF';
+            else if (flagImg.includes('cn') || linkText.includes(' VCN')) language = 'VCN';
             
-            const items = [];
+            let type = 'anime';
+            if (linkText.toLowerCase().includes('scans') || href.includes('/scan/')) {
+                type = 'scan';
+            }
+
+            const $img = $link.find('img').not('[src*="flag"]').first();
+            let image = $img.attr('src') || $img.attr('data-src');
+            if (!image || !image.startsWith('http')) {
+                image = `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${animeId}.jpg`;
+            }
+
+            const item = {
+                animeId,
+                title: title || animeId.replace(/-/g, ' '),
+                url: href.startsWith('http') ? href : `https://anime-sama.eu${href}`,
+                image,
+                releaseTime: time ? convertTime(time, detectedTimezone) : null,
+                originalTime: time,
+                language,
+                type,
+                day: dayKey.charAt(0).toUpperCase() + dayKey.slice(1),
+                status: 'scheduled'
+            };
+
+            // Avoid duplicate entries for the same anime/language combination in a day section
+            if (!planningData.days[dayKey].items.find(it => it.animeId === item.animeId && it.language === item.language)) {
+                planningData.days[dayKey].items.push(item);
+                planningData.days[dayKey].count++;
+            }
+        };
+
+        const processedDays = new Set();
+        // Target headers like "Sorties du Dimanche - 21/12"
+        $('h1, h2, h3').each((i, el) => {
+            const headerText = $(el).text().trim();
+            const dayMatch = headerText.match(/Sorties du (\w+)/i);
+            if (!dayMatch) return;
             
-            // Chaque carte est dans un lien a
-            $container.find('a[href*="/catalogue/"]').each((idx, el) => {
-                const $link = $(el);
-                const href = $link.attr('href');
-                
-                if (!href || !href.includes('/catalogue/')) return;
-                
-                // Extraire l'ID de l'anime du href
-                const urlParts = href.split('/');
-                const catalogueIndex = urlParts.indexOf('catalogue');
-                const animeId = urlParts[catalogueIndex + 1];
-                
-                // Le titre est dans la balise ** (strong) ou le texte brut
-                // On récupère le texte du strong s'il existe, sinon le texte du premier b
-                let $titleEl = $link.find('strong').first();
-                if ($titleEl.length === 0) $titleEl = $link.find('b').first();
-                
-                let title = $titleEl.text().trim();
-                
-                if (!title || title.toLowerCase() === 'anime' || title.toLowerCase() === 'scans') {
-                    // Fallback: Si le titre est juste "Anime" ou "Scans", c'est que le vrai titre est ailleurs
-                    // Souvent le titre est le texte suivant l'image du drapeau ou dans une autre balise
-                    const lines = $link.text().split('\n').map(t => t.trim()).filter(t => t.length > 0);
-                    // On cherche une ligne qui n'est pas "Anime", "Scans", ou une heure
-                    title = lines.find(t => 
-                        t.length > 2 && 
-                        !['anime', 'scans', 'vostfr', 'vf'].includes(t.toLowerCase()) && 
-                        !t.match(/\d{1,2}h\d{2}/)
-                    ) || title;
+            const dayNameRaw = dayMatch[1].toLowerCase();
+            const dayKey = dayNames.find(d => dayNameRaw.includes(d));
+            if (!dayKey || processedDays.has(dayKey)) return;
+            processedDays.add(dayKey);
+
+            // Process all cards following this header until the next header
+            let $sibling = $(el).next();
+            while ($sibling.length > 0 && !$sibling.is('h1, h2, h3')) {
+                if ($sibling.is('a[href*="/catalogue/"]')) {
+                    processLink(dayKey, $sibling);
+                } else {
+                    $sibling.find('a[href*="/catalogue/"]').each((j, l) => processLink(dayKey, l));
                 }
-
-                // L'heure est un texte brut après le titre (format 12h00)
-                const linkText = $link.text();
-                const timeMatch = linkText.match(/(\d{1,2}h\d{2})/);
-                let time = timeMatch ? timeMatch[1] : null;
-
-                // Nettoyage final du titre
-                if (title) {
-                    title = title.replace(/\d{1,2}h\d{2}/, '').trim();
-                }
-
-                // Langue via l'image du drapeau
-                let language = 'VOSTFR';
-                const flagImg = $link.find('img[src*="flag_"]').attr('src') || '';
-                if (flagImg.includes('flag_fr')) language = 'VF';
-                else if (flagImg.includes('flag_cn')) language = 'VCN';
-                else if (linkText.includes('VF')) language = 'VF';
-                
-                // Type (Anime ou Scans)
-                let type = 'anime';
-                if (linkText.toLowerCase().includes('scans') || href.includes('/scan/')) {
-                    type = 'scan';
-                }
-
-                // Image
-                const $img = $link.find('img').first();
-                let image = $img.attr('src') || $img.attr('data-src');
-                if (!image) {
-                    image = `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${animeId}.jpg`;
-                }
-
-                const convertedTime = time ? convertTime(time, detectedTimezone) : time;
-                
-                const item = {
-                    animeId: animeId,
-                    title: title || animeId.replace(/-/g, ' '),
-                    url: href.startsWith('http') ? href : `https://anime-sama.eu${href}`,
-                    image: image,
-                    releaseTime: convertedTime,
-                    originalTime: autoDetected || detectedTimezone !== 'paris' ? time : undefined,
-                    language: language,
-                    type: type,
-                    day: dayName,
-                    status: 'scheduled'
-                };
-                
-                items.push(item);
-            });
-            
-            if (items.length > 0) {
-                planningData.days[dayKey] = {
-                    day: dayName,
-                    count: items.length,
-                    items: items
-                };
+                $sibling = $sibling.next();
             }
         });
-        
-        // Default: return today
-        if (!day || day.toLowerCase() === 'today') {
-            const todayData = planningData.days[currentDay];
-            if (todayData) {
-                return res.status(200).json({
-                    success: true,
-                    currentDay: currentDay,
-                    extractedAt: planningData.extractedAt,
-                    ...todayData
-                });
-            }
-        }
-        
-        // If specific day requested
-        if (day && day.toLowerCase() !== 'all' && planningData.days[day.toLowerCase()]) {
-            return res.status(200).json({
-                success: true,
-                day: day,
-                extractedAt: planningData.extractedAt,
-                ...planningData.days[day.toLowerCase()]
+
+        // Fallback: If no headers were matched, try classic container IDs
+        if (Object.values(planningData.days).every(d => d.count === 0)) {
+            dayNames.forEach(dk => {
+                const id = 'container' + dk.charAt(0).toUpperCase() + dk.slice(1);
+                $(`#${id}`).find('a[href*="/catalogue/"]').each((j, l) => processLink(dk, l));
             });
         }
-        
-        // Return all only if explicitly requested
+
+        // Handle specific day or "all" request
         if (day && day.toLowerCase() === 'all') {
-            // Filter if requested
             if (filter) {
-                Object.keys(planningData.days).forEach(dayKey => {
-                    planningData.days[dayKey].items = planningData.days[dayKey].items.filter(item => {
-                        switch (filter.toLowerCase()) {
-                            case 'anime':
-                            case 'animes':
-                                return item.type === 'anime';
-                            case 'scan':
-                            case 'scans':
-                                return item.type === 'scan';
-                            case 'vf':
-                                return item.language === 'VF';
-                            case 'vo':
-                            case 'vostfr':
-                                return item.language === 'VOSTFR';
-                            default:
-                                return true;
-                        }
+                Object.keys(planningData.days).forEach(dk => {
+                    planningData.days[dk].items = planningData.days[dk].items.filter(item => {
+                        const f = filter.toLowerCase();
+                        if (f === 'anime' || f === 'animes') return item.type === 'anime';
+                        if (f === 'scan' || f === 'scans') return item.type === 'scan';
+                        if (f === 'vf') return item.language === 'VF';
+                        if (f === 'vostfr' || f === 'vo') return item.language === 'VOSTFR';
+                        return true;
                     });
-                    planningData.days[dayKey].count = planningData.days[dayKey].items.length;
+                    planningData.days[dk].count = planningData.days[dk].items.length;
                 });
             }
-            
-            const totalItems = Object.values(planningData.days).reduce((sum, d) => sum + d.count, 0);
-            planningData.totalItems = totalItems;
-            planningData.currentDay = currentDay;
-            
-            if (detectedTimezone && detectedTimezone !== 'paris') {
-                planningData.timezoneInfo = {
-                    detected: detectedTimezone,
-                    autoDetected: autoDetected,
-                    originalTimezone: 'GMT+2 (Paris)',
-                    note: autoDetected ? 
-                        'Fuseau horaire détecté automatiquement et heures converties' : 
-                        'Heures converties selon le fuseau horaire demandé'
-                };
-            }
-            
             return res.status(200).json(planningData);
         }
 
-        // Fallback to today if nothing matched
-        const todayFallback = planningData.days[currentDay];
+        const requestedDay = (day && day.toLowerCase() !== 'today' && dayNames.includes(day.toLowerCase())) ? day.toLowerCase() : currentDay;
+        const resultData = planningData.days[requestedDay];
+
         return res.status(200).json({
             success: true,
-            currentDay: currentDay,
+            currentDay,
             extractedAt: planningData.extractedAt,
-            ...todayFallback
+            ...resultData
         });
         
     } catch (error) {
         console.error('Planning API error:', error);
-        
         res.status(500).json({
             error: 'Failed to fetch planning data',
-            message: 'Unable to retrieve planning information at this time. Please try again later.',
-            details: process.env.NODE_ENV === 'development' ? error.message : undefined
+            message: error.message
         });
     }
 };
