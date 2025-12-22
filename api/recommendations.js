@@ -112,14 +112,14 @@ async function refreshRecommendationsCache() {
                 image = `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${animeId}.jpg`;
             }
             
-            const genreElements = $card.find('p.text-gray-300.font-medium.text-xs');
             let genres = [];
-            genreElements.each((i, el) => {
-                const text = $(el).text().trim();
-                if (text && text !== 'Anime' && text !== 'Scans' && !text.includes('http')) {
-                    genres.push(text);
-                }
-            });
+            // Extract genres from visible text content - defaults to 'Anime' if not found
+            const genrePattern = /(?:Action|Adventure|Comedy|Drama|Fantasy|Horror|Mecha|Mystery|Romance|Sci-Fi|Slice of Life|Sports|Supernatural|Thriller|Psychological)/gi;
+            const foundGenres = cardText.match(genrePattern);
+            
+            if (foundGenres && foundGenres.length > 0) {
+                genres = [...new Set(foundGenres.map(g => g.charAt(0).toUpperCase() + g.slice(1).toLowerCase()))];
+            }
             
             const contentType = 'anime';
             const languages = ['VOSTFR'];
