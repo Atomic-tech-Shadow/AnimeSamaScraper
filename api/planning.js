@@ -182,18 +182,8 @@ module.exports = async (req, res) => {
             }
         });
         
-        // If specific day requested
-        if (day && day.toLowerCase() !== 'all' && planningData.days[day.toLowerCase()]) {
-            return res.status(200).json({
-                success: true,
-                day: day,
-                extractedAt: planningData.extractedAt,
-                ...planningData.days[day.toLowerCase()]
-            });
-        }
-        
         // Default: return today
-        if (!day || day.toLowerCase() !== 'all') {
+        if (!day || day.toLowerCase() === 'today') {
             const todayData = planningData.days[currentDay];
             if (todayData) {
                 return res.status(200).json({
@@ -205,46 +195,68 @@ module.exports = async (req, res) => {
             }
         }
         
-        // Filter if requested
-        if (filter) {
-            Object.keys(planningData.days).forEach(dayKey => {
-                planningData.days[dayKey].items = planningData.days[dayKey].items.filter(item => {
-                    switch (filter.toLowerCase()) {
-                        case 'anime':
-                        case 'animes':
-                            return item.type === 'anime';
-                        case 'scan':
-                        case 'scans':
-                            return item.type === 'scan';
-                        case 'vf':
-                            return item.language === 'VF';
-                        case 'vo':
-                        case 'vostfr':
-                            return item.language === 'VOSTFR';
-                        default:
-                            return true;
-                    }
-                });
-                planningData.days[dayKey].count = planningData.days[dayKey].items.length;
+        // If specific day requested
+        if (day && day.toLowerCase() !== 'all' && planningData.days[day.toLowerCase()]) {
+            return res.status(200).json({
+                success: true,
+                day: day,
+                extractedAt: planningData.extractedAt,
+                ...planningData.days[day.toLowerCase()]
             });
         }
         
-        const totalItems = Object.values(planningData.days).reduce((sum, d) => sum + d.count, 0);
-        planningData.totalItems = totalItems;
-        planningData.currentDay = currentDay;
-        
-        if (detectedTimezone && detectedTimezone !== 'paris') {
-            planningData.timezoneInfo = {
-                detected: detectedTimezone,
-                autoDetected: autoDetected,
-                originalTimezone: 'GMT+2 (Paris)',
-                note: autoDetected ? 
-                    'Fuseau horaire détecté automatiquement et heures converties' : 
-                    'Heures converties selon le fuseau horaire demandé'
-            };
+        // Return all only if explicitly requested
+        if (day && day.toLowerCase() === 'all') {
+            // Filter if requested
+            if (filter) {
+                Object.keys(planningData.days).forEach(dayKey => {
+                    planningData.days[dayKey].items = planningData.days[dayKey].items.filter(item => {
+                        switch (filter.toLowerCase()) {
+                            case 'anime':
+                            case 'animes':
+                                return item.type === 'anime';
+                            case 'scan':
+                            case 'scans':
+                                return item.type === 'scan';
+                            case 'vf':
+                                return item.language === 'VF';
+                            case 'vo':
+                            case 'vostfr':
+                                return item.language === 'VOSTFR';
+                            default:
+                                return true;
+                        }
+                    });
+                    planningData.days[dayKey].count = planningData.days[dayKey].items.length;
+                });
+            }
+            
+            const totalItems = Object.values(planningData.days).reduce((sum, d) => sum + d.count, 0);
+            planningData.totalItems = totalItems;
+            planningData.currentDay = currentDay;
+            
+            if (detectedTimezone && detectedTimezone !== 'paris') {
+                planningData.timezoneInfo = {
+                    detected: detectedTimezone,
+                    autoDetected: autoDetected,
+                    originalTimezone: 'GMT+2 (Paris)',
+                    note: autoDetected ? 
+                        'Fuseau horaire détecté automatiquement et heures converties' : 
+                        'Heures converties selon le fuseau horaire demandé'
+                };
+            }
+            
+            return res.status(200).json(planningData);
         }
-        
-        res.status(200).json(planningData);
+
+        // Fallback to today if nothing matched
+        const todayFallback = planningData.days[currentDay];
+        return res.status(200).json({
+            success: true,
+            currentDay: currentDay,
+            extractedAt: planningData.extractedAt,
+            ...todayFallback
+        });
         
     } catch (error) {
         console.error('Planning API error:', error);
