@@ -51,7 +51,7 @@ module.exports = async (req, res) => {
         const dayNames = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
         const currentDay = dayNames[today.getDay()];
         
-        const $ = await scrapeAnimesama('https://anime-sama.eu');
+        const $ = await scrapeAnimesama('https://anime-sama.si');
         
         const planningData = {
             success: true,
@@ -110,7 +110,7 @@ module.exports = async (req, res) => {
             const item = {
                 animeId,
                 title: title || animeId.replace(/-/g, ' '),
-                url: href.startsWith('http') ? href : `https://anime-sama.eu${href}`,
+                url: href.startsWith('http') ? href : `https://anime-sama.si${href}`,
                 image,
                 releaseTime: time ? convertTime(time, detectedTimezone) : null,
                 originalTime: time,

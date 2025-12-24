@@ -19,7 +19,7 @@ module.exports = async (req, res) => {
 
     try {
         // Scrape the homepage
-        const $ = await scrapeAnimesama('https://anime-sama.eu/');
+        const $ = await scrapeAnimesama('https://anime-sama.si/');
         
         const recentEpisodes = [];
         const seenLinks = new Set();
@@ -102,7 +102,7 @@ module.exports = async (req, res) => {
                 season: season,
                 episode: episode,
                 language: language,
-                url: href.startsWith('http') ? href : `https://anime-sama.eu${href}`,
+                url: href.startsWith('http') ? href : `https://anime-sama.si${href}`,
                 image: image,
                 addedAt: new Date().toISOString(),
                 type: 'anime',

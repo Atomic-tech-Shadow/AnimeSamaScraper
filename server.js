@@ -20,7 +20,7 @@ app.get('/', (req, res) => {
     res.json({
         name: 'Anime-Sama API',
         version: '2.0.0',
-        description: 'Real-time anime scraping API for anime-sama.eu',
+        description: 'Real-time anime scraping API for anime-sama.si',
         author: 'el_cid',
         poweredBy: 'el_cid',
         status: 'running',
@@ -35,7 +35,7 @@ app.get('/', (req, res) => {
             seasonsIndex: '/api/seasons?animeId=xxx&season=1&language=VF&server=eps1',
             episodeSources: '/api/episode-by-id/:episodeId',
             specificEpisode: '/api/episode/:animeId/:season/:episode',
-            embed: '/api/embed?url=https%3A%2F%2Fanime-sama.eu%2Fcatalogue%2F...'
+            embed: '/api/embed?url=https%3A%2F%2Fanime-sama.si%2Fcatalogue%2F...'
         },
         examples: {
             searchAnime: 'GET /api/search?query=black%20butler',
@@ -46,7 +46,7 @@ app.get('/', (req, res) => {
             getSeasons: 'GET /api/seasons/black-butler',
             getEpisodes: 'GET /api/episodes/black-butler?season=1&language=VOSTFR',
             getEpisodeSources: 'GET /api/episode-by-id/black-butler-s1-e1',
-            embedPlayer: 'GET /api/embed?url=https%3A%2F%2Fanime-sama.eu%2Fcatalogue%2Fblack-butler'
+            embedPlayer: 'GET /api/embed?url=https%3A%2F%2Fanime-sama.si%2Fcatalogue%2Fblack-butler'
         }
     });
 });
@@ -120,7 +120,7 @@ if (require.main === module) {
         console.log('📚 API Documentation:', `http://localhost:${PORT}`);
         console.log('🔍 Search endpoint:', `http://localhost:${PORT}/api/search?query=naruto`);
         console.log('📈 Recent endpoint:', `http://localhost:${PORT}/api/recent`);
-        console.log('🎬 Embed endpoint:', `http://localhost:${PORT}/api/embed?url=https%3A%2F%2Fanime-sama.eu%2Fcatalogue%2Fblack-butler`);
+        console.log('🎬 Embed endpoint:', `http://localhost:${PORT}/api/embed?url=https%3A%2F%2Fanime-sama.si%2Fcatalogue%2Fblack-butler`);
     });
 }
 
