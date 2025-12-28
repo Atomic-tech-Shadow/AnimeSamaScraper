@@ -60,15 +60,8 @@ module.exports = async (req, res) => {
                 animeTitle = animeId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
             }
             
-            // Get image
-            const $img = $link.find('img').first();
-            let image = $img.attr('src') || $img.attr('data-src');
-            
-            if (!image || !image.includes('statically')) {
-                image = `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${animeId}.jpg`;
-            } else if (image && !image.startsWith('http')) {
-                image = 'https:' + image;
-            }
+            // Get image - Use direct CDN URL for instant loading
+            const image = `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${animeId}.jpg`;
             
             // Extract season and episode
             const infoText = $link.find('.info-text').text().trim() || $link.text();

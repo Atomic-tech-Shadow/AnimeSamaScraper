@@ -105,12 +105,8 @@ async function refreshRecommendationsCache() {
                         .replace(/\s*\[FIN\]\s*/gi, '')
                         .trim();
             
-            const $img = $card.find('img.imageCarteHorizontale').first();
-            let image = $img.attr('src') || $img.attr('data-src');
-            
-            if (!image || !image.includes('http')) {
-                image = `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${animeId}.jpg`;
-            }
+            // Get image - Use direct CDN URL for instant loading
+            const image = `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${animeId}.jpg`;
             
             let genres = [];
             // Extract genres from visible text content - defaults to 'Anime' if not found

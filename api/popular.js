@@ -77,15 +77,8 @@ module.exports = async (req, res) => {
                     title = animeId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
                 }
                 
-                // Get image
-                const $img = $link.find('img').first();
-                let image = $img.attr('src');
-                
-                if (!image || !image.includes('statically')) {
-                    image = `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${animeId}.jpg`;
-                } else if (image && !image.startsWith('http')) {
-                    image = 'https:' + image;
-                }
+                // Get image - Use direct CDN URL for instant loading
+                const image = `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${animeId}.jpg`;
                 
                 popularAnime.pepites.push({
                     id: animeId,
@@ -150,15 +143,8 @@ module.exports = async (req, res) => {
                     title = animeId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
                 }
                 
-                // Get image
-                const $img = $link.find('img').first();
-                let image = $img.attr('src');
-                
-                if (!image || !image.includes('statically')) {
-                    image = `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${animeId}.jpg`;
-                } else if (image && !image.startsWith('http')) {
-                    image = 'https:' + image;
-                }
+                // Get image - Use direct CDN URL for instant loading
+                const image = `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${animeId}.jpg`;
                 
                 popularAnime.classiques.push({
                     id: animeId,
