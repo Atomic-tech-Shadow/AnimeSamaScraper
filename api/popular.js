@@ -15,7 +15,7 @@ module.exports = async (req, res) => {
     }
 
     try {
-        const $ = await scrapeAnimesama('https://anime-sama.si/');
+        const $ = await scrapeAnimesama('https://anime-sama.tv/');
         
         const popularAnime = {
             classiques: [],
@@ -91,7 +91,7 @@ module.exports = async (req, res) => {
                     id: animeId,
                     title: title,
                     image: image,
-                    url: href.startsWith('http') ? href : `https://anime-sama.si${href}`,
+                    url: href.startsWith('http') ? href : `https://anime-sama.tv${href}`,
                     category: 'pepite'
                 });
             });
@@ -164,7 +164,7 @@ module.exports = async (req, res) => {
                     id: animeId,
                     title: title,
                     image: image,
-                    url: href.startsWith('http') ? href : `https://anime-sama.si${href}`,
+                    url: href.startsWith('http') ? href : `https://anime-sama.tv${href}`,
                     category: 'classique'
                 });
             });
@@ -187,7 +187,7 @@ module.exports = async (req, res) => {
             },
             allPopular: allPopular,
             extractedAt: new Date().toISOString(),
-            source: 'anime-sama.si homepage'
+            source: 'anime-sama.tv homepage'
         });
         
     } catch (error) {
