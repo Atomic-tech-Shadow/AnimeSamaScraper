@@ -117,6 +117,8 @@ module.exports = async (req, res) => {
                 language,
                 type,
                 day: dayKey.charAt(0).toUpperCase() + dayKey.slice(1),
+                isFin: linkText.includes('[FIN]') || linkText.toLowerCase().includes('fin'),
+                isReporte: linkText.toLowerCase().includes('reporté') || linkText.toLowerCase().includes('reporte'),
                 status: 'scheduled'
             };
 
