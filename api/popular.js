@@ -45,7 +45,7 @@ module.exports = async (req, res) => {
                 seenIds.add(animeId);
                 
                 // Clean title - extract just the main title
-                let title = $link.text().trim();
+                let title = $link.find('h1, h2, h3, .title, p').first().text().trim() || $link.text().trim();
                 title = title.replace(/\n/g, ' ')
                             .replace(/\s+/g, ' ')
                             .replace(/(\d{1,2}h\d{2})/g, '')
@@ -57,21 +57,6 @@ module.exports = async (req, res) => {
                             .replace(/Langues.*$/i, '')
                             .replace(/Synopsis.*$/i, '')
                             .trim();
-                
-                // Take only first meaningful part (before duplicate titles)
-                if (title.includes(' ') && title.length > 20) {
-                    const words = title.split(' ');
-                    let cleanTitle = '';
-                    for (let w of words) {
-                        if (w.match(/^[A-Z][a-z]*$/) && cleanTitle && cleanTitle.split(' ').length >= 2) {
-                            // Check if this might be a duplicate
-                            if (cleanTitle.toLowerCase().includes(w.toLowerCase())) break;
-                        }
-                        cleanTitle += (cleanTitle ? ' ' : '') + w;
-                        if (cleanTitle.split(' ').length >= 4 && cleanTitle.length > 20) break;
-                    }
-                    title = cleanTitle.trim();
-                }
                 
                 if (!title || title.length < 2) {
                     title = animeId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
@@ -112,7 +97,7 @@ module.exports = async (req, res) => {
                 seenIds.add(animeId);
                 
                 // Clean title - extract just the main title
-                let title = $link.text().trim();
+                let title = $link.find('h1, h2, h3, .title, p').first().text().trim() || $link.text().trim();
                 title = title.replace(/\n/g, ' ')
                             .replace(/\s+/g, ' ')
                             .replace(/(\d{1,2}h\d{2})/g, '')
@@ -125,20 +110,6 @@ module.exports = async (req, res) => {
                             .replace(/Synopsis.*$/i, '')
                             .trim();
                 
-                // Take only first meaningful part (before duplicate titles)
-                if (title.includes(' ') && title.length > 20) {
-                    const words = title.split(' ');
-                    let cleanTitle = '';
-                    for (let w of words) {
-                        if (w.match(/^[A-Z][a-z]*$/) && cleanTitle && cleanTitle.split(' ').length >= 2) {
-                            if (cleanTitle.toLowerCase().includes(w.toLowerCase())) break;
-                        }
-                        cleanTitle += (cleanTitle ? ' ' : '') + w;
-                        if (cleanTitle.split(' ').length >= 4 && cleanTitle.length > 20) break;
-                    }
-                    title = cleanTitle.trim();
-                }
-                
                 if (!title || title.length < 2) {
                     title = animeId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
                 }
@@ -150,6 +121,34 @@ module.exports = async (req, res) => {
                     id: animeId,
                     title: title,
                     image: image,
+                    url: href.startsWith('http') ? href : `https://anime-sama.tv${href}`,
+                    category: 'classique'
+                });
+            });
+        }
+        
+        // Fallback for Classiques if container not found
+        if (popularAnime.classiques.length === 0) {
+            $('.scan-card-premium a[href*="/catalogue/"]').each((index, link) => {
+                if (popularAnime.classiques.length >= 15) return false;
+                const $link = $(link);
+                const href = $link.attr('href');
+                if (!href) return;
+                
+                const urlParts = href.split('/');
+                const catalogueIndex = urlParts.indexOf('catalogue');
+                const animeId = catalogueIndex >= 0 && catalogueIndex + 1 < urlParts.length ? urlParts[catalogueIndex + 1] : null;
+                
+                if (!animeId || seenIds.has(animeId)) return;
+                seenIds.add(animeId);
+                
+                let title = $link.find('h1, .title, p').first().text().trim() || $link.text().trim();
+                title = title.split('\n')[0].trim();
+                
+                popularAnime.classiques.push({
+                    id: animeId,
+                    title: title || animeId,
+                    image: `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${animeId}.jpg`,
                     url: href.startsWith('http') ? href : `https://anime-sama.tv${href}`,
                     category: 'classique'
                 });
