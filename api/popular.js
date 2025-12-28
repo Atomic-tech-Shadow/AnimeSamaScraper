@@ -45,7 +45,7 @@ module.exports = async (req, res) => {
                 seenIds.add(animeId);
                 
                 // Clean title - extract just the main title
-                let title = $link.find('h1, h2, h3, .title, p').first().text().trim() || $link.text().trim();
+                let title = $link.find('h2.card-title, .card-title, h1, h3, .title, p').first().text().trim() || $link.attr('alt') || $link.find('img').attr('alt') || $link.text().trim();
                 title = title.replace(/\n/g, ' ')
                             .replace(/\s+/g, ' ')
                             .replace(/(\d{1,2}h\d{2})/g, '')
@@ -58,7 +58,8 @@ module.exports = async (req, res) => {
                             .replace(/Synopsis.*$/i, '')
                             .trim();
                 
-                if (!title || title.length < 2) {
+                // If title is still "Scans", try to get it from animeId
+                if (title.toLowerCase() === 'scans' || !title || title.length < 2) {
                     title = animeId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
                 }
                 
@@ -97,7 +98,7 @@ module.exports = async (req, res) => {
                 seenIds.add(animeId);
                 
                 // Clean title - extract just the main title
-                let title = $link.find('h1, h2, h3, .title, p').first().text().trim() || $link.text().trim();
+                let title = $link.find('h2.card-title, .card-title, h1, h3, .title, p').first().text().trim() || $link.attr('alt') || $link.find('img').attr('alt') || $link.text().trim();
                 title = title.replace(/\n/g, ' ')
                             .replace(/\s+/g, ' ')
                             .replace(/(\d{1,2}h\d{2})/g, '')
@@ -110,7 +111,8 @@ module.exports = async (req, res) => {
                             .replace(/Synopsis.*$/i, '')
                             .trim();
                 
-                if (!title || title.length < 2) {
+                // If title is still "Scans", try to get it from animeId
+                if (title.toLowerCase() === 'scans' || !title || title.length < 2) {
                     title = animeId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
                 }
                 
@@ -142,7 +144,10 @@ module.exports = async (req, res) => {
                 if (!animeId || seenIds.has(animeId)) return;
                 seenIds.add(animeId);
                 
-                let title = $link.find('h1, .title, p').first().text().trim() || $link.text().trim();
+                let title = $link.find('h2.card-title, .card-title, h1, .title, p').first().text().trim() || $link.attr('alt') || $link.find('img').attr('alt') || $link.text().trim();
+                if (title.toLowerCase() === 'scans' || !title || title.length < 2) {
+                    title = animeId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                }
                 title = title.split('\n')[0].trim();
                 
                 popularAnime.classiques.push({
