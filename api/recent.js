@@ -67,13 +67,13 @@ module.exports = async (req, res) => {
             const infoText = $link.find('.info-text').text().trim() || $link.text();
             
             // Extract Season
-            const seasonMatch = href.match(/\/saison(\d+)/i) || infoText.match(/Saison\s*(\d+)/i);
+            // Match "Saison 1", "Saison1", "S 1", "S1", "Part 1", "Partie 1"
+            const seasonMatch = infoText.match(/(?:Saison|Partie|Part|S)\s*(\d+)/i) || href.match(/\/saison(\d+)/i);
             const season = seasonMatch ? parseInt(seasonMatch[1]) : 1;
             
             // Extract Episode
-            // Pattern 1: "Episode 1154"
-            // Pattern 2: "Saison 1 Episode 15"
-            const epMatch = infoText.match(/Episode\s*(\d+)/i);
+            // Match "Episode 15", "Ep 15", "E15", "Ep. 15"
+            const epMatch = infoText.match(/(?:Episode|Ep\.?|E)\s*(\d+)/i);
             const episode = epMatch ? parseInt(epMatch[1]) : null;
 
             // Extract special statuses
