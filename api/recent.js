@@ -75,6 +75,10 @@ module.exports = async (req, res) => {
             // Pattern 2: "Saison 1 Episode 15"
             const epMatch = infoText.match(/Episode\s*(\d+)/i);
             const episode = epMatch ? parseInt(epMatch[1]) : null;
+
+            // Extract special statuses
+            const isFin = infoText.includes('[FIN]') || infoText.toLowerCase().includes('fin');
+            const isReporte = infoText.toLowerCase().includes('reporté') || infoText.toLowerCase().includes('reporte');
             
             // Language
             let language = 'VOSTFR';
@@ -95,6 +99,8 @@ module.exports = async (req, res) => {
                 season: season,
                 episode: episode,
                 language: language,
+                isFin: isFin,
+                isReporte: isReporte,
                 url: href.startsWith('http') ? href : `https://anime-sama.tv${href}`,
                 image: image,
                 addedAt: new Date().toISOString(),
