@@ -64,9 +64,12 @@ async function refreshRecommendationsCache() {
             
             if (catalogueIndex === -1 || catalogueIndex + 1 >= urlParts.length) return;
             
-            const animeId = urlParts[catalogueIndex + 1];
+            const animeIdRaw = urlParts[catalogueIndex + 1];
+            if (!animeIdRaw || animeIdRaw === '') return;
             
-            if (!animeId || animeId === '' || seenAnimes.has(animeId)) return;
+            const animeId = animeIdRaw.toLowerCase().replace(/\/$/, '').trim();
+            
+            if (seenAnimes.has(animeId)) return;
             
             const $card = $link.closest('.shrink-0') || $link;
             const cardText = $card.text().toLowerCase();
