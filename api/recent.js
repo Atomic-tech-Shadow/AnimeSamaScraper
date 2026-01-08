@@ -45,7 +45,7 @@ module.exports = async (req, res) => {
                 : null;
             
             if (!animeId) return;
-            const cleanId = animeId.replace(/\/$/, '');
+            const cleanId = animeId.toLowerCase().replace(/\/$/, '').trim();
             
             // Get title and metadata from card
             let animeTitle = $link.find('.card-title').text().trim() || $link.find('h3').text().trim() || $link.attr('title') || $link.text().trim();
@@ -61,8 +61,13 @@ module.exports = async (req, res) => {
                 animeTitle = cleanId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
             }
             
-            // Get image - Use direct CDN URL for instant loading
-            const image = `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${cleanId}.jpg`;
+            // Try to get image from DOM first
+            let image = $link.find('img').attr('src') || $link.find('img').attr('data-src');
+            
+            // Fallback to CDN if not found or if it's a relative path
+            if (!image || !image.startsWith('http') || image.includes('anime-sama.tv')) {
+                image = `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${cleanId}.jpg`;
+            }
             
             // Extract season and episode
             const infoText = $link.find('.info-text').text().trim() || $link.text();

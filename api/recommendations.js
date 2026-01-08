@@ -106,7 +106,7 @@ async function refreshRecommendationsCache() {
                         .trim();
             
             // Get image - Use direct CDN URL for instant loading
-            const cleanId = animeId.replace(/\/$/, '');
+            const cleanId = animeId.toLowerCase().replace(/\/$/, '').trim();
             const image = `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${cleanId}.jpg`;
             
             let genres = [];

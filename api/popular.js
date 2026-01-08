@@ -43,7 +43,7 @@ module.exports = async (req, res) => {
                 
                 if (!animeId || seenIds.has(animeId)) return;
                 seenIds.add(animeId);
-                const cleanId = animeId.replace(/\/$/, '');
+                const cleanId = animeId.toLowerCase().replace(/\/$/, '').trim();
                 
                 // Clean title - extract just the main title
                 let title = $link.find('h2.card-title, .card-title, h1, h3, .title, p').first().text().trim() || $link.attr('alt') || $link.find('img').attr('alt') || $link.text().trim();
@@ -64,8 +64,13 @@ module.exports = async (req, res) => {
                     title = cleanId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
                 }
                 
-                // Get image - Use direct CDN URL for instant loading
-                const image = `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${cleanId}.jpg`;
+                // Try to get image from DOM first
+                let image = $link.find('img').attr('src') || $link.find('img').attr('data-src');
+                
+                // Fallback to CDN if not found or if it's a relative path
+                if (!image || !image.startsWith('http') || image.includes('anime-sama.tv')) {
+                    image = `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${cleanId}.jpg`;
+                }
                 
                 popularAnime.pepites.push({
                     id: cleanId,
@@ -97,7 +102,7 @@ module.exports = async (req, res) => {
                 if (!animeId || seenIds.has(animeId)) return;
             
                 seenIds.add(animeId);
-                const cleanId = animeId.replace(/\/$/, '');
+                const cleanId = animeId.toLowerCase().replace(/\/$/, '').trim();
                 
                 // Clean title - extract just the main title
                 let title = $link.find('h2.card-title, .card-title, h1, h3, .title, p').first().text().trim() || $link.attr('alt') || $link.find('img').attr('alt') || $link.text().trim();
@@ -118,8 +123,13 @@ module.exports = async (req, res) => {
                     title = cleanId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
                 }
                 
-                // Get image - Use direct CDN URL for instant loading
-                const image = `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${cleanId}.jpg`;
+                // Try to get image from DOM first
+                let image = $link.find('img').attr('src') || $link.find('img').attr('data-src');
+                
+                // Fallback to CDN if not found or if it's a relative path
+                if (!image || !image.startsWith('http') || image.includes('anime-sama.tv')) {
+                    image = `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${cleanId}.jpg`;
+                }
                 
                 popularAnime.classiques.push({
                     id: cleanId,
