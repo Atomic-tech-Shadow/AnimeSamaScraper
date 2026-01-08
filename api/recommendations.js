@@ -106,7 +106,8 @@ async function refreshRecommendationsCache() {
                         .trim();
             
             // Get image - Use direct CDN URL for instant loading
-            const image = `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${animeId}.jpg`;
+            const cleanId = animeId.replace(/\/$/, '');
+            const image = `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${cleanId}.jpg`;
             
             let genres = [];
             // Extract genres from visible text content - defaults to 'Anime' if not found

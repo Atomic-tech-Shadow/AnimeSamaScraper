@@ -43,6 +43,7 @@ module.exports = async (req, res) => {
                 
                 if (!animeId || seenIds.has(animeId)) return;
                 seenIds.add(animeId);
+                const cleanId = animeId.replace(/\/$/, '');
                 
                 // Clean title - extract just the main title
                 let title = $link.find('h2.card-title, .card-title, h1, h3, .title, p').first().text().trim() || $link.attr('alt') || $link.find('img').attr('alt') || $link.text().trim();
@@ -60,14 +61,14 @@ module.exports = async (req, res) => {
                 
                 // If title is still "Scans", try to get it from animeId
                 if (title.toLowerCase() === 'scans' || !title || title.length < 2) {
-                    title = animeId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                    title = cleanId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
                 }
                 
                 // Get image - Use direct CDN URL for instant loading
-                const image = `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${animeId}.jpg`;
+                const image = `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${cleanId}.jpg`;
                 
                 popularAnime.pepites.push({
-                    id: animeId,
+                    id: cleanId,
                     title: title,
                     image: image,
                     url: href.startsWith('http') ? href : `https://anime-sama.tv${href}`,
@@ -96,6 +97,7 @@ module.exports = async (req, res) => {
                 if (!animeId || seenIds.has(animeId)) return;
             
                 seenIds.add(animeId);
+                const cleanId = animeId.replace(/\/$/, '');
                 
                 // Clean title - extract just the main title
                 let title = $link.find('h2.card-title, .card-title, h1, h3, .title, p').first().text().trim() || $link.attr('alt') || $link.find('img').attr('alt') || $link.text().trim();
@@ -113,14 +115,14 @@ module.exports = async (req, res) => {
                 
                 // If title is still "Scans", try to get it from animeId
                 if (title.toLowerCase() === 'scans' || !title || title.length < 2) {
-                    title = animeId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                    title = cleanId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
                 }
                 
                 // Get image - Use direct CDN URL for instant loading
-                const image = `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${animeId}.jpg`;
+                const image = `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${cleanId}.jpg`;
                 
                 popularAnime.classiques.push({
-                    id: animeId,
+                    id: cleanId,
                     title: title,
                     image: image,
                     url: href.startsWith('http') ? href : `https://anime-sama.tv${href}`,
