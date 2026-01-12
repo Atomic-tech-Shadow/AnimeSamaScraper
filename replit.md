@@ -1,12 +1,12 @@
 # Anime-Sama API v2.0 - Project Notes
 
 ## Project Overview
-**Anime-Sama API** is a real-time anime scraping API that fetches data from anime-sama.eu (migrated from anime-sama.fr). The API provides 11 complete endpoints for searching, retrieving, and streaming anime content.
+**Anime-Sama API** is a real-time anime scraping API that fetches data from anime-sama.si (migrated from anime-sama.eu). The API provides 11 complete endpoints for searching, retrieving, and streaming anime content.
 
 ## Current Status ✅
-- **Domain**: anime-sama.eu (Updated Dec 21, 2025)
+- **Domain**: anime-sama.si (Updated Jan 12, 2026)
 - **All 11 endpoints**: Fully tested and operational
-- **Latest update**: Fixed Classiques container selector + improved title cleaning
+- **Latest update**: Migrated to .si domain + added Season/Episode to planning
 - **Workflow status**: Running and healthy
 - **Data Accuracy**: 100% verified against live website
 
@@ -30,31 +30,16 @@
 - Cheerio (HTML parsing)
 - Cors middleware
 
-## Recent Changes (December 21, 2025)
+## Recent Changes (January 12, 2026)
 
-### Data Accuracy Verification & Corrections
-All 11 endpoints thoroughly tested against live website:
+### Domain Migration & Planning Improvements
+- **Domain Update**: Migrated all API endpoints to scrape from `anime-sama.si` (from `.eu`/`.tv`).
+- **Planning Metadata**: Added `season` and `episode` fields to the `/api/planning` endpoint items.
+- **Global Replacement**: Performed a project-wide replacement of old domains to ensure all features remain functional.
 
-1. **Section Verification** ✅
-   - Confirmed each endpoint scrapes correct homepage section
-   - Verified container IDs: containerDimanche-Samedi, containerPepites, containerClassiques
-   - All 11 endpoints return appropriate sections
-
-2. **Data Accuracy Fixes** ✅
-   - **Fixed Classiques container**: Now uses #containerClassiques instead of generic link parsing
-   - **Improved title cleaning**: Enhanced regex patterns to remove metadata (Genres, Types, Synopsis)
-   - **Better title extraction**: Limits to first 4 words + 20 chars to avoid alternative titles
-
-3. **Test Results** ✅
-   - Anime IDs: 100% correct
-   - URLs: 100% accessible (200 OK)
-   - Descriptions: 100% matching
-   - Images: All available with CDN fallback
-   - Section accuracy: Perfect alignment with website
-
-### Files Modified (Dec 21, 2025)
-- `api/recent.js` - Improved title extraction logic
-- `api/popular.js` - Fixed to use #containerClassiques + improved title cleaning
+### Data Accuracy Verification
+- **Verified**: Planning endpoint now returns structured metadata for scheduled releases.
+- **Verified**: Search and details endpoints are correctly reaching the `.si` domain.
 
 ## API Endpoints
 1. `GET /` - Root documentation

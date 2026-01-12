@@ -51,7 +51,7 @@ module.exports = async (req, res) => {
         const dayNames = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
         const currentDay = dayNames[today.getDay()];
         
-        const $ = await scrapeAnimesama('https://anime-sama.tv');
+        const $ = await scrapeAnimesama('https://anime-sama.si');
         
         const planningData = {
             success: true,
@@ -91,6 +91,13 @@ module.exports = async (req, res) => {
             const timeMatch = linkText.match(/(\d{1,2}h\d{2})/);
             let time = timeMatch ? timeMatch[1] : null;
 
+            // Extract Season and Episode information
+            const seasonMatch = linkText.match(/Saison\s*(\d+)/i) || href.match(/\/saison(\d+)/i);
+            const season = seasonMatch ? parseInt(seasonMatch[1]) : 1;
+            
+            const epMatch = linkText.match(/(?:Episode|Ep\.?|E)\s*(\d+)/i);
+            const episode = epMatch ? parseInt(epMatch[1]) : null;
+
             let language = 'VOSTFR';
             const flagImg = $link.find('img[src*="flag_"], img[src*="flag-"], img[src*="flag"]').attr('src') || '';
             if (flagImg.includes('fr') || linkText.includes(' VF')) language = 'VF';
@@ -107,7 +114,7 @@ module.exports = async (req, res) => {
             const cleanId = animeId.replace(/\/$/, '');
             if (!image || !image.startsWith('http')) {
                 image = `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${cleanId}.jpg`;
-            } else if (image.includes('anime-sama.tv')) {
+            } else if (image.includes('anime-sama.si')) {
                 // If it's a relative path or local image, prefer the CDN for stability
                 image = `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${cleanId}.jpg`;
             }
@@ -115,7 +122,9 @@ module.exports = async (req, res) => {
             const item = {
                 animeId,
                 title: title || animeId.replace(/-/g, ' '),
-                url: href.startsWith('http') ? href : `https://anime-sama.tv${href}`,
+                season,
+                episode,
+                url: href.startsWith('http') ? href : `https://anime-sama.si${href}`,
                 image,
                 releaseTime: time ? convertTime(time, detectedTimezone) : null,
                 originalTime: time,
