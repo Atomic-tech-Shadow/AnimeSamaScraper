@@ -69,7 +69,7 @@ module.exports = async (req, res) => {
                 
                 // Fallback to CDN if not found or if it's a relative path
                 if (!image || !image.startsWith('http') || image.includes('anime-sama.si')) {
-                    image = `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${cleanId}.jpg`;
+                    image = `https://raw.githubusercontent.com/Anime-Sama/IMG/img/contenu/${cleanId}.jpg`;
                 }
                 
                 popularAnime.pepites.push({
@@ -128,7 +128,7 @@ module.exports = async (req, res) => {
                 
                 // Fallback to CDN if not found or if it's a relative path
                 if (!image || !image.startsWith('http') || image.includes('anime-sama.si')) {
-                    image = `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${cleanId}.jpg`;
+                    image = `https://raw.githubusercontent.com/Anime-Sama/IMG/img/contenu/${cleanId}.jpg`;
                 }
                 
                 popularAnime.classiques.push({
@@ -165,7 +165,7 @@ module.exports = async (req, res) => {
                 popularAnime.classiques.push({
                     id: animeId,
                     title: title || animeId,
-                    image: `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${animeId}.jpg`,
+                    image: `https://raw.githubusercontent.com/Anime-Sama/IMG/img/contenu/${animeId}.jpg`,
                     url: href.startsWith('http') ? href : `https://anime-sama.si${href}`,
                     category: 'classique'
                 });

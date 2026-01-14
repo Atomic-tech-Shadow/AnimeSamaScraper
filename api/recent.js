@@ -66,7 +66,7 @@ module.exports = async (req, res) => {
             
             // Fallback to CDN if not found or if it's a relative path
             if (!image || !image.startsWith('http') || image.includes('anime-sama.si')) {
-                image = `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${cleanId}.jpg`;
+                image = `https://raw.githubusercontent.com/Anime-Sama/IMG/img/contenu/${cleanId}.jpg`;
             }
             
             // Extract season and episode

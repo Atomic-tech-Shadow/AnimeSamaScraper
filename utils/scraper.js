@@ -365,7 +365,7 @@ async function getTrendingAnime() {
             
             // The site analysis shows all images use the statically.io CDN
             if (!image) {
-                image = `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${animeId}.jpg`;
+                image = `https://raw.githubusercontent.com/Anime-Sama/IMG/img/contenu/${animeId}.jpg`;
             }
             
             // Determine content type and language from URL
@@ -548,7 +548,7 @@ async function getAnimeDetails(animeId) {
         // Extract image from meta or page elements
         const image = $('meta[property="og:image"]').attr('content') ||
                      $('img[alt*="' + animeId + '"]').first().attr('src') ||
-                     `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${animeId}.jpg`;
+                     `https://raw.githubusercontent.com/Anime-Sama/IMG/img/contenu/${animeId}.jpg`;
         
         // Extract genres from the page using direct text search
         let genres = [];
@@ -701,7 +701,7 @@ async function getBasicAnimeInfo(animeId) {
         return {
             id: animeId,
             title: animeId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-            image: `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${animeId}.jpg`,
+            image: `https://raw.githubusercontent.com/Anime-Sama/IMG/img/contenu/${animeId}.jpg`,
             type: 'anime'
         };
         
@@ -1743,7 +1743,7 @@ async function getRecentEpisodes() {
                 isFinale: isFinale,
                 isVFCrunchyroll: isVFCrunchyroll,
                 url: href.startsWith('http') ? href : `https://anime-sama.si${href}`,
-                image: image || `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${animeId}.jpg`,
+                image: image || `https://raw.githubusercontent.com/Anime-Sama/IMG/img/contenu/${animeId}.jpg`,
                 badgeInfo: buttonText,
                 addedAt: new Date().toISOString(),
                 type: isFinale ? 'finale' : 'episode'

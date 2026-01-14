@@ -113,10 +113,10 @@ module.exports = async (req, res) => {
             
             const cleanId = animeId.replace(/\/$/, '');
             if (!image || !image.startsWith('http')) {
-                image = `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${cleanId}.jpg`;
+                image = `https://raw.githubusercontent.com/Anime-Sama/IMG/img/contenu/${cleanId}.jpg`;
             } else if (image.includes('anime-sama.si')) {
                 // If it's a relative path or local image, prefer the CDN for stability
-                image = `https://cdn.statically.io/gh/Anime-Sama/IMG/img/contenu/${cleanId}.jpg`;
+                image = `https://raw.githubusercontent.com/Anime-Sama/IMG/img/contenu/${cleanId}.jpg`;
             }
 
             const item = {
