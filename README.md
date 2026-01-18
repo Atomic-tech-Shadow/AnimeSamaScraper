@@ -36,29 +36,61 @@
 
 ---
 
-## 🛠️ Endpoints API
+## 🛠️ Endpoints API (Détails & Utilisation)
 
 ### 🏠 Documentation Racine
 `GET /`
-Retourne l'état du serveur et les métadonnées de synchronisation.
+- **Description** : Retourne les métadonnées de l'API, l'état du serveur et les informations de synchronisation de compte.
+- **Utilisation** : Vérification de la connectivité et des versions supportées.
 
 ### 🔍 Recherche
-`GET /api/search?query=naruto`
-Recherche intelligente avec nettoyage automatique des titres.
+`GET /api/search?query={nom}`
+- **Description** : Recherche d'animes par titre avec nettoyage automatique des tags de langue.
+- **Paramètres** : `query` (obligatoire).
+- **Exemple** : `/api/search?query=naruto`
 
 ### 📈 Sorties Récentes
 `GET /api/recent`
-Les 30 derniers épisodes ajoutés, filtrés par langue et type (Film, OAV, Special).
+- **Description** : Récupère les 30 derniers épisodes ajoutés sur la plateforme.
+- **Données** : Titre propre, saison, épisode, langue (VF, VOSTFR, etc.), type (Anime, Film, OAV, Special).
 
-### 📅 Planning
-`GET /api/planning?day=lundi`
-Planning hebdomadaire converti en GMT+0. Utilisez `?day=all` pour la semaine complète.
+### 📅 Planning hebdomadaire
+`GET /api/planning?day={jour}&filter={type}`
+- **Description** : Planning des sorties converti en **GMT+0**.
+- **Paramètres** : 
+  - `day` : `lundi`, `mardi`... ou `all` pour la semaine.
+  - `filter` : `anime`, `vf`, `vostfr`.
+- **Exemple** : `/api/planning?day=all&filter=vf`
 
-### 🎬 Détails & Streaming
-- `GET /api/anime/:id` : Métadonnées complètes.
-- `GET /api/seasons/:animeId` : Liste des saisons.
-- `GET /api/episodes/:animeId?season=1&language=VOSTFR` : Épisodes et sources.
-- `GET /api/episode-by-id/:episodeId` : Sources via ID (ex: `naruto-s1-e1`).
+### 🎬 Détails de l'Anime
+`GET /api/anime/:id`
+- **Description** : Métadonnées complètes (synopsis, genres, image HD, statut).
+- **Exemple** : `/api/anime/black-clover`
+
+### 📺 Saisons
+`GET /api/seasons/:animeId`
+- **Description** : Liste toutes les saisons, films et OAV disponibles pour un ID donné.
+- **Exemple** : `/api/seasons/one-piece`
+
+### 🎞️ Épisodes d'une Saison
+`GET /api/episodes/:animeId?season={n}&language={lang}`
+- **Description** : Liste les épisodes avec leurs sources de streaming pour une combinaison saison/langue.
+- **Paramètres** : `season` (défaut: 1), `language` (défaut: VOSTFR).
+- **Exemple** : `/api/episodes/bleach?season=1&language=VF`
+
+### 🔗 Sources Directes (par ID)
+`GET /api/episode-by-id/:episodeId`
+- **Description** : Extraction rapide des serveurs pour un épisode spécifique via son ID technique.
+- **Exemple** : `/api/episode-by-id/naruto-s1-e1`
+
+### 🖥️ Lecteur & Sources (par numéro)
+`GET /api/episode/:animeId/:season/:ep`
+- **Description** : Récupère les liens des lecteurs (Sibnet, SendVid, etc.) pour un numéro précis.
+
+### 🎥 Extraction Embed
+`GET /api/embed?url={url_anime_sama}`
+- **Description** : Extrait les sources vidéo à partir d'une URL brute du site Anime-Sama.
+- **Utilisation** : Pour les intégrations personnalisées de lecteurs.
 
 ---
 
