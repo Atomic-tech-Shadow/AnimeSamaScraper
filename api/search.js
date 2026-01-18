@@ -31,6 +31,8 @@ module.exports = async (req, res) => {
         const results = await searchAnime(query.trim());
 
         // Return results
+        res.setHeader('X-Provider', 'Anime-Sama');
+        res.setHeader('X-API-Version', '2.0.0');
         res.status(200).json({
             success: true,
             query: query.trim(),

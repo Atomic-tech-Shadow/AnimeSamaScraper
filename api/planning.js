@@ -215,6 +215,8 @@ module.exports = async (req, res) => {
         const requestedDay = (day && day.toLowerCase() !== 'today' && dayNames.includes(day.toLowerCase())) ? day.toLowerCase() : currentDay;
         const resultData = planningData.days[requestedDay];
 
+        res.setHeader('X-Provider', 'Anime-Sama');
+        res.setHeader('X-API-Version', '2.0.0');
         return res.status(200).json({
             success: true,
             currentDay,

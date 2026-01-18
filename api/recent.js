@@ -133,6 +133,8 @@ module.exports = async (req, res) => {
         });
         
         // Return recent episodes
+        res.setHeader('X-Provider', 'Anime-Sama');
+        res.setHeader('X-API-Version', '2.0.0');
         res.status(200).json({
             success: true,
             count: recentEpisodes.length,
