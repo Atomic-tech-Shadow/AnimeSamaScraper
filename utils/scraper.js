@@ -1161,10 +1161,21 @@ async function getAnimeEpisodes(animeId, season = 1, language = 'VOSTFR') {
                             
                             // Enhanced server detection using the new mapping
                             for (const [domain, name] of Object.entries(SERVER_MAPPING)) {
-                                if (serverUrl.toLowerCase().includes(domain)) {
+                                if (serverUrl.toLowerCase().includes(domain.toLowerCase())) {
                                     serverName = name;
                                     break;
                                 }
+                            }
+                            
+                            // Fallback for newer or unknown servers (extract domain as name)
+                            if (serverName.startsWith('Server ')) {
+                                try {
+                                    const domainMatch = serverUrl.match(/https?:\/\/([^\/]+)/i);
+                                    if (domainMatch && domainMatch[1]) {
+                                        const domain = domainMatch[1].replace('www.', '').split('.')[0];
+                                        serverName = domain.charAt(0).toUpperCase() + domain.slice(1);
+                                    }
+                                } catch (e) {}
                             }
                             
                             streamingSources.push({
