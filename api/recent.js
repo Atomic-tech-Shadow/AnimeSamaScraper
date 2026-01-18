@@ -73,30 +73,23 @@ module.exports = async (req, res) => {
             const infoText = $link.find('.info-text').text().trim() || $link.text();
             
             // Extract Season
-            // Match "Saison 1", "Saison1", "S 1", "S1", "Part 1", "Partie 1"
             const seasonMatch = infoText.match(/(?:Saison|Partie|Part|S)\s*(\d+)/i) || href.match(/\/saison(\d+)/i);
             const season = seasonMatch ? parseInt(seasonMatch[1]) : 1;
             
             // Extract Episode
-            // Match "Episode 15", "Ep 15", "E15", "Ep. 15"
             const epMatch = infoText.match(/(?:Episode|Ep\.?|E)\s*(\d+)/i);
             const episode = epMatch ? parseInt(epMatch[1]) : null;
 
-            // Extract special statuses
-            const isFin = infoText.includes('[FIN]') || infoText.toLowerCase().includes('fin');
-            const isReporte = infoText.toLowerCase().includes('reporté') || infoText.toLowerCase().includes('reporte');
-            
-            // Language
-            let language = 'VOSTFR';
-            const langBadge = $link.find('.language-badge-top img').attr('title') || $link.find('.language-badge-top img').attr('alt');
-            if (langBadge) {
-                language = langBadge.toUpperCase();
-            } else if (href.includes('/vf2') || infoText.includes('VF2')) {
-                language = 'VF2';
-            } else if (href.includes('/vf1') || infoText.includes('VF1')) {
-                language = 'VF1';
-            } else if (href.includes('/vf') || infoText.includes('VF')) {
-                language = 'VF';
+            // NEW: Improved Type Detection (Film, OAV, Special)
+            let type = 'anime';
+            if (infoText.toLowerCase().includes('scan') || href.includes('/scan/')) {
+                type = 'scan';
+            } else if (infoText.toLowerCase().includes('film') || href.includes('/film/')) {
+                type = 'film';
+            } else if (infoText.toLowerCase().includes('oav') || href.includes('/oav/')) {
+                type = 'oav';
+            } else if (infoText.toLowerCase().includes('special') || href.includes('/special/')) {
+                type = 'special';
             }
             
             const item = {
@@ -110,7 +103,7 @@ module.exports = async (req, res) => {
                 url: href.startsWith('http') ? href : `https://anime-sama.si${href}`,
                 image: image,
                 addedAt: new Date().toISOString(),
-                type: 'anime',
+                type: type,
                 infoText: infoText // Added for debugging and clarity
             };
             

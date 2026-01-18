@@ -95,17 +95,20 @@ module.exports = async (req, res) => {
             const seasonMatch = linkText.match(/Saison\s*(\d+)/i) || href.match(/\/saison(\d+)/i);
             const season = seasonMatch ? parseInt(seasonMatch[1]) : 1;
             
+            // Extract Episode
             const epMatch = linkText.match(/(?:Episode|Ep\.?|E)\s*(\d+)/i);
             const episode = epMatch ? parseInt(epMatch[1]) : null;
 
-            let language = 'VOSTFR';
-            const flagImg = $link.find('img[src*="flag_"], img[src*="flag-"], img[src*="flag"]').attr('src') || '';
-            if (flagImg.includes('fr') || linkText.includes(' VF')) language = 'VF';
-            else if (flagImg.includes('cn') || linkText.includes(' VCN')) language = 'VCN';
-            
+            // NEW: Support for [OAV], [Film], [Special]
             let type = 'anime';
             if (linkText.toLowerCase().includes('scans') || href.includes('/scan/')) {
                 type = 'scan';
+            } else if (linkText.toLowerCase().includes('film') || href.includes('/film/')) {
+                type = 'film';
+            } else if (linkText.toLowerCase().includes('oav') || href.includes('/oav/')) {
+                type = 'oav';
+            } else if (linkText.toLowerCase().includes('special') || href.includes('/special/')) {
+                type = 'special';
             }
 
             const $img = $link.find('img').not('[src*="flag"]').first();
