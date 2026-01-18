@@ -80,6 +80,10 @@ module.exports = async (req, res) => {
             const epMatch = infoText.match(/(?:Episode|Ep\.?|E)\s*(\d+)/i);
             const episode = epMatch ? parseInt(epMatch[1]) : null;
 
+            // Flags & Status
+            const isFin = infoText.includes('[FIN]') || infoText.toLowerCase().includes('fin');
+            const isReporte = infoText.toLowerCase().includes('reporté') || infoText.toLowerCase().includes('reporte');
+
             // NEW: Improved Type Detection (Film, OAV, Special)
             let type = 'anime';
             if (infoText.toLowerCase().includes('scan') || href.includes('/scan/')) {
