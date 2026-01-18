@@ -83,7 +83,7 @@ module.exports = async (req, res) => {
             // NEW: Improved Type Detection (Film, OAV, Special)
             let type = 'anime';
             if (infoText.toLowerCase().includes('scan') || href.includes('/scan/')) {
-                type = 'scan';
+                return; // Skip scans
             } else if (infoText.toLowerCase().includes('film') || href.includes('/film/')) {
                 type = 'film';
             } else if (infoText.toLowerCase().includes('oav') || href.includes('/oav/')) {

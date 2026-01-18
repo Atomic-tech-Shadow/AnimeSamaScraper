@@ -102,7 +102,7 @@ module.exports = async (req, res) => {
             // NEW: Support for [OAV], [Film], [Special]
             let type = 'anime';
             if (linkText.toLowerCase().includes('scans') || href.includes('/scan/')) {
-                type = 'scan';
+                return; // Skip scans as requested
             } else if (linkText.toLowerCase().includes('film') || href.includes('/film/')) {
                 type = 'film';
             } else if (linkText.toLowerCase().includes('oav') || href.includes('/oav/')) {

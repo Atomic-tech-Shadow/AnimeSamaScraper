@@ -379,7 +379,7 @@ async function getTrendingAnime() {
             
             let contentType = 'anime';
             if (seasonPath && seasonPath.toLowerCase().includes('scan')) {
-                contentType = 'scan';
+                return; // Skip scans as requested
             } else if (seasonPath && seasonPath.toLowerCase().includes('film')) {
                 contentType = 'film';
             }

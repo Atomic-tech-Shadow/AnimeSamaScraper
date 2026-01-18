@@ -42,6 +42,10 @@ module.exports = async (req, res) => {
                     : null;
                 
                 if (!animeId || seenIds.has(animeId)) return;
+                
+                // Skip scans
+                if (href.includes('/scan/')) return;
+                
                 seenIds.add(animeId);
                 const cleanId = animeId.toLowerCase().replace(/\/$/, '').trim();
                 
@@ -154,6 +158,10 @@ module.exports = async (req, res) => {
                 const animeId = catalogueIndex >= 0 && catalogueIndex + 1 < urlParts.length ? urlParts[catalogueIndex + 1] : null;
                 
                 if (!animeId || seenIds.has(animeId)) return;
+                
+                // Skip scans
+                if (href.includes('/scan/')) return;
+                
                 seenIds.add(animeId);
                 
                 let title = $link.find('h2.card-title, .card-title, h1, .title, p').first().text().trim() || $link.attr('alt') || $link.find('img').attr('alt') || $link.text().trim();
