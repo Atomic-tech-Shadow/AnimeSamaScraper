@@ -88,7 +88,12 @@ const SERVER_MAPPING = {
     'doodstream.com': 'DoodStream',
     'streamtape.com': 'StreamTape',
     'upstream.to': 'Upstream',
-    'embedgram.com': 'EmbedGram'
+    'embedgram.com': 'EmbedGram',
+    'mixdrop.co': 'Mixdrop',
+    'voe.sx': 'Voe',
+    'ok.ru': 'OK.ru',
+    'vidoza.net': 'Vidoza',
+    'fembed.com': 'Fembed'
 };
 
 // Get random user agent
