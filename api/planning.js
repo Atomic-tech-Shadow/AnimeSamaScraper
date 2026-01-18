@@ -88,6 +88,22 @@ module.exports = async (req, res) => {
                 ) || title;
             }
 
+            // Extract Language information
+            let language = 'VOSTFR';
+            const flagImg = $link.find('img[src*="flag_"], img[src*="flag-"], img[src*="flag"]').attr('src') || '';
+            const flagTitle = $link.find('img[src*="flag"]').attr('title') || $link.find('img[src*="flag"]').attr('alt') || '';
+            const linkLower = linkText.toLowerCase();
+            
+            if (flagImg.includes('fr') || linkLower.includes(' vf') || flagTitle.toUpperCase().includes('VF')) language = 'VF';
+            else if (flagImg.includes('cn') || linkLower.includes(' vcn') || flagTitle.toUpperCase().includes('VCN')) language = 'VCN';
+            else if (flagImg.includes('jp') || linkLower.includes(' vostfr') || flagTitle.toUpperCase().includes('VOSTFR')) language = 'VOSTFR';
+            else if (flagImg.includes('en') || linkLower.includes(' va') || flagTitle.toUpperCase().includes('VA')) language = 'VA';
+            else if (flagImg.includes('ar') || linkLower.includes(' var') || flagTitle.toUpperCase().includes('VAR')) language = 'VAR';
+            else if (flagImg.includes('kr') || linkLower.includes(' vkr') || flagTitle.toUpperCase().includes('VKR')) language = 'VKR';
+            else if (flagImg.includes('qc') || linkLower.includes(' vqc') || flagTitle.toUpperCase().includes('VQC')) language = 'VQC';
+            else if (linkLower.includes(' vf1')) language = 'VF1';
+            else if (linkLower.includes(' vf2')) language = 'VF2';
+
             const timeMatch = linkText.match(/(\d{1,2}h\d{2})/);
             let time = timeMatch ? timeMatch[1] : null;
 

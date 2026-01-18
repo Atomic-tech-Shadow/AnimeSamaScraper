@@ -30,16 +30,14 @@
 - Cheerio (HTML parsing)
 - Cors middleware
 
-## Recent Changes (January 12, 2026)
+## Recent Changes (January 18, 2026)
 
-### Domain Migration & Planning Improvements
-- **Domain Update**: Migrated all API endpoints to scrape from `anime-sama.si` (from `.eu`/`.tv`).
-- **Planning Metadata**: Added `season` and `episode` fields to the `/api/planning` endpoint items.
-- **Global Replacement**: Performed a project-wide replacement of old domains to ensure all features remain functional.
-
-### Data Accuracy Verification
-- **Verified**: Planning endpoint now returns structured metadata for scheduled releases.
-- **Verified**: Search and details endpoints are correctly reaching the `.si` domain.
+### Optimization & Feature Enrichment
+- **Account Readiness**: Added metadata for new Anime-Sama account features (synchronization).
+- **Extended Language Support**: Added support for VAR (Arabe), VKR (Coréen), VCN (Chinois), VA (Anglais), and VQC (Québécois).
+- **Refined Content Detection**: Enhanced detection for Films, OAVs, and Specials across all endpoints.
+- **Improved Title Cleaning**: More aggressive filtering of language tags and metadata from titles.
+- **Image Stability**: All images are now sourced directly from the GitHub raw content repository for maximum reliability.
 
 ## API Endpoints
 1. `GET /` - Root documentation

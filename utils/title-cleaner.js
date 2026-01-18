@@ -14,7 +14,12 @@ function cleanTitle(rawTitle) {
     cleaned = cleaned.replace(/\bVOSTFR\b/gi, '')           // Enlever VOSTFR
                     .replace(/\bVF\b/gi, '')                 // Enlever VF
                     .replace(/\bVA\b/gi, '')                 // Enlever VA
-                    .replace(/\bVJSTFR\b/gi, '')             // Enlever VJSTFR
+                    .replace(/\bVAR\b/gi, '')                // Enlever VAR
+                    .replace(/\bVKR\b/gi, '')                // Enlever VKR
+                    .replace(/\bVCN\b/gi, '')                // Enlever VCN
+                    .replace(/\bVQC\b/gi, '')                // Enlever VQC
+                    .replace(/\bVF1\b/gi, '')                // Enlever VF1
+                    .replace(/\bVF2\b/gi, '')                // Enlever VF2
                     .replace(/Episode\s*\d+/gi, '')          // Enlever "Episode 123"
                     .replace(/Saison\s*\d+/gi, '')           // Enlever "Saison 1"
                     .replace(/\[FIN\]/gi, '')                // Enlever [FIN]

@@ -37,6 +37,11 @@ app.get('/', (req, res) => {
             specificEpisode: '/api/episode/:animeId/:season/:episode',
             embed: '/api/embed?url=https%3A%2F%2Fanime-sama.si%2Fcatalogue%2F...'
         },
+        metadata: {
+            domain: 'anime-sama.si',
+            accountFeatures: 'available',
+            synchronization: 'enabled'
+        },
         examples: {
             searchAnime: 'GET /api/search?query=black%20butler',
             getRecent: 'GET /api/recent',

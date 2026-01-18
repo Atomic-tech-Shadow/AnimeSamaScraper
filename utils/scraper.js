@@ -55,6 +55,13 @@ const LANGUAGE_SYSTEM = {
         flag: 'qc',
         priority: 6 
     },
+    'var': { 
+        code: 'var', 
+        name: 'VAR', 
+        fullName: 'Version Arabe',
+        flag: 'ar',
+        priority: 10 
+    },
     'vf1': { 
         code: 'vf1', 
         name: 'VF1', 

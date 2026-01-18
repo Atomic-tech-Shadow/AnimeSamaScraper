@@ -92,6 +92,28 @@ module.exports = async (req, res) => {
                 type = 'special';
             }
             
+            // Language
+            let language = 'VOSTFR';
+            const langBadge = $link.find('.language-badge-top img, .language-badge img').first();
+            const langTitle = langBadge.attr('title') || langBadge.attr('alt') || '';
+            const linkLower = (href + ' ' + infoText).toLowerCase();
+            
+            if (langTitle.toUpperCase().includes('VF') || linkLower.includes('/vf') || linkLower.includes(' vf')) {
+                if (linkLower.includes('vf2')) language = 'VF2';
+                else if (linkLower.includes('vf1')) language = 'VF1';
+                else language = 'VF';
+            } else if (langTitle.toUpperCase().includes('VCN') || linkLower.includes('/vcn') || linkLower.includes(' vcn')) {
+                language = 'VCN';
+            } else if (langTitle.toUpperCase().includes('VA') || linkLower.includes('/va') || linkLower.includes(' va')) {
+                language = 'VA';
+            } else if (langTitle.toUpperCase().includes('VAR') || linkLower.includes('/var') || linkLower.includes(' var')) {
+                language = 'VAR';
+            } else if (langTitle.toUpperCase().includes('VKR') || linkLower.includes('/vkr') || linkLower.includes(' vkr')) {
+                language = 'VKR';
+            } else if (langTitle.toUpperCase().includes('VQC') || linkLower.includes('/vqc') || linkLower.includes(' vqc')) {
+                language = 'VQC';
+            }
+            
             const item = {
                 animeId: animeId,
                 animeTitle: animeTitle,
