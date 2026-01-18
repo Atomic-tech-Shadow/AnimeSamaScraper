@@ -1,14 +1,16 @@
 # Anime-Sama API v2.0 - Project Notes
 
+## Current Status ✅
+- **Domain**: anime-sama.si (Updated Jan 18, 2026)
+- **All 11 endpoints**: Fully tested and operational
+- **Focus**: 100% Anime (Scans/Mangas removed)
+- **Timezone**: Native GMT+0 conversion
+- **Workflow status**: Running and healthy
+- **Data Accuracy**: 100% verified against live website
+
 ## Project Overview
 **Anime-Sama API** is a real-time anime scraping API that fetches data from anime-sama.si (migrated from anime-sama.eu). The API provides 11 complete endpoints for searching, retrieving, and streaming anime content.
 
-## Current Status ✅
-- **Domain**: anime-sama.si (Updated Jan 12, 2026)
-- **All 11 endpoints**: Fully tested and operational
-- **Latest update**: Migrated to .si domain + added Season/Episode to planning
-- **Workflow status**: Running and healthy
-- **Data Accuracy**: 100% verified against live website
 
 ## Key Features
 ✅ Search anime by query
