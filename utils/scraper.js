@@ -1063,13 +1063,13 @@ async function getAnimeEpisodes(animeId, season = 1, language = 'VOSTFR') {
         const possibleLanguages = ['vostfr', 'vf', 'vf1', 'vf2', 'va', 'vkr', 'vcn', 'vqc', 'vj'];
         
         // Optimized parallel language detection for better performance
-        const languagesToTest = requestedLang === 'vf' ? ['vf1', 'vf2', 'vf'] : [requestedLang];
+        const languagesToTest = requestedLang === 'vf' ? ['vf1', 'vf2', 'vf', 'vostfr'] : [requestedLang, 'vostfr'];
         
         const languageTests = languagesToTest.map(async (testLang) => {
             try {
-                const testUrl = `https://anime-sama.si/catalogue/${animeId}/${seasonPath}/${testLang}/episodes.js`;
+                const testUrl = `https://anime-sama.tv/catalogue/${animeId}/${seasonPath}/${testLang}/episodes.js`;
                 const testResponse = await axios.get(testUrl, {
-                    timeout: 1500,
+                    timeout: 2000,
                     headers: { 'User-Agent': getRandomUserAgent() },
                     validateStatus: function (status) {
                         return status < 500;
@@ -1096,7 +1096,7 @@ async function getAnimeEpisodes(animeId, season = 1, language = 'VOSTFR') {
             }
         }
         
-        const seasonUrl = `https://anime-sama.si/catalogue/${animeId}/${seasonPath}/${languageCode}/`;
+        const seasonUrl = `https://anime-sama.tv/catalogue/${animeId}/${seasonPath}/${languageCode}/`;
         
         // Try to get the episodes.js file for this specific anime/season
         const episodesJsUrl = `${seasonUrl}episodes.js`;
@@ -1122,21 +1122,21 @@ async function getAnimeEpisodes(animeId, season = 1, language = 'VOSTFR') {
             
             if (typeof jsContent === 'string' && jsContent.includes('var eps')) {
                 // Extract all episode server arrays (eps1, eps2, eps3, etc.)
-                const episodeArrayMatches = jsContent.match(/var eps(\d+) = \[([\s\S]*?)\];/g);
+                const episodeArrayMatches = jsContent.match(/var eps(\d+)\s*=\s*\[([\s\S]*?)\];/g);
                 const servers = new Map();
                 
                 if (episodeArrayMatches) {
                     episodeArrayMatches.forEach((match) => {
-                        const serverMatch = match.match(/var eps(\d+) = \[([\s\S]*?)\];/);
+                        const serverMatch = match.match(/var eps(\d+)\s*=\s*\[([\s\S]*?)\];/);
                         if (serverMatch) {
                             const serverNum = parseInt(serverMatch[1]);
                             const urlsContent = serverMatch[2];
                             
-                            // Extract URLs from the array
-                            const urls = urlsContent.match(/'([^']+)'/g);
+                            // Extract URLs from the array - support single and double quotes
+                            const urls = urlsContent.match(/(['"])(.*?)\1/g);
                             
                             if (urls) {
-                                const cleanUrls = urls.map(url => url.replace(/'/g, '').trim()).filter(url => url.length > 0);
+                                const cleanUrls = urls.map(url => url.substring(1, url.length - 1).trim()).filter(url => url.length > 0);
                                 servers.set(serverNum, cleanUrls);
                             }
                         }
@@ -1341,10 +1341,10 @@ async function getEpisodeSources(episodeUrl) {
         const episodeIdMatch = episodeUrl.match(/^([a-z0-9-]+)-s(\d+)-e(\d+)$/i);
         if (episodeIdMatch) {
             const [, animeId, season, episode] = episodeIdMatch;
-            finalUrl = `https://anime-sama.si/catalogue/${animeId}/saison${season}/vostfr/episode-${episode}`;
-        } else if (!episodeUrl.includes('anime-sama.si')) {
+            finalUrl = `https://anime-sama.tv/catalogue/${animeId}/saison${season}/vostfr/episode-${episode}`;
+        } else if (!episodeUrl.includes('anime-sama.tv')) {
             // If it's a relative path, add the domain
-            finalUrl = `https://anime-sama.si${episodeUrl}`;
+            finalUrl = `https://anime-sama.tv${episodeUrl}`;
         }
         
         console.log(`Extracting streaming sources from: ${finalUrl}`);
@@ -1389,7 +1389,7 @@ async function extractFromEpisodePage(episodeUrl) {
         const episodeNumber = parseInt(episodePart.replace('episode-', ''));
         
         // Get the season's episodes.js file
-        const seasonUrl = `https://anime-sama.si/catalogue/${animeId}/${seasonPath}/${language}/`;
+        const seasonUrl = `https://anime-sama.tv/catalogue/${animeId}/${seasonPath}/${language}/`;
         const episodesJsUrl = `${seasonUrl}episodes.js`;
         
         console.log(`Getting episodes.js from: ${episodesJsUrl}`);
@@ -1410,21 +1410,21 @@ async function extractFromEpisodePage(episodeUrl) {
         
         if (typeof jsContent === 'string' && jsContent.includes('var eps')) {
             // Extract all episode server arrays (eps1, eps2, eps3, etc.)
-            const episodeArrayMatches = jsContent.match(/var eps(\d+) = \[([\s\S]*?)\];/g);
+            const episodeArrayMatches = jsContent.match(/var eps(\d+)\s*=\s*\[([\s\S]*?)\];/g);
             
             if (episodeArrayMatches) {
                 episodeArrayMatches.forEach((match) => {
-                    const serverMatch = match.match(/var eps(\d+) = \[([\s\S]*?)\];/);
+                    const serverMatch = match.match(/var eps(\d+)\s*=\s*\[([\s\S]*?)\];/);
                     if (serverMatch) {
                         const serverNum = parseInt(serverMatch[1]);
                         const urlsContent = serverMatch[2];
                         
-                        // Extract URLs from the array
-                        const urls = urlsContent.match(/'([^']+)'/g);
+                        // Extract URLs from the array - support single and double quotes
+                        const urls = urlsContent.match(/(['"])(.*?)\1/g);
                         
                         if (urls && urls[episodeNumber - 1]) {
                             // Get the URL for the specific episode
-                            const episodeUrl = urls[episodeNumber - 1].replace(/'/g, '').trim();
+                            const episodeUrl = urls[episodeNumber - 1].substring(1, urls[episodeNumber - 1].length - 1).trim();
                             
                             if (episodeUrl && episodeUrl.startsWith('http')) {
                                 // Determine server name from URL
