@@ -735,7 +735,7 @@ async function getSeasonLanguages(animeId, seasonValue) {
     // Use Promise.allSettled for parallel requests instead of sequential
     const languageChecks = possibleLanguages.map(async (lang) => {
         try {
-            const episodesUrl = `https://anime-sama.si/catalogue/${animeId}/${seasonValue}/${lang}/episodes.js`;
+            const episodesUrl = `https://anime-sama.tv/catalogue/${animeId}/${seasonValue}/${lang}/episodes.js`;
             const response = await axios.get(episodesUrl, {
                 timeout: 2000, // Reduced timeout
                 headers: { 'User-Agent': getRandomUserAgent() },
@@ -772,7 +772,7 @@ async function getSeasonLanguages(animeId, seasonValue) {
 async function getAnimeSeasons(animeId) {
     try {
         // Scrape the anime's main page to get real seasons data
-        const $ = await scrapeAnimesama(`https://anime-sama.si/catalogue/${animeId}/`);
+        const $ = await scrapeAnimesama(`https://anime-sama.tv/catalogue/${animeId}/`);
         
         const seasons = [];
         const fullHtml = $.html();
@@ -877,7 +877,7 @@ async function getAnimeSeasons(animeId) {
                         value: seasonValue, // saison1, film, etc.
                         type: seasonType,
                         url: seasonUrl,
-                        fullUrl: `https://anime-sama.si/catalogue/${animeId}/${seasonUrl}`,
+                        fullUrl: `https://anime-sama.tv/catalogue/${animeId}/${seasonUrl}`,
                         languages: languages,
                         available: true,
                         contentType: 'anime'
@@ -934,7 +934,7 @@ async function getAnimeSeasons(animeId) {
                             value: scanValue, // scan, light-novel, etc.
                             type: scanType,
                             url: scanUrl,
-                            fullUrl: `https://anime-sama.si/catalogue/${animeId}/${scanUrl}`,
+                            fullUrl: `https://anime-sama.tv/catalogue/${animeId}/${scanUrl}`,
                             languages: languages,
                             available: true,
                             contentType: 'manga'
@@ -957,7 +957,8 @@ async function getAnimeSeasons(animeId) {
             
             // Check for various content types that might be missed
             if (href.includes('/scan/') || text.includes('scan')) {
-                const scanUrl = href.replace(`https://anime-sama.si/catalogue/${animeId}/`, '');
+                const scanUrl = href.replace(`https://anime-sama.tv/catalogue/${animeId}/`, '')
+                                    .replace(`https://anime-sama.si/catalogue/${animeId}/`, '');
                 if (!seasons.find(s => s.url === scanUrl)) {
                     seasons.push({
                         number: 2100 + index,
@@ -965,14 +966,15 @@ async function getAnimeSeasons(animeId) {
                         value: 'scan',
                         type: 'Scan',
                         url: scanUrl,
-                        fullUrl: href,
+                        fullUrl: `https://anime-sama.tv/catalogue/${animeId}/${scanUrl}`,
                         languages: ['VF'],
                         available: true,
                         contentType: 'manga'
                     });
                 }
             } else if (href.includes('/oav/') || text.includes('oav') || text.includes('ova')) {
-                const oavUrl = href.replace(`https://anime-sama.si/catalogue/${animeId}/`, '');
+                const oavUrl = href.replace(`https://anime-sama.tv/catalogue/${animeId}/`, '')
+                                   .replace(`https://anime-sama.si/catalogue/${animeId}/`, '');
                 if (!seasons.find(s => s.url === oavUrl)) {
                     seasons.push({
                         number: 990 + index,
@@ -980,14 +982,15 @@ async function getAnimeSeasons(animeId) {
                         value: 'oav',
                         type: 'OAV',
                         url: oavUrl,
-                        fullUrl: href,
+                        fullUrl: `https://anime-sama.tv/catalogue/${animeId}/${oavUrl}`,
                         languages: ['VOSTFR', 'VF'],
                         available: true,
                         contentType: 'anime'
                     });
                 }
             } else if (href.includes('/special/') || text.includes('spécial') || text.includes('special')) {
-                const specialUrl = href.replace(`https://anime-sama.si/catalogue/${animeId}/`, '');
+                const specialUrl = href.replace(`https://anime-sama.tv/catalogue/${animeId}/`, '')
+                                       .replace(`https://anime-sama.si/catalogue/${animeId}/`, '');
                 if (!seasons.find(s => s.url === specialUrl)) {
                     seasons.push({
                         number: 980 + index,
@@ -995,7 +998,7 @@ async function getAnimeSeasons(animeId) {
                         value: 'special',
                         type: 'Spécial',
                         url: specialUrl,
-                        fullUrl: href,
+                        fullUrl: `https://anime-sama.tv/catalogue/${animeId}/${specialUrl}`,
                         languages: ['VOSTFR', 'VF'],
                         available: true,
                         contentType: 'anime'
