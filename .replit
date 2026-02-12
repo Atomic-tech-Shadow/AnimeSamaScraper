@@ -37,4 +37,4 @@ expertMode = true
 
 [deployment]
 deploymentTarget = "autoscale"
-run = ["npm", "start"]
+run = ["node", "server.js"]
