@@ -5,7 +5,7 @@
 <img src="https://readme-typing-svg.herokuapp.com?font=Fira+Code&pause=1000&color=F75C7E&center=true&vCenter=true&width=435&lines=Real-time+Anime+Scraping+API;100%25+Animation+Focus;Production+Ready;Global+Language+Support" alt="Typing SVG" />
 
 [![Version](https://img.shields.io/badge/version-2.1.0-blue.svg?style=for-the-badge)]()
-[![Domain](https://img.shields.io/badge/domain-anime--sama.si-green.svg?style=for-the-badge)]()
+[![Domain](https://img.shields.io/badge/domain-anime--sama.tv-green.svg?style=for-the-badge)]()
 [![Node.js](https://img.shields.io/badge/Node.js-20+-green.svg?style=for-the-badge&logo=node.js)]()
 [![Express](https://img.shields.io/badge/Express.js-4.x-black.svg?style=for-the-badge&logo=express)]()
 [![Status](https://img.shields.io/badge/status-active-success.svg?style=for-the-badge)]()
@@ -20,7 +20,7 @@
 <img src="https://img.shields.io/badge/Cheerio-E88C1A?style=for-the-badge&logo=cheerio&logoColor=white" />
 </p>
 
-**API Node.js ultra-rapide dédiée exclusivement à l'animation. Scrape en temps réel anime-sama.si avec une détection linguistique mondiale.**
+**API Node.js ultra-rapide dédiée exclusivement à l'animation. Scrape en temps réel anime-sama.tv avec une détection linguistique mondiale.**
 
 </div>
 

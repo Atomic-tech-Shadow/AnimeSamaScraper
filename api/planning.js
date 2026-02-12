@@ -51,7 +51,7 @@ module.exports = async (req, res) => {
         const dayNames = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
         const currentDay = dayNames[today.getDay()];
         
-        const $ = await scrapeAnimesama('https://anime-sama.si');
+        const $ = await scrapeAnimesama('https://anime-sama.tv');
         
         const planningData = {
             success: true,
@@ -133,7 +133,7 @@ module.exports = async (req, res) => {
             const cleanId = animeId.replace(/\/$/, '');
             if (!image || !image.startsWith('http')) {
                 image = `https://raw.githubusercontent.com/Anime-Sama/IMG/img/contenu/${cleanId}.jpg`;
-            } else if (image.includes('anime-sama.si')) {
+            } else if (image.includes('anime-sama.tv')) {
                 // If it's a relative path or local image, prefer the CDN for stability
                 image = `https://raw.githubusercontent.com/Anime-Sama/IMG/img/contenu/${cleanId}.jpg`;
             }
@@ -143,7 +143,7 @@ module.exports = async (req, res) => {
                 title: title || animeId.replace(/-/g, ' '),
                 season,
                 episode,
-                url: href.startsWith('http') ? href : `https://anime-sama.si${href}`,
+                url: href.startsWith('http') ? href : `https://anime-sama.tv${href}`,
                 image,
                 releaseTime: time ? convertTime(time, detectedTimezone) : null,
                 originalTime: time,

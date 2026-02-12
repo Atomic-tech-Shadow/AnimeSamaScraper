@@ -19,7 +19,7 @@ module.exports = async (req, res) => {
 
     try {
         // Scrape the homepage
-        const $ = await scrapeAnimesama('https://anime-sama.si/');
+        const $ = await scrapeAnimesama('https://anime-sama.tv/');
         
         const recentEpisodes = [];
         const seenLinks = new Set();
@@ -65,7 +65,7 @@ module.exports = async (req, res) => {
             let image = $link.find('img').attr('src') || $link.find('img').attr('data-src');
             
             // Fallback to CDN if not found or if it's a relative path
-            if (!image || !image.startsWith('http') || image.includes('anime-sama.si')) {
+            if (!image || !image.startsWith('http') || image.includes('anime-sama.tv')) {
                 image = `https://raw.githubusercontent.com/Anime-Sama/IMG/img/contenu/${cleanId}.jpg`;
             }
             
@@ -126,7 +126,7 @@ module.exports = async (req, res) => {
                 language: language,
                 isFin: isFin,
                 isReporte: isReporte,
-                url: href.startsWith('http') ? href : `https://anime-sama.si${href}`,
+                url: href.startsWith('http') ? href : `https://anime-sama.tv${href}`,
                 image: image,
                 addedAt: new Date().toISOString(),
                 type: type,

@@ -1,7 +1,7 @@
 # Anime-Sama API
 
 ## Overview
-A Node.js API server that scrapes anime-sama.si in real-time to provide anime data via JSON endpoints. Built with Express.
+A Node.js API server that scrapes anime-sama.tv in real-time to provide anime data via JSON endpoints. Built with Express.
 
 ## Project Architecture
 - **server.js** - Main Express server entry point (port 5000)
@@ -40,4 +40,5 @@ A Node.js API server that scrapes anime-sama.si in real-time to provide anime da
 - `GET /api/embed?url=...` - Embed player
 
 ## Recent Changes
+- 2026-02-12: Domain changed to anime-sama.tv
 - 2026-02-12: Initial import and setup in Replit environment

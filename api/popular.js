@@ -15,7 +15,7 @@ module.exports = async (req, res) => {
     }
 
     try {
-        const $ = await scrapeAnimesama('https://anime-sama.si/');
+        const $ = await scrapeAnimesama('https://anime-sama.tv/');
         
         const popularAnime = {
             classiques: [],
@@ -72,7 +72,7 @@ module.exports = async (req, res) => {
                 let image = $link.find('img').attr('src') || $link.find('img').attr('data-src');
                 
                 // Fallback to CDN if not found or if it's a relative path
-                if (!image || !image.startsWith('http') || image.includes('anime-sama.si')) {
+                if (!image || !image.startsWith('http') || image.includes('anime-sama.tv')) {
                     image = `https://raw.githubusercontent.com/Anime-Sama/IMG/img/contenu/${cleanId}.jpg`;
                 }
                 
@@ -80,7 +80,7 @@ module.exports = async (req, res) => {
                     id: cleanId,
                     title: title,
                     image: image,
-                    url: href.startsWith('http') ? href : `https://anime-sama.si${href}`,
+                    url: href.startsWith('http') ? href : `https://anime-sama.tv${href}`,
                     category: 'pepite'
                 });
             });
@@ -131,7 +131,7 @@ module.exports = async (req, res) => {
                 let image = $link.find('img').attr('src') || $link.find('img').attr('data-src');
                 
                 // Fallback to CDN if not found or if it's a relative path
-                if (!image || !image.startsWith('http') || image.includes('anime-sama.si')) {
+                if (!image || !image.startsWith('http') || image.includes('anime-sama.tv')) {
                     image = `https://raw.githubusercontent.com/Anime-Sama/IMG/img/contenu/${cleanId}.jpg`;
                 }
                 
@@ -139,7 +139,7 @@ module.exports = async (req, res) => {
                     id: cleanId,
                     title: title,
                     image: image,
-                    url: href.startsWith('http') ? href : `https://anime-sama.si${href}`,
+                    url: href.startsWith('http') ? href : `https://anime-sama.tv${href}`,
                     category: 'classique'
                 });
             });
@@ -174,7 +174,7 @@ module.exports = async (req, res) => {
                     id: animeId,
                     title: title || animeId,
                     image: `https://raw.githubusercontent.com/Anime-Sama/IMG/img/contenu/${animeId}.jpg`,
-                    url: href.startsWith('http') ? href : `https://anime-sama.si${href}`,
+                    url: href.startsWith('http') ? href : `https://anime-sama.tv${href}`,
                     category: 'classique'
                 });
             });
@@ -197,7 +197,7 @@ module.exports = async (req, res) => {
             },
             allPopular: allPopular,
             extractedAt: new Date().toISOString(),
-            source: 'anime-sama.si homepage'
+            source: 'anime-sama.tv homepage'
         });
         
     } catch (error) {
