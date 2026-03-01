@@ -641,11 +641,43 @@ async function getAnimeDetails(animeId) {
         
         // Extract year from various sources
         let year = 'Inconnu';
-        const pageContent = $.html();
-        const yearMatches = pageContent.match(/20[0-2][0-9]/g);
-        if (yearMatches) {
-            // Get the earliest year found (likely release year)
-            year = Math.min(...yearMatches.map(y => parseInt(y))).toString();
+        // Improved year extraction: search for specific labels and prioritize earlier years for release
+        const yearMatch = pageHTML.match(/Année de sortie\s*:\s*(\d{4})/i) || 
+                          pageHTML.match(/Date de sortie\s*:\s*(\d{4})/i) ||
+                          pageHTML.match(/Sortie\s*:\s*(\d{4})/i) ||
+                          pageHTML.match(/(\d{4})\s*\|\s*Série/i);
+        
+        if (yearMatch) {
+            year = yearMatch[1];
+        } else {
+            // Method 3: Try to find year in the first season's episodes file or meta
+            const metaDescription = $('meta[name="description"]').attr('content') || '';
+            const descYearMatch = metaDescription.match(/\b(19[7-9]\d|20[0-2]\d)\b/);
+            
+            if (descYearMatch && descYearMatch[0] !== '2000' && descYearMatch[0] !== '2024' && descYearMatch[0] !== '2025') {
+                year = descYearMatch[0];
+            } else {
+                // Method 4: Check for year in the first "Saison" panneauAnime name
+                const firstSeasonYearMatch = pageHTML.match(/panneauAnime\(".*?(\d{4}).*?",/);
+                if (firstSeasonYearMatch) {
+                    year = firstSeasonYearMatch[1];
+                } else {
+                    // Method 5: Look for years in the range 1970-2026
+                    const yearMatches = pageHTML.match(/\b(19[7-9]\d|20[0-2]\d)\b/g);
+                    if (yearMatches) {
+                        const uniqueYears = [...new Set(yearMatches)]
+                            .map(Number)
+                            .filter(y => y <= new Date().getFullYear() + 1)
+                            .sort((a, b) => a - b);
+                        
+                        if (uniqueYears.length > 0) {
+                            // Filter out common copyright/current years to find the original release
+                            const likelyYear = uniqueYears.find(y => y !== 2000 && y !== 2024 && y !== 2025 && y !== 2026);
+                            year = (likelyYear || uniqueYears[0]).toString();
+                        }
+                    }
+                }
+            }
         }
         
         // Determine available languages from seasons
@@ -657,8 +689,10 @@ async function getAnimeDetails(animeId) {
         if (availableLanguages.length === 0) availableLanguages.push('VOSTFR'); // Default
         
         // Enhanced status with season count
-        if (totalSeasons > 1) {
-            status = `${totalSeasons} saisons disponibles`;
+        // FIX: Only count actual anime seasons, not scans or films for the "saisons disponibles" label
+        const actualAnimeSeasons = seasons.filter(s => s.type === 'Saison' && !s.name.toLowerCase().includes('film') && !s.name.toLowerCase().includes('oav')).length;
+        if (actualAnimeSeasons > 0) {
+            status = `${actualAnimeSeasons} saison${actualAnimeSeasons > 1 ? 's' : ''} disponible${actualAnimeSeasons > 1 ? 's' : ''}`;
             if (progressInfo) {
                 status += ` - ${progressInfo}`;
             }
