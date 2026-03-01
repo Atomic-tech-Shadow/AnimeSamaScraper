@@ -58,7 +58,7 @@ async function refreshRecommendationsCache() {
             
             if (!href || !href.includes('/catalogue/')) return;
             
-            const fullUrl = href.startsWith('http') ? href : `https://anime-sama.si${href}`;
+            const fullUrl = href.startsWith('http') ? href : `https://anime-sama.tv${href}`;
             const urlParts = fullUrl.split('/');
             const catalogueIndex = urlParts.findIndex(part => part === 'catalogue');
             

@@ -4,9 +4,9 @@ const { cleanTitleWithFallback } = require('./title-cleaner');
 
 // User-Agent rotation for anti-bot protection
 const USER_AGENTS = [
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:89.0) Gecko/20100101 Firefox/89.0',
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:89.0) Gecko/20100101 Firefox/89.0'
 ];
@@ -130,15 +130,19 @@ async function scrapeAnimesama(url, options = {}) {
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
                 'Accept-Language': 'fr-FR,fr;q=0.9,en;q=0.8',
                 'Accept-Encoding': 'gzip, deflate, br',
+                'Accept-Encoding': 'gzip, deflate, br',
                 'Connection': 'keep-alive',
+                'sec-ch-ua': '"Not A(Brand";v="99", "Google Chrome";v="121", "Chromium";v="121"',
+                'sec-ch-ua-mobile': '?0',
+                'sec-ch-ua-platform': '"Windows"',
                 'Upgrade-Insecure-Requests': '1',
                 ...options.headers
             }
         });
 
-        return cheerio.load(response.data.replace(/anime-sama\.(si|eu|fr)/g, 'anime-sama.tv'));
+        return cheerio.load(response.data.replace(/anime-sama\\.(si|fr|me|li|to|ee|re|com|tv)/g, 'anime-sama.tv'));
     } catch (error) {
-        console.error('Scraping error:', error.message);
+        if (error.response && error.response.status === 403) { console.error('Access forbidden (403) by Cloudflare/Bot protection'); } else { console.error('Scraping error:', error.message); }
         throw new Error(`Failed to scrape ${url}: ${error.message}`);
     }
 }
@@ -168,7 +172,7 @@ async function searchAnime(query) {
         );
 
         // Parse the HTML response from the search API
-        const $ = cheerio.load(response.data.replace(/anime-sama\.(si|eu|fr)/g, 'anime-sama.tv'));
+        const $ = cheerio.load(response.data.replace(/anime-sama\\.(si|fr|me|li|to|ee|re|com|tv)/g, 'anime-sama.tv'));
         const results = [];
         const seenTitles = new Set();
 
@@ -665,7 +669,7 @@ async function getAnimeDetails(animeId) {
             title: title,
             alternativeTitles: alternativeTitles || null,
             synopsis: synopsis,
-            image: image ? (image.startsWith('http') ? image : `https://anime-sama.si${image}`) : null,
+            image: image ? (image.startsWith('http') ? image : `https://anime-sama.tv${image}`) : null,
             genres: genres.length > 0 ? genres : ['Anime'],
             status: status,
             progressInfo: progressInfo || null,
@@ -958,7 +962,7 @@ async function getAnimeSeasons(animeId) {
             // Check for various content types that might be missed
             if (href.includes('/scan/') || text.includes('scan')) {
                 const scanUrl = href.replace(`https://anime-sama.tv/catalogue/${animeId}/`, '')
-                                    .replace(`https://anime-sama.si/catalogue/${animeId}/`, '');
+                                    .replace(`https://anime-sama.tv/catalogue/${animeId}/`, '');
                 if (!seasons.find(s => s.url === scanUrl)) {
                     seasons.push({
                         number: 2100 + index,
@@ -974,7 +978,7 @@ async function getAnimeSeasons(animeId) {
                 }
             } else if (href.includes('/oav/') || text.includes('oav') || text.includes('ova')) {
                 const oavUrl = href.replace(`https://anime-sama.tv/catalogue/${animeId}/`, '')
-                                   .replace(`https://anime-sama.si/catalogue/${animeId}/`, '');
+                                   .replace(`https://anime-sama.tv/catalogue/${animeId}/`, '');
                 if (!seasons.find(s => s.url === oavUrl)) {
                     seasons.push({
                         number: 990 + index,
@@ -990,7 +994,7 @@ async function getAnimeSeasons(animeId) {
                 }
             } else if (href.includes('/special/') || text.includes('spécial') || text.includes('special')) {
                 const specialUrl = href.replace(`https://anime-sama.tv/catalogue/${animeId}/`, '')
-                                       .replace(`https://anime-sama.si/catalogue/${animeId}/`, '');
+                                       .replace(`https://anime-sama.tv/catalogue/${animeId}/`, '');
                 if (!seasons.find(s => s.url === specialUrl)) {
                     seasons.push({
                         number: 980 + index,
@@ -1334,7 +1338,7 @@ async function getAnimeEpisodes(animeId, season = 1, language = 'VOSTFR') {
     }
 }
 
-// Get episode streaming sources from episode URL or anime-sama.si streaming URL
+// Get episode streaming sources from episode URL or anime-sama.tv streaming URL
 async function getEpisodeSources(episodeUrl) {
     try {
         // Handle different URL formats
@@ -1552,7 +1556,7 @@ async function extractEpisodeStreamingSources(episodeUrl) {
             if (serverName && serverUrl) {
                 sources.push({
                     server: serverName,
-                    url: serverUrl.startsWith('http') ? serverUrl : `https://anime-sama.si${serverUrl}`,
+                    url: serverUrl.startsWith('http') ? serverUrl : `https://anime-sama.tv${serverUrl}`,
                     quality: $el.attr('data-quality') || 'HD',
                     type: 'streaming'
                 });
@@ -1586,12 +1590,12 @@ async function extractEpisodeStreamingSources(episodeUrl) {
     }
 }
 
-// Extract direct streaming sources from anime-sama.si streaming URL
+// Extract direct streaming sources from anime-sama.tv streaming URL
 async function extractDirectStreamingSources(streamingUrl) {
     try {
         const sources = [];
         
-        // Common streaming domains used by anime-sama.si
+        // Common streaming domains used by anime-sama.tv
         const streamingDomains = [
             'sibnet.ru',
             'sendvid.com', 
@@ -1661,7 +1665,7 @@ async function extractDirectStreamingSources(streamingUrl) {
 // Enhanced recent episodes extraction with 100% AUTHENTIC data from daily release sections
 async function getRecentEpisodes() {
     try {
-        const $ = await scrapeAnimesama('https://anime-sama.si');
+        const $ = await scrapeAnimesama('https://anime-sama.tv');
         
         const recentEpisodes = [];
         const seenEpisodes = new Set();
@@ -1757,7 +1761,7 @@ async function getRecentEpisodes() {
             const $img = $container.find('img').first();
             let image = $img.attr('src') || $img.attr('data-src');
             if (image && !image.startsWith('http')) {
-                image = image.startsWith('//') ? `https:${image}` : `https://anime-sama.si${image}`;
+                image = image.startsWith('//') ? `https:${image}` : `https://anime-sama.tv${image}`;
             }
             
             recentEpisodes.push({
@@ -1768,7 +1772,7 @@ async function getRecentEpisodes() {
                 language: detectedLanguage,
                 isFinale: isFinale,
                 isVFCrunchyroll: isVFCrunchyroll,
-                url: href.startsWith('http') ? href : `https://anime-sama.si${href}`,
+                url: href.startsWith('http') ? href : `https://anime-sama.tv${href}`,
                 image: image || `https://raw.githubusercontent.com/Anime-Sama/IMG/img/contenu/${animeId}.jpg`,
                 badgeInfo: buttonText,
                 addedAt: new Date().toISOString(),
@@ -1787,7 +1791,7 @@ async function getRecentEpisodes() {
 // Get manga chapters for scans
 async function getMangaChapters(animeId, scanValue = 'scan', language = 'VF') {
     try {
-        const scanUrl = `https://anime-sama.si/catalogue/${animeId}/${scanValue}/${language.toLowerCase()}/`;
+        const scanUrl = `https://anime-sama.tv/catalogue/${animeId}/${scanValue}/${language.toLowerCase()}/`;
         console.log(`Getting manga chapters from: ${scanUrl}`);
         
         const $ = await scrapeAnimesama(scanUrl);
@@ -1797,7 +1801,7 @@ async function getMangaChapters(animeId, scanValue = 'scan', language = 'VF') {
         
         console.log('Analyzing page for chapter data...');
         
-        // Method 1: Look for eps variables in JavaScript (primary method for anime-sama.si)
+        // Method 1: Look for eps variables in JavaScript (primary method for anime-sama.tv)
         const epsVariables = [];
         let epsCount = 1;
         

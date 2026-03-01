@@ -51,7 +51,7 @@ app.get('/', (req, res) => {
             getSeasons: 'GET /api/seasons/black-butler',
             getEpisodes: 'GET /api/episodes/black-butler?season=1&language=VOSTFR',
             getEpisodeSources: 'GET /api/episode-by-id/black-butler-s1-e1',
-            embedPlayer: 'GET /api/embed?url=https%3A%2F%2Fanime-sama.si%2Fcatalogue%2Fblack-butler'
+            embedPlayer: 'GET /api/embed?url=https%3A%2F%2Fanime-sama.tv%2Fcatalogue%2Fblack-butler'
         }
     });
 });
