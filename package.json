@@ -15,5 +15,5 @@
     "cors": "^2.8.6",
     "express": "^4.22.1"
   },
-  "description": "Une API Node.js serverless qui scrape le site anime-sama.fr en temps réel pour fournir des données d'anime via des endpoints JSON. Compatible avec Vercel et prêt pour le déploiement."
+  "description": "Une API Node.js serverless qui scrape le site anime-sama.tv en temps réel pour fournir des données d'anime via des endpoints JSON. Compatible avec Vercel et prêt pour le déploiement."
 }

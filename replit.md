@@ -28,17 +28,7 @@ A Node.js API server that scrapes anime-sama.tv in real-time to provide anime da
 - cheerio - HTML parsing for scraping
 - cors - Cross-origin resource sharing
 
-## Key Endpoints
-- `GET /` - API documentation
-- `GET /api/search?query=naruto` - Search anime
-- `GET /api/recent` - Recent anime
-- `GET /api/planning` - Anime schedule
-- `GET /api/recommendations` - Recommendations
-- `GET /api/anime/:id` - Anime details
-- `GET /api/seasons/:animeId` - Anime seasons
-- `GET /api/episodes/:animeId` - Anime episodes
-- `GET /api/embed?url=...` - Embed player
-
 ## Recent Changes
-- 2026-02-12: Domain changed to anime-sama.tv
-- 2026-02-12: Initial import and setup in Replit environment
+- 2026-03-01: Migration complète vers anime-sama.tv. Purge de tous les anciens domaines (.fr, .eu, .me, .li, .to, .ee, .si) dans l'ensemble du projet.
+- 2026-03-01: Mise à jour des headers anti-bot (Chrome 122).
+- 2026-02-12: Initial import and setup in Replit environment.

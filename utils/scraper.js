@@ -140,7 +140,7 @@ async function scrapeAnimesama(url, options = {}) {
             }
         });
 
-        return cheerio.load(response.data.replace(/anime-sama\\.(si|fr|me|li|to|ee|re|com|tv)/g, 'anime-sama.tv'));
+        return cheerio.load(response.data);
     } catch (error) {
         if (error.response && error.response.status === 403) { console.error('Access forbidden (403) by Cloudflare/Bot protection'); } else { console.error('Scraping error:', error.message); }
         throw new Error(`Failed to scrape ${url}: ${error.message}`);
@@ -172,7 +172,7 @@ async function searchAnime(query) {
         );
 
         // Parse the HTML response from the search API
-        const $ = cheerio.load(response.data.replace(/anime-sama\\.(si|fr|me|li|to|ee|re|com|tv)/g, 'anime-sama.tv'));
+        const $ = cheerio.load(response.data);
         const results = [];
         const seenTitles = new Set();
 
