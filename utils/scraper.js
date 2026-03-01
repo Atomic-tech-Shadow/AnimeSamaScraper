@@ -161,9 +161,20 @@ async function getAnimeDetails(animeId) {
         const url = `https://anime-sama.tv/catalogue/${animeId}/`;
         const $ = await scrapeAnimesama(url);
         if ($('body').text().includes('301 Moved Permanently')) throw new Error('Anime page not found');
-        const title = $('meta[property="og:title"]').attr('content') || $('title').text().split('|')[0].trim() || animeId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-        const synopsis = $('meta[name="description"]').attr('content') || 'Synopsis non disponible';
+        
+        const title = $('h4#titreOeuvre').text().trim() || $('meta[property="og:title"]').attr('content') || $('title').text().split('|')[0].trim() || animeId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        const alternativeTitle = $('h2#titreAlter').text().trim();
+        const synopsis = $('#synopsis').text().trim() || $('p.text-sm.text-gray-300.leading-relaxed').first().text().trim() || 'Synopsis non disponible';
         const image = $('meta[property="og:image"]').attr('content') || `https://raw.githubusercontent.com/Anime-Sama/IMG/img/contenu/${animeId}.jpg`;
+        
+        // Champs d'informations spécifiques détectés sur le site
+        const status = $('h2:contains("Statut")').next().text().trim();
+        const releaseYear = $('h2:contains("Année de sortie")').next().text().trim();
+        const studio = $('h2:contains("Studio")').next().text().trim();
+        const types = $('h2:contains("Types")').next().text().trim();
+        const actualite = $('p:contains("Actualité :")').find('span').text().trim();
+        const correspondence = $('p:contains("Correspondance (Anime/Manga) :")').find('span').text().trim();
+
         let genres = [];
         $('a, p, span').each((i, el) => {
             const text = $(el).text().trim();
@@ -172,8 +183,27 @@ async function getAnimeDetails(animeId) {
                 return false;
             }
         });
+        
         const seasons = await getAnimeSeasons(animeId);
-        return { id: animeId, title, synopsis, image, genres: genres.length > 0 ? genres : ['Anime'], seasons, url };
+        
+        return { 
+            id: animeId, 
+            title, 
+            alternativeTitle: alternativeTitle || null,
+            synopsis, 
+            image, 
+            genres: genres.length > 0 ? genres : ['Anime'], 
+            details: {
+                status: status || null,
+                releaseYear: releaseYear || null,
+                studio: studio || null,
+                types: types || null,
+                actualite: (actualite && actualite !== 'Aucune donnée.') ? actualite : null,
+                correspondence: (correspondence && correspondence !== 'Aucune donnée.') ? correspondence : null
+            },
+            seasons, 
+            url 
+        };
     } catch (error) {
         throw error;
     }
