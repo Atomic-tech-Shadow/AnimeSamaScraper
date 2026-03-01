@@ -1,13 +1,15 @@
-# Anime API Server
+# Anime API Server (Anime Only)
 
-A real-time REST API server for scraping anime data from anime-sama.tv.
+A real-time REST API server for scraping anime data from anime-sama.tv. This API is strictly focused on anime content and excludes all manga/scan references.
 
 ## Features
-- Search anime
-- Recent episodes
+- Search anime (Filtered)
+- Recent episodes (Anime/Films only)
 - Anime details (synopsis, genres, year, seasons)
 - Episode lists with streaming sources
 - Support for VOSTFR, VF, and VA
+- **No Scans/Manga**: All manga and scan content is filtered out.
+- **Pure Anime Experience**: Optimized for video content.
 
 ## API Endpoints
 - `GET /api/search?q=query`

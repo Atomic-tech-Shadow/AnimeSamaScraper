@@ -1,4 +1,4 @@
-const { getAnimeEpisodes, getMangaChapters, getAnimeSeasons } = require('../../utils/scraper');
+const { getAnimeEpisodes } = require('../../utils/scraper');
 
 module.exports = async (req, res) => {
     // Enable CORS
@@ -29,58 +29,21 @@ module.exports = async (req, res) => {
             });
         }
 
-        // Determine if this is a scan/manga request or anime episodes
-        const isScanRequest = season === 'scan' || season.toLowerCase().includes('scan') || 
-                             season.toLowerCase().includes('manga') || season.toLowerCase().includes('novel');
-        
-        let episodes;
-        let contentType;
-        
-        if (isScanRequest) {
-            // For scans, try to get the correct language from seasons data first
-            let scanLanguage = language;
-            try {
-                const seasonsData = await getAnimeSeasons(animeId.trim());
-                const scanSeason = seasonsData.find(s => 
-                    s.value === 'scan' || s.type.toLowerCase().includes('scan') || 
-                    s.name.toLowerCase().includes('scan')
-                );
-                
-                if (scanSeason && scanSeason.languages && scanSeason.languages.length > 0) {
-                    // Use the first available language for this scan
-                    scanLanguage = scanSeason.languages[0];
-                    console.log(`Auto-detected scan language: ${scanLanguage} for ${animeId}`);
-                }
-            } catch (seasonError) {
-                console.log('Could not auto-detect scan language, using default:', language);
-            }
-            
-            // Get manga chapters
-            episodes = await Promise.race([
-                getMangaChapters(animeId.trim(), season, scanLanguage),
-                new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error('Manga chapters request timeout')), 8000)
-                )
-            ]);
-            contentType = 'manga';
-        } else {
-            // Get anime episodes
-            episodes = await Promise.race([
-                getAnimeEpisodes(animeId.trim(), season, language),
-                new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error('Episodes request timeout')), 8000)
-                )
-            ]);
-            contentType = 'anime';
-        }
+        // Get anime episodes
+        const episodes = await Promise.race([
+            getAnimeEpisodes(animeId.trim(), season, language),
+            new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Episodes request timeout')), 8000)
+            )
+        ]);
 
-        // Return episodes/chapters
+        // Return episodes
         res.status(200).json({
             success: true,
             animeId: animeId.trim(),
             season: season,
             language: language,
-            contentType: contentType,
+            contentType: 'anime',
             count: episodes.length,
             episodes: episodes
         });

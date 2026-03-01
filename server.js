@@ -18,12 +18,13 @@ app.options('*', cors());
 // Root route with API documentation
 app.get('/', (req, res) => {
     res.json({
-        name: 'Anime-Sama API',
+        name: "Anime-Sama API (Anime Only)",
         version: '2.0.0',
-        description: 'Real-time anime scraping API for anime-sama.tv',
+        description: 'Real-time anime scraping API for anime-sama.tv (Anime Only)',
         author: 'el_cid',
         poweredBy: 'el_cid',
         status: 'running',
+        content: "100% Anime (No Scans/Manga)",
         endpoints: {
             search: '/api/search?query=naruto',
             recent: '/api/recent',
