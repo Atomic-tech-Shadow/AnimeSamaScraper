@@ -31,11 +31,23 @@ module.exports = async (req, res) => {
         // Decode URL
         const decodedUrl = decodeURIComponent(url);
 
-        // Validate that it's an anime-sama.to URL or streaming URL
+        // Validate that it's an anime-sama.to URL
         if (!decodedUrl.includes('anime-sama.to') && !decodedUrl.match(/^https?:\/\//)) {
             return res.status(400).json({
                 error: 'Invalid URL',
-                message: 'Please provide a valid anime-sama.to URL or direct streaming URL'
+                message: 'Please provide a valid anime-sama.to episode URL',
+                example: 'https://anime-sama.to/catalogue/naruto/saison1/vostfr/episode-1'
+            });
+        }
+
+        // Validate that the URL points to a specific episode, not a catalogue page
+        if (decodedUrl.includes('anime-sama.to') && !decodedUrl.includes('/episode-')) {
+            return res.status(400).json({
+                error: 'Invalid URL format',
+                message: 'The URL must point to a specific episode, not a catalogue or season page',
+                received: decodedUrl,
+                expected_format: 'https://anime-sama.to/catalogue/{animeId}/{season}/{language}/episode-{number}',
+                example: 'https://anime-sama.to/catalogue/naruto/saison1/vostfr/episode-1'
             });
         }
 

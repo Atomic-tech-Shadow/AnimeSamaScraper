@@ -321,6 +321,26 @@ async function getRecentEpisodes() {
 
 async function getEpisodeSources(episodeUrl) {
     try {
+        // Handle custom ID format: {animeId}-s{season}-e{episode} (e.g. naruto-s1-e1)
+        if (!episodeUrl.includes('/')) {
+            const idMatch = episodeUrl.match(/^(.+)-s(\d+)-e(\d+)$/);
+            if (!idMatch) return [];
+            const [, animeId, season, ep] = idMatch;
+            // Try to find the actual language available for this season
+            const langsToTest = ['vostfr', 'vf', 'vf1', 'vf2', 'va'];
+            let resolvedLang = 'vostfr';
+            for (const lang of langsToTest) {
+                try {
+                    const check = await axios.get(`https://anime-sama.to/catalogue/${animeId}/saison${season}/${lang}/episodes.js`, { timeout: 3000, headers: { 'User-Agent': getRandomUserAgent() } });
+                    if (check.status === 200 && check.data && check.data.includes('var eps')) {
+                        resolvedLang = lang;
+                        break;
+                    }
+                } catch (e) {}
+            }
+            episodeUrl = `https://anime-sama.to/catalogue/${animeId}/saison${season}/${resolvedLang}/episode-${ep}`;
+        }
+
         if (episodeUrl.includes('/catalogue/') && episodeUrl.includes('/episode-')) {
             const parts = episodeUrl.split('/');
             const animeId = parts[4], seasonPath = parts[5], lang = parts[6], epNum = parseInt(parts[7].replace('episode-', ''));
@@ -334,8 +354,9 @@ async function getEpisodeSources(episodeUrl) {
                         const url = urls[epNum - 1].substring(1, urls[epNum - 1].length - 1).trim();
                         if (url.startsWith('http')) {
                             let sName = `Server ${sm[1]}`;
-                            if (url.includes('sibnet.ru')) sName = 'Sibnet';
-                            else if (url.includes('sendvid.com')) sName = 'SendVid';
+                            for (const [domain, name] of Object.entries(SERVER_MAPPING)) {
+                                if (url.toLowerCase().includes(domain)) { sName = name; break; }
+                            }
                             sources.push({ server: sName, url, quality: 'HD', type: 'streaming', episode: epNum, serverNumber: parseInt(sm[1]) });
                         }
                     }
