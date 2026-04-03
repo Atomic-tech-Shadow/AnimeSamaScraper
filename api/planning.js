@@ -1,4 +1,3 @@
-const cheerio = require('cheerio');
 const { scrapeAnimesama } = require('../utils/scraper');
 
 function convertTime(frenchTime) {
@@ -12,6 +11,24 @@ function convertTime(frenchTime) {
     return `${hours.toString().padStart(2, '0')}h${minutes}`;
 }
 
+function extractAnimeId(href) {
+    const parts = href.split('/').filter(Boolean);
+    const catalogueIdx = parts.indexOf('catalogue');
+    if (catalogueIdx === -1 || catalogueIdx + 1 >= parts.length) return null;
+    return parts[catalogueIdx + 1];
+}
+
+function extractLanguage(href) {
+    const langCodes = ['vostfr', 'vf1', 'vf2', 'vf', 'va', 'vcn', 'vkr', 'vqc', 'var', 'vj'];
+    const lower = href.toLowerCase();
+    for (const code of langCodes) {
+        if (lower.includes(`/${code}/`) || lower.endsWith(`/${code}`)) {
+            return code.toUpperCase();
+        }
+    }
+    return 'VOSTFR';
+}
+
 module.exports = async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -21,39 +38,57 @@ module.exports = async (req, res) => {
     if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
     try {
-        const { day } = req.query;
+        const { day, filter } = req.query;
         const dayNames = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
         const currentDay = dayNames[new Date().getDay()];
-        const $ = await scrapeAnimesama('https://anime-sama.to');
+
+        // Scraper la vraie page planning (pas la homepage qui ne montre qu'un jour)
+        const $ = await scrapeAnimesama('https://anime-sama.to/planning/');
+
         const planningData = { success: true, days: {} };
-        
         dayNames.forEach(d => planningData.days[d] = { day: d, count: 0, items: [] });
 
-        $('h1, h2, h3').each((i, el) => {
-            const headerText = $(el).text().trim();
-            const dayMatch = headerText.match(/Sorties du (\w+)/i);
-            if (!dayMatch) return;
-            const dayKey = dayNames.find(d => dayMatch[1].toLowerCase().includes(d));
+        // Parcourir les h2 de jours (class="titreJours") et leurs siblings d'anime cards
+        $('h2.titreJours').each((i, el) => {
+            const headingText = $(el).text().trim().toLowerCase();
+            const dayKey = dayNames.find(d => headingText === d || headingText.startsWith(d));
             if (!dayKey) return;
 
             let $sibling = $(el).next();
-            while ($sibling.length > 0 && !$sibling.is('h1, h2, h3')) {
+            while ($sibling.length > 0 && !$sibling.is('h2.titreJours')) {
                 $sibling.find('a[href*="/catalogue/"]').each((j, link) => {
-                    const href = $(link).attr('href');
-                    if (!href || href.includes('/scan/') || href.includes('/manga/')) return;
-                    const animeId = href.split('/').filter(Boolean).pop();
-                    const text = $(link).text();
-                    if (text.toLowerCase().includes('scan') || text.toLowerCase().includes('manga')) return;
-                    
-                    const timeMatch = text.match(/(\d{1,2}h\d{2})/);
+                    const href = $(link).attr('href') || '';
+                    const fullHref = href.startsWith('http') ? href : `https://anime-sama.to${href}`;
+
+                    // Exclure scans/manga
+                    if (fullHref.includes('/scan') || fullHref.includes('/manga')) return;
+
+                    const animeId = extractAnimeId(fullHref);
+                    if (!animeId) return;
+
+                    const language = extractLanguage(fullHref);
+
+                    // Filtre optionnel de langue
+                    if (filter === 'vf' && !['VF', 'VF1', 'VF2'].includes(language)) return;
+                    if (filter === 'vostfr' && language !== 'VOSTFR') return;
+
+                    const titleEl = $(link).find('strong, b').first().text().trim();
+                    const linkText = $(link).text();
+                    const timeMatch = linkText.match(/(\d{1,2}h\d{2})/);
+                    const seasonMatch = linkText.match(/Saison\s*(.+?)(?:\s{2,}|$)/i);
+
                     const item = {
-                        animeId, title: $(link).find('strong, b').first().text().trim() || animeId.replace(/-/g, ' '),
-                        url: `https://anime-sama.to${href}`,
+                        animeId,
+                        title: titleEl || animeId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+                        url: fullHref,
                         image: `https://raw.githubusercontent.com/Anime-Sama/IMG/img/contenu/${animeId}.jpg`,
                         releaseTime: timeMatch ? convertTime(timeMatch[1]) : null,
-                        language: text.includes('VF') ? 'VF' : 'VOSTFR'
+                        season: seasonMatch ? seasonMatch[1].trim() : null,
+                        language
                     };
-                    if (!planningData.days[dayKey].items.find(it => it.animeId === item.animeId && it.language === item.language)) {
+
+                    const key = `${animeId}-${language}`;
+                    if (!planningData.days[dayKey].items.find(it => `${it.animeId}-${it.language}` === key)) {
                         planningData.days[dayKey].items.push(item);
                         planningData.days[dayKey].count++;
                     }
@@ -63,7 +98,19 @@ module.exports = async (req, res) => {
         });
 
         const requestedDay = (day && dayNames.includes(day.toLowerCase())) ? day.toLowerCase() : currentDay;
-        res.status(200).json(day === 'all' ? planningData : { success: true, currentDay, ...planningData.days[requestedDay] });
+
+        if (day === 'all') {
+            return res.status(200).json(planningData);
+        }
+
+        res.status(200).json({
+            success: true,
+            currentDay,
+            day: requestedDay,
+            count: planningData.days[requestedDay].count,
+            items: planningData.days[requestedDay].items
+        });
+
     } catch (error) {
         res.status(500).json({ error: 'Failed to fetch planning data', message: error.message });
     }
