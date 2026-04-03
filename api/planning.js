@@ -24,7 +24,7 @@ module.exports = async (req, res) => {
         const { day } = req.query;
         const dayNames = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
         const currentDay = dayNames[new Date().getDay()];
-        const $ = await scrapeAnimesama('https://anime-sama.tv');
+        const $ = await scrapeAnimesama('https://anime-sama.to');
         const planningData = { success: true, days: {} };
         
         dayNames.forEach(d => planningData.days[d] = { day: d, count: 0, items: [] });
@@ -48,7 +48,7 @@ module.exports = async (req, res) => {
                     const timeMatch = text.match(/(\d{1,2}h\d{2})/);
                     const item = {
                         animeId, title: $(link).find('strong, b').first().text().trim() || animeId.replace(/-/g, ' '),
-                        url: `https://anime-sama.tv${href}`,
+                        url: `https://anime-sama.to${href}`,
                         image: `https://raw.githubusercontent.com/Anime-Sama/IMG/img/contenu/${animeId}.jpg`,
                         releaseTime: timeMatch ? convertTime(timeMatch[1]) : null,
                         language: text.includes('VF') ? 'VF' : 'VOSTFR'

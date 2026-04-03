@@ -55,14 +55,14 @@ async function scrapeAnimesama(url, options = {}) {
 async function searchAnime(query) {
     try {
         await randomDelay();
-        const response = await axios.post('https://anime-sama.tv/template-php/defaut/fetch.php', `query=${encodeURIComponent(query)}`, {
+        const response = await axios.post('https://anime-sama.to/template-php/defaut/fetch.php', `query=${encodeURIComponent(query)}`, {
             timeout: 8000,
             headers: {
                 'User-Agent': getRandomUserAgent(),
                 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
                 'X-Requested-With': 'XMLHttpRequest',
-                'Referer': 'https://anime-sama.tv/',
-                'Origin': 'https://anime-sama.tv'
+                'Referer': 'https://anime-sama.to/',
+                'Origin': 'https://anime-sama.to'
             }
         });
         const $ = cheerio.load(response.data);
@@ -71,7 +71,7 @@ async function searchAnime(query) {
         $('a[href*="/catalogue/"]').each((index, element) => {
             const link = $(element).attr('href');
             if (!link || !link.includes('/catalogue/')) return;
-            const fullUrl = link.startsWith('http') ? link : `https://anime-sama.tv${link}`;
+            const fullUrl = link.startsWith('http') ? link : `https://anime-sama.to${link}`;
             const urlParts = fullUrl.split('/');
             const catalogueIndex = urlParts.findIndex(part => part === 'catalogue');
             if (catalogueIndex === -1 || catalogueIndex + 1 >= urlParts.length) return;
@@ -82,7 +82,7 @@ async function searchAnime(query) {
             const image = $(element).find('img').attr('src') || $(element).find('img').attr('data-src');
             if (title && animeId && !seenTitles.has(animeId)) {
                 seenTitles.add(animeId);
-                results.push({ id: animeId, title, image: image ? (image.startsWith('http') ? image : `https://anime-sama.tv${image}`) : null, url: fullUrl });
+                results.push({ id: animeId, title, image: image ? (image.startsWith('http') ? image : `https://anime-sama.to${image}`) : null, url: fullUrl });
             }
         });
         if (results.length === 0) return await fallbackHomepageSearch(query);
@@ -93,13 +93,13 @@ async function searchAnime(query) {
 }
 
 async function fallbackHomepageSearch(query) {
-    const $ = await scrapeAnimesama('https://anime-sama.tv');
+    const $ = await scrapeAnimesama('https://anime-sama.to');
     const results = [];
     const queryLower = query.toLowerCase();
     const seenTitles = new Set();
     $('a[href*="/catalogue/"]').each((index, element) => {
         const link = $(element).attr('href');
-        if (!link || link === 'https://anime-sama.tv/catalogue' || link.split('/').length < 5) return;
+        if (!link || link === 'https://anime-sama.to/catalogue' || link.split('/').length < 5) return;
         const urlParts = link.split('/');
         const catalogueIndex = urlParts.indexOf('catalogue');
         if (catalogueIndex === -1 || catalogueIndex + 1 >= urlParts.length) return;
@@ -108,7 +108,7 @@ async function fallbackHomepageSearch(query) {
         if ((title.toLowerCase().includes(queryLower) || animeId.toLowerCase().includes(queryLower)) && !seenTitles.has(title.toLowerCase())) {
             seenTitles.add(title.toLowerCase());
             const image = $(element).find('img').attr('src') || $(element).find('img').attr('data-src');
-            results.push({ id: animeId, title, image: image ? (image.startsWith('http') ? image : `https://anime-sama.tv${image}`) : null, url: `https://anime-sama.tv/catalogue/${animeId}` });
+            results.push({ id: animeId, title, image: image ? (image.startsWith('http') ? image : `https://anime-sama.to${image}`) : null, url: `https://anime-sama.to/catalogue/${animeId}` });
         }
     });
     return results.slice(0, 15);
@@ -116,7 +116,7 @@ async function fallbackHomepageSearch(query) {
 
 async function getTrendingAnime() {
     try {
-        const $ = await scrapeAnimesama('https://anime-sama.tv');
+        const $ = await scrapeAnimesama('https://anime-sama.to');
         const trending = [];
         const seenAnimes = new Set();
         $('.bg-cyan-600').each((index, button) => {
@@ -125,7 +125,7 @@ async function getTrendingAnime() {
             if (!$animeLink.length) return;
             const href = $animeLink.attr('href');
             if (!href || !href.includes('/catalogue/')) return;
-            const fullUrl = href.startsWith('http') ? href : `https://anime-sama.tv${href}`;
+            const fullUrl = href.startsWith('http') ? href : `https://anime-sama.to${href}`;
             const urlParts = fullUrl.split('/');
             const catalogueIndex = urlParts.findIndex(part => part === 'catalogue');
             if (catalogueIndex === -1 || catalogueIndex + 1 >= urlParts.length) return;
@@ -158,7 +158,7 @@ async function getTrendingAnime() {
 
 async function getAnimeDetails(animeId) {
     try {
-        const url = `https://anime-sama.tv/catalogue/${animeId}/`;
+        const url = `https://anime-sama.to/catalogue/${animeId}/`;
         const $ = await scrapeAnimesama(url);
         if ($('body').text().includes('301 Moved Permanently')) throw new Error('Anime page not found');
         
@@ -213,7 +213,7 @@ async function getSeasonLanguages(animeId, seasonValue) {
     const possibleLanguages = ['vostfr', 'vf', 'vf1', 'vf2', 'va'];
     const results = await Promise.allSettled(possibleLanguages.map(async (lang) => {
         try {
-            const res = await axios.get(`https://anime-sama.tv/catalogue/${animeId}/${seasonValue}/${lang}/episodes.js`, { timeout: 2000, headers: { 'User-Agent': getRandomUserAgent() } });
+            const res = await axios.get(`https://anime-sama.to/catalogue/${animeId}/${seasonValue}/${lang}/episodes.js`, { timeout: 2000, headers: { 'User-Agent': getRandomUserAgent() } });
             return (res.status === 200 && res.data && (res.data.includes('var eps') || res.data.includes('eps1'))) ? lang.toUpperCase() : null;
         } catch (e) { return null; }
     }));
@@ -223,7 +223,7 @@ async function getSeasonLanguages(animeId, seasonValue) {
 
 async function getAnimeSeasons(animeId) {
     try {
-        const $ = await scrapeAnimesama(`https://anime-sama.tv/catalogue/${animeId}/`);
+        const $ = await scrapeAnimesama(`https://anime-sama.to/catalogue/${animeId}/`);
         const seasons = [];
         const fullHtml = $.html();
         const beforeManga = fullHtml.split('<!-- MANGA -->')[0];
@@ -237,7 +237,7 @@ async function getAnimeSeasons(animeId) {
                     const seasonValue = seasonUrl.split('/')[0];
                     if (seasons.find(s => s.value === seasonValue)) continue;
                     const languages = await getSeasonLanguages(animeId, seasonValue);
-                    seasons.push({ number: seasons.length + 1, name: seasonName, value: seasonValue, type: seasonName.toLowerCase().includes('film') ? 'Film' : 'Saison', url: seasonUrl, fullUrl: `https://anime-sama.tv/catalogue/${animeId}/${seasonUrl}`, languages, available: true, contentType: 'anime' });
+                    seasons.push({ number: seasons.length + 1, name: seasonName, value: seasonValue, type: seasonName.toLowerCase().includes('film') ? 'Film' : 'Saison', url: seasonUrl, fullUrl: `https://anime-sama.to/catalogue/${animeId}/${seasonUrl}`, languages, available: true, contentType: 'anime' });
                 }
             }
         }
@@ -254,14 +254,14 @@ async function getAnimeEpisodes(animeId, season = 1, language = 'VOSTFR') {
         let languageCode = 'vostfr';
         for (const testLang of langsToTest) {
             try {
-                const res = await axios.get(`https://anime-sama.tv/catalogue/${animeId}/${seasonPath}/${testLang}/episodes.js`, { timeout: 2000, headers: { 'User-Agent': getRandomUserAgent() } });
+                const res = await axios.get(`https://anime-sama.to/catalogue/${animeId}/${seasonPath}/${testLang}/episodes.js`, { timeout: 2000, headers: { 'User-Agent': getRandomUserAgent() } });
                 if (res.status === 200 && res.data && (res.data.includes('var eps') || res.data.includes('eps1'))) {
                     languageCode = testLang;
                     break;
                 }
             } catch (e) {}
         }
-        const seasonUrl = `https://anime-sama.tv/catalogue/${animeId}/${seasonPath}/${languageCode}/`;
+        const seasonUrl = `https://anime-sama.to/catalogue/${animeId}/${seasonPath}/${languageCode}/`;
         const response = await axios.get(`${seasonUrl}episodes.js`, { timeout: 4000, headers: { 'User-Agent': getRandomUserAgent(), Referer: seasonUrl } });
         const jsContent = response.data;
         const episodes = [];
@@ -296,7 +296,7 @@ async function getAnimeEpisodes(animeId, season = 1, language = 'VOSTFR') {
 
 async function getRecentEpisodes() {
     try {
-        const $ = await scrapeAnimesama('https://anime-sama.tv');
+        const $ = await scrapeAnimesama('https://anime-sama.to');
         const recentEpisodes = [];
         const seenEpisodes = new Set();
         $('.bg-cyan-600').each((index, button) => {
@@ -313,7 +313,7 @@ async function getRecentEpisodes() {
             const key = `${animeId}-s${sNum}-e${epNum}-${lang}`;
             if (seenEpisodes.has(key)) return;
             seenEpisodes.add(key);
-            recentEpisodes.push({ animeId, animeTitle: cleanTitleWithFallback($animeLink.text(), animeId), season: sNum, episode: epNum, language: lang, url: href.startsWith('http') ? href : `https://anime-sama.tv${href}`, image: `https://raw.githubusercontent.com/Anime-Sama/IMG/img/contenu/${animeId}.jpg`, addedAt: new Date().toISOString() });
+            recentEpisodes.push({ animeId, animeTitle: cleanTitleWithFallback($animeLink.text(), animeId), season: sNum, episode: epNum, language: lang, url: href.startsWith('http') ? href : `https://anime-sama.to${href}`, image: `https://raw.githubusercontent.com/Anime-Sama/IMG/img/contenu/${animeId}.jpg`, addedAt: new Date().toISOString() });
         });
         return recentEpisodes;
     } catch (error) { return []; }
@@ -324,7 +324,7 @@ async function getEpisodeSources(episodeUrl) {
         if (episodeUrl.includes('/catalogue/') && episodeUrl.includes('/episode-')) {
             const parts = episodeUrl.split('/');
             const animeId = parts[4], seasonPath = parts[5], lang = parts[6], epNum = parseInt(parts[7].replace('episode-', ''));
-            const res = await axios.get(`https://anime-sama.tv/catalogue/${animeId}/${seasonPath}/${lang}/episodes.js`, { timeout: 8000, headers: { 'User-Agent': getRandomUserAgent() } });
+            const res = await axios.get(`https://anime-sama.to/catalogue/${animeId}/${seasonPath}/${lang}/episodes.js`, { timeout: 8000, headers: { 'User-Agent': getRandomUserAgent() } });
             const sources = [];
             res.data.match(/var eps(\d+)\s*=\s*\[([\s\S]*?)\];/g)?.forEach(match => {
                 const sm = match.match(/var eps(\d+)\s*=\s*\[([\s\S]*?)\];/);

@@ -20,7 +20,7 @@ app.get('/', (req, res) => {
     res.json({
         name: "Anime-Sama API (Anime Only)",
         version: '2.0.0',
-        description: 'Real-time anime scraping API for anime-sama.tv (Anime Only)',
+        description: 'Real-time anime scraping API for anime-sama.to (Anime Only)',
         author: 'el_cid',
         poweredBy: 'el_cid',
         status: 'running',
@@ -36,10 +36,10 @@ app.get('/', (req, res) => {
             seasonsIndex: '/api/seasons?animeId=xxx&season=1&language=VF&server=eps1',
             episodeSources: '/api/episode-by-id/:episodeId',
             specificEpisode: '/api/episode/:animeId/:season/:episode',
-            embed: '/api/embed?url=https%3A%2F%2Fanime-sama.tv%2Fcatalogue%2F...'
+            embed: '/api/embed?url=https%3A%2F%2Fanime-sama.to%2Fcatalogue%2F...'
         },
         metadata: {
-            domain: 'anime-sama.tv',
+            domain: 'anime-sama.to',
             accountFeatures: 'available',
             synchronization: 'enabled'
         },
@@ -52,7 +52,7 @@ app.get('/', (req, res) => {
             getSeasons: 'GET /api/seasons/black-butler',
             getEpisodes: 'GET /api/episodes/black-butler?season=1&language=VOSTFR',
             getEpisodeSources: 'GET /api/episode-by-id/black-butler-s1-e1',
-            embedPlayer: 'GET /api/embed?url=https%3A%2F%2Fanime-sama.tv%2Fcatalogue%2Fblack-butler'
+            embedPlayer: 'GET /api/embed?url=https%3A%2F%2Fanime-sama.to%2Fcatalogue%2Fblack-butler'
         }
     });
 });
@@ -126,7 +126,7 @@ if (require.main === module) {
         console.log('📚 API Documentation:', `http://localhost:${PORT}`);
         console.log('🔍 Search endpoint:', `http://localhost:${PORT}/api/search?query=naruto`);
         console.log('📈 Recent endpoint:', `http://localhost:${PORT}/api/recent`);
-        console.log('🎬 Embed endpoint:', `http://localhost:${PORT}/api/embed?url=https%3A%2F%2Fanime-sama.tv%2Fcatalogue%2Fblack-butler`);
+        console.log('🎬 Embed endpoint:', `http://localhost:${PORT}/api/embed?url=https%3A%2F%2Fanime-sama.to%2Fcatalogue%2Fblack-butler`);
     });
 }
 

@@ -1,6 +1,6 @@
 # Anime API Server (Anime Only)
 
-A real-time REST API server for scraping anime data from anime-sama.tv. This API is strictly focused on anime content and excludes all manga/scan references.
+A real-time REST API server for scraping anime data from anime-sama.to. This API is strictly focused on anime content and excludes all manga/scan references.
 
 ## Features
 - Search anime (Filtered)

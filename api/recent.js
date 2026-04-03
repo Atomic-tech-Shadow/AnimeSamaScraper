@@ -10,7 +10,7 @@ module.exports = async (req, res) => {
     if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
     try {
-        const $ = await scrapeAnimesama('https://anime-sama.tv/');
+        const $ = await scrapeAnimesama('https://anime-sama.to/');
         const recentEpisodes = [];
         const seenLinks = new Set();
         
@@ -32,7 +32,7 @@ module.exports = async (req, res) => {
             if (!title || title.length < 2) title = cleanId.replace(/-/g, ' ');
 
             let image = $link.find('img').attr('src') || $link.find('img').attr('data-src');
-            if (!image || !image.startsWith('http') || image.includes('anime-sama.tv')) {
+            if (!image || !image.startsWith('http') || image.includes('anime-sama.to')) {
                 image = `https://raw.githubusercontent.com/Anime-Sama/IMG/img/contenu/${cleanId}.jpg`;
             }
             
@@ -51,7 +51,7 @@ module.exports = async (req, res) => {
                 animeId, animeTitle: title, season: seasonMatch ? parseInt(seasonMatch[1]) : 1,
                 episode: epMatch ? parseInt(epMatch[1]) : null,
                 language: href.includes('/vf/') ? 'VF' : 'VOSTFR',
-                url: href.startsWith('http') ? href : `https://anime-sama.tv${href}`,
+                url: href.startsWith('http') ? href : `https://anime-sama.to${href}`,
                 image, type, addedAt: new Date().toISOString()
             });
         });

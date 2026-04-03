@@ -10,7 +10,7 @@ module.exports = async (req, res) => {
     if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
     try {
-        const $ = await scrapeAnimesama('https://anime-sama.tv/');
+        const $ = await scrapeAnimesama('https://anime-sama.to/');
         const popularAnime = { classiques: [], pepites: [] };
         const seenIds = new Set();
         
@@ -26,7 +26,7 @@ module.exports = async (req, res) => {
                 popularAnime[category].push({
                     id: animeId, title, category,
                     image: `https://raw.githubusercontent.com/Anime-Sama/IMG/img/contenu/${animeId}.jpg`,
-                    url: `https://anime-sama.tv${href}`
+                    url: `https://anime-sama.to${href}`
                 });
             });
         };

@@ -22,7 +22,7 @@ async function refreshRecommendationsCache() {
     try {
         recommendationsCache.isUpdating = true;
         const targetPage = getRandomUnexploredPage();
-        const $ = await scrapeAnimesama(`https://anime-sama.tv/catalogue/?page=${targetPage}`);
+        const $ = await scrapeAnimesama(`https://anime-sama.to/catalogue/?page=${targetPage}`);
         const recommendations = [];
         const seenAnimes = new Set();
         
@@ -44,7 +44,7 @@ async function refreshRecommendationsCache() {
             
             recommendations.push({
                 id: animeId, title, image: `https://raw.githubusercontent.com/Anime-Sama/IMG/img/contenu/${animeId}.jpg`,
-                url: href.startsWith('http') ? href : `https://anime-sama.tv${href}`,
+                url: href.startsWith('http') ? href : `https://anime-sama.to${href}`,
                 contentType: 'anime', genres: ['Anime'], languages: ['VOSTFR'], category: 'recommendation'
             });
         });
