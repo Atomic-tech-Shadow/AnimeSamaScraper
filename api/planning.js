@@ -57,8 +57,11 @@ function resolveSeasonDisplay(seasonValue, textSeasonInfo) {
     if (v === 'oav' || v === 'ova') return 'OAV';
     if (v.startsWith('kai')) return seasonValue.toUpperCase();
     if (v.startsWith('saison')) {
-        const num = v.replace('saison', '');
-        return num ? `Saison ${num}` : 'Saison';
+        const raw = v.replace('saison', '');
+        if (!raw) return 'Saison';
+        const partMatch = raw.match(/^(\d+)-(\d+)$/);
+        if (partMatch) return `Saison ${partMatch[1]} Partie ${partMatch[2]}`;
+        return `Saison ${raw}`;
     }
     return seasonValue;
 }
