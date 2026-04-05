@@ -18,41 +18,89 @@ app.options('*', cors());
 // Root route with API documentation
 app.get('/', (req, res) => {
     res.json({
-        name: "Anime-Sama API (Anime Only)",
-        version: '2.0.0',
-        description: 'Real-time anime scraping API for anime-sama.to (Anime Only)',
+        name: "Anime-Sama API",
+        version: '3.0.0',
+        description: 'Real-time anime scraping API for anime-sama.to — Anime only (no scans/manga)',
         author: 'el_cid',
-        poweredBy: 'el_cid',
         status: 'running',
-        content: "100% Anime (No Scans/Manga)",
         endpoints: {
-            search: '/api/search?query=naruto',
-            recent: '/api/recent',
-            planning: '/api/planning',
-            recommendations: '/api/recommendations?page=1&limit=50',
-            animeDetails: '/api/anime/:id',
-            seasons: '/api/seasons/:animeId',
-            episodes: '/api/episodes/:animeId?season=1&language=VOSTFR',
-            seasonsIndex: '/api/seasons?animeId=xxx&season=1&language=VF&server=eps1',
-            episodeSources: '/api/episode-by-id/:episodeId',
-            specificEpisode: '/api/episode/:animeId/:season/:episode',
-            embed: '/api/embed?url=https%3A%2F%2Fanime-sama.to%2Fcatalogue%2F...'
+            search: {
+                path: '/api/search?query=:query',
+                description: 'Search anime by name',
+                returns: 'id, title, image, url'
+            },
+            recent: {
+                path: '/api/recent',
+                description: 'Latest added/updated anime episodes',
+                returns: 'animeId, title, season, seasonValue, episode, language, contentType, url, image'
+            },
+            planning: {
+                path: '/api/planning',
+                params: 'day (lundi|mardi|...|all), filter (vf|vostfr)',
+                description: 'Weekly release schedule',
+                returns: 'title, season, seasonValue, contentType, releaseTime, language'
+            },
+            popular: {
+                path: '/api/popular',
+                description: 'Classics and hidden gems from the homepage',
+                returns: 'id, title, image, url, category'
+            },
+            recommendations: {
+                path: '/api/recommendations?page=1&limit=50',
+                description: 'Random anime catalogue page for discovery',
+                returns: 'id, title, image, url'
+            },
+            animeDetails: {
+                path: '/api/anime/:id',
+                description: 'Full anime details including all seasons',
+                returns: 'title, synopsis, image, genres, details, seasons[]'
+            },
+            seasons: {
+                path: '/api/seasons/:animeId',
+                description: 'List all seasons/films/OAV/kai for an anime',
+                returns: 'name, value, type (Saison|Film|OAV|Kai), contentType, languages[]'
+            },
+            episodes: {
+                path: '/api/episodes/:animeId?season=:seasonValue&language=VOSTFR',
+                description: 'Episodes for a specific season — seasonValue from /api/seasons (ex: saison1, film, oav, kai, kai2, saison4-3)',
+                contentTypes: 'anime, film, oav, kai',
+                returns: 'number, title, streamingSources[], language'
+            },
+            seasonsIndex: {
+                path: '/api/seasons?animeId=:id&season=:seasonValue&language=VOSTFR',
+                description: 'Alternative episodes endpoint via query params',
+                returns: 'episodes[]'
+            },
+            episodeSources: {
+                path: '/api/episode-by-id/:episodeId',
+                description: 'Streaming sources for one episode — format: {animeId}-s{season}-e{episode}',
+                example: '/api/episode-by-id/one-piece-s1-e1',
+                returns: 'server, url, quality'
+            },
+            embed: {
+                path: '/api/embed?url=:episodeUrl',
+                description: 'Extract streaming sources from a full anime-sama episode URL',
+                returns: 'sources[], count'
+            }
         },
-        metadata: {
-            domain: 'anime-sama.to',
-            accountFeatures: 'available',
-            synchronization: 'enabled'
+        notes: {
+            seasonValue: 'Always use the `seasonValue` field from /api/seasons as the `season` param in /api/episodes. Examples: saison1, film, oav, kai, kai2, saison4-3',
+            contentTypes: 'anime | film | oav | kai',
+            languages: 'VOSTFR | VF | VF1 | VF2 | VA | VKR | VCN | VQC | VAR | VJ'
         },
         examples: {
-            searchAnime: 'GET /api/search?query=black%20butler',
-            getRecent: 'GET /api/recent',
-            getPlanning: 'GET /api/planning (jour actuel) ou ?day=all&filter=anime',
-            getRecommendations: 'GET /api/recommendations?page=1&limit=50',
-            getAnimeDetails: 'GET /api/anime/black-butler',
-            getSeasons: 'GET /api/seasons/black-butler',
-            getEpisodes: 'GET /api/episodes/black-butler?season=1&language=VOSTFR',
-            getEpisodeSources: 'GET /api/episode-by-id/black-butler-s1-e1',
-            embedPlayer: 'GET /api/embed?url=https%3A%2F%2Fanime-sama.to%2Fcatalogue%2Fblack-butler'
+            search: 'GET /api/search?query=one+piece',
+            recentEpisodes: 'GET /api/recent',
+            planning: 'GET /api/planning?day=all',
+            animeDetails: 'GET /api/anime/dragon-ball-z',
+            seasons: 'GET /api/seasons/dragon-ball-z',
+            episodesNormal: 'GET /api/episodes/one-piece?season=saison1&language=VOSTFR',
+            episodesFilm: 'GET /api/episodes/one-piece?season=film&language=VOSTFR',
+            episodesOAV: 'GET /api/episodes/one-piece?season=oav&language=VOSTFR',
+            episodesKai: 'GET /api/episodes/dragon-ball-z?season=kai&language=VOSTFR',
+            episodesPartielle: 'GET /api/episodes/dr-stone?season=saison4-3&language=VOSTFR',
+            episodeSource: 'GET /api/episode-by-id/one-piece-s1-e1',
+            embed: 'GET /api/embed?url=https%3A%2F%2Fanime-sama.to%2Fcatalogue%2Fone-piece%2Fsaison1%2Fvostfr%2Fepisode-1'
         }
     });
 });
