@@ -18,6 +18,16 @@ function extractAnimeId(href) {
     return parts[catalogueIdx + 1];
 }
 
+function extractSeasonValue(href) {
+    const parts = href.split('/').filter(Boolean);
+    const catalogueIdx = parts.indexOf('catalogue');
+    if (catalogueIdx === -1 || catalogueIdx + 2 >= parts.length) return null;
+    const segment = parts[catalogueIdx + 2];
+    const langCodes = ['vostfr', 'vf1', 'vf2', 'vf', 'va', 'vcn', 'vkr', 'vqc', 'var', 'vj'];
+    if (langCodes.includes(segment.toLowerCase())) return null;
+    return segment;
+}
+
 function extractLanguage(href) {
     const langCodes = ['vostfr', 'vf1', 'vf2', 'vf', 'va', 'vcn', 'vkr', 'vqc', 'var', 'vj'];
     const lower = href.toLowerCase();
@@ -27,6 +37,30 @@ function extractLanguage(href) {
         }
     }
     return 'VOSTFR';
+}
+
+function resolveContentType(seasonValue) {
+    if (!seasonValue) return 'anime';
+    const v = seasonValue.toLowerCase();
+    if (v === 'film' || v === 'films') return 'film';
+    if (v === 'oav' || v === 'ova') return 'oav';
+    if (v.startsWith('kai')) return 'kai';
+    if (v.startsWith('saison')) return 'anime';
+    return 'anime';
+}
+
+function resolveSeasonDisplay(seasonValue, textSeasonInfo) {
+    if (textSeasonInfo) return textSeasonInfo.trim();
+    if (!seasonValue) return null;
+    const v = seasonValue.toLowerCase();
+    if (v === 'film' || v === 'films') return 'Film';
+    if (v === 'oav' || v === 'ova') return 'OAV';
+    if (v.startsWith('kai')) return seasonValue.toUpperCase();
+    if (v.startsWith('saison')) {
+        const num = v.replace('saison', '');
+        return num ? `Saison ${num}` : 'Saison';
+    }
+    return seasonValue;
 }
 
 module.exports = async (req, res) => {
@@ -42,13 +76,11 @@ module.exports = async (req, res) => {
         const dayNames = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
         const currentDay = dayNames[new Date().getDay()];
 
-        // Scraper la vraie page planning (pas la homepage qui ne montre qu'un jour)
         const $ = await scrapeAnimesama('https://anime-sama.to/planning/');
 
         const planningData = { success: true, days: {} };
         dayNames.forEach(d => planningData.days[d] = { day: d, count: 0, items: [] });
 
-        // Parcourir les h2 de jours (class="titreJours") et leurs siblings d'anime cards
         $('h2.titreJours').each((i, el) => {
             const headingText = $(el).text().trim().toLowerCase();
             const dayKey = dayNames.find(d => headingText === d || headingText.startsWith(d));
@@ -60,7 +92,6 @@ module.exports = async (req, res) => {
                     const href = $(link).attr('href') || '';
                     const fullHref = href.startsWith('http') ? href : `https://anime-sama.to${href}`;
 
-                    // Exclure scans/manga
                     if (fullHref.includes('/scan') || fullHref.includes('/manga')) return;
 
                     const animeId = extractAnimeId(fullHref);
@@ -68,27 +99,42 @@ module.exports = async (req, res) => {
 
                     const language = extractLanguage(fullHref);
 
-                    // Filtre optionnel de langue
                     if (filter === 'vf' && !['VF', 'VF1', 'VF2'].includes(language)) return;
                     if (filter === 'vostfr' && language !== 'VOSTFR') return;
+                    if (filter === 'anime') {
+                        const $card = $(link).closest('[class*="planning-card"]');
+                        const cardClass = $card.attr('class') || '';
+                        if (!cardClass.toLowerCase().includes('anime')) return;
+                    }
 
-                    const titleEl = $(link).find('strong, b').first().text().trim();
-                    const linkText = $(link).text();
-                    const timeMatch = linkText.match(/(\d{1,2}h\d{2})/);
-                    const seasonMatch = linkText.match(/Saison\s*(.+?)(?:\s{2,}|$)/i);
+                    const seasonValue = extractSeasonValue(fullHref);
+                    const contentType = resolveContentType(seasonValue);
+
+                    const title = $(link).find('h2.card-title').first().text().trim()
+                        || $(link).find('.card-title').first().text().trim()
+                        || $(link).find('strong, b').first().text().trim()
+                        || animeId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+
+                    const timeEl = $(link).find('.info-text.font-bold').first().text().trim();
+                    const timeMatch = timeEl.match(/(\d{1,2}h\d{2})/);
+
+                    const seasonInfoEl = $(link).find('.info-item.episode').not(':has(.time-icon-svg)').find('.info-text').first().text().trim();
+                    const seasonDisplay = resolveSeasonDisplay(seasonValue, seasonInfoEl || null);
 
                     const item = {
                         animeId,
-                        title: titleEl || animeId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+                        title,
                         url: fullHref,
                         image: `https://raw.githubusercontent.com/Anime-Sama/IMG/img/contenu/${animeId}.jpg`,
                         releaseTime: timeMatch ? convertTime(timeMatch[1]) : null,
-                        season: seasonMatch ? seasonMatch[1].trim() : null,
+                        season: seasonDisplay,
+                        seasonValue,
+                        contentType,
                         language
                     };
 
-                    const key = `${animeId}-${language}`;
-                    if (!planningData.days[dayKey].items.find(it => `${it.animeId}-${it.language}` === key)) {
+                    const key = `${animeId}-${language}-${seasonValue}`;
+                    if (!planningData.days[dayKey].items.find(it => `${it.animeId}-${it.language}-${it.seasonValue}` === key)) {
                         planningData.days[dayKey].items.push(item);
                         planningData.days[dayKey].count++;
                     }
