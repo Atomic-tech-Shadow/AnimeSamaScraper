@@ -49,23 +49,6 @@ function resolveContentType(seasonValue) {
     return 'anime';
 }
 
-function resolveSeasonDisplay(seasonValue, textSeasonInfo) {
-    if (textSeasonInfo) return textSeasonInfo.trim();
-    if (!seasonValue) return null;
-    const v = seasonValue.toLowerCase();
-    if (v === 'film' || v === 'films') return 'Film';
-    if (v === 'oav' || v === 'ova') return 'OAV';
-    if (v.startsWith('kai')) return seasonValue.toUpperCase();
-    if (v.startsWith('saison')) {
-        const raw = v.replace('saison', '');
-        if (!raw) return 'Saison';
-        const partMatch = raw.match(/^(\d+)-(\d+)$/);
-        if (partMatch) return `Saison ${partMatch[1]} Partie ${partMatch[2]}`;
-        return `Saison ${raw}`;
-    }
-    return seasonValue;
-}
-
 module.exports = async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -121,8 +104,7 @@ module.exports = async (req, res) => {
                     const timeEl = $(link).find('.info-text.font-bold').first().text().trim();
                     const timeMatch = timeEl.match(/(\d{1,2}h\d{2})/);
 
-                    const seasonInfoEl = $(link).find('.info-item.episode').not(':has(.time-icon-svg)').find('.info-text').first().text().trim();
-                    const seasonDisplay = resolveSeasonDisplay(seasonValue, seasonInfoEl || null);
+                    const seasonText = $(link).find('.info-item.episode').not(':has(.time-icon-svg)').find('.info-text').first().text().trim() || null;
 
                     const item = {
                         animeId,
@@ -130,7 +112,7 @@ module.exports = async (req, res) => {
                         url: fullHref,
                         image: `https://raw.githubusercontent.com/Anime-Sama/IMG/img/contenu/${animeId}.jpg`,
                         releaseTime: timeMatch ? convertTime(timeMatch[1]) : null,
-                        season: seasonDisplay,
+                        season: seasonText,
                         seasonValue,
                         contentType,
                         language
