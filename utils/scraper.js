@@ -248,7 +248,11 @@ async function getAnimeSeasons(animeId) {
 
 async function getAnimeEpisodes(animeId, season = 1, language = 'VOSTFR') {
     try {
-        const seasonPath = typeof season === 'string' && season.startsWith('saison') ? season : `saison${season}`;
+        const seasonPath = typeof season === 'string' && season.startsWith('saison')
+            ? season
+            : /^\d+$/.test(String(season))
+                ? `saison${season}`
+                : String(season);
         const requestedLang = language.toLowerCase();
         const langsToTest = requestedLang === 'vf' ? ['vf1', 'vf2', 'vf', 'vostfr'] : [requestedLang, 'vostfr'];
         let languageCode = 'vostfr';
@@ -331,7 +335,8 @@ async function getEpisodeSources(episodeUrl) {
             let resolvedLang = 'vostfr';
             for (const lang of langsToTest) {
                 try {
-                    const check = await axios.get(`https://anime-sama.to/catalogue/${animeId}/saison${season}/${lang}/episodes.js`, { timeout: 3000, headers: { 'User-Agent': getRandomUserAgent() } });
+                    const resolvedSeasonPath = /^\d+$/.test(String(season)) ? `saison${season}` : String(season);
+                    const check = await axios.get(`https://anime-sama.to/catalogue/${animeId}/${resolvedSeasonPath}/${lang}/episodes.js`, { timeout: 3000, headers: { 'User-Agent': getRandomUserAgent() } });
                     if (check.status === 200 && check.data && check.data.includes('var eps')) {
                         resolvedLang = lang;
                         break;
