@@ -34,7 +34,7 @@ module.exports = async (req, res) => {
         res.status(200).json({
             success: true,
             animeId: animeId.trim(),
-            season: parseInt(season),
+            season,
             language: language,
             server: server,
             count: episodes.length,

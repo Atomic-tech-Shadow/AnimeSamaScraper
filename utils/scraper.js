@@ -77,8 +77,8 @@ async function searchAnime(query) {
             if (catalogueIndex === -1 || catalogueIndex + 1 >= urlParts.length) return;
             let animeId = urlParts[catalogueIndex + 1].replace(/\/$/, '');
             let title = $(element).find('h3').text().trim() || $(element).find('.title, .name').text().trim() || $(element).attr('title') || $(element).find('img').attr('alt');
-            if (!title || title.length < 3) title = animeId.replace(/-/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
-            title = title.replace(/\s+/g, ' ').trim();
+            if (!title || title.length < 3) title = null;
+            if (title) title = title.replace(/\s+/g, ' ').trim();
             const image = $(element).find('img').attr('src') || $(element).find('img').attr('data-src');
             if (title && animeId && !seenTitles.has(animeId)) {
                 seenTitles.add(animeId);
@@ -162,9 +162,9 @@ async function getAnimeDetails(animeId) {
         const $ = await scrapeAnimesama(url);
         if ($('body').text().includes('301 Moved Permanently')) throw new Error('Anime page not found');
         
-        const title = $('h4#titreOeuvre').text().trim() || $('meta[property="og:title"]').attr('content') || $('title').text().split('|')[0].trim() || animeId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-        const alternativeTitle = $('h2#titreAlter').text().trim();
-        const synopsis = $('#synopsis').text().trim() || $('p.text-sm.text-gray-300.leading-relaxed').first().text().trim() || 'Synopsis non disponible';
+        const title = $('h4#titreOeuvre').text().trim() || $('meta[property="og:title"]').attr('content') || $('title').text().split('|')[0].trim() || null;
+        const alternativeTitle = $('h2#titreAlter').text().trim() || null;
+        const synopsis = $('#synopsis').text().trim() || $('p.text-sm.text-gray-300.leading-relaxed').first().text().trim() || null;
         const image = $('meta[property="og:image"]').attr('content') || `https://raw.githubusercontent.com/Anime-Sama/IMG/img/contenu/${animeId}.jpg`;
         
         // Champs d'informations spécifiques détectés sur le site
@@ -192,7 +192,7 @@ async function getAnimeDetails(animeId) {
             alternativeTitle: alternativeTitle || null,
             synopsis, 
             image, 
-            genres: genres.length > 0 ? genres : ['Anime'], 
+            genres: genres.length > 0 ? genres : [], 
             details: {
                 status: status || null,
                 releaseYear: releaseYear || null,
@@ -237,7 +237,14 @@ async function getAnimeSeasons(animeId) {
                     const seasonValue = seasonUrl.split('/')[0];
                     if (seasons.find(s => s.value === seasonValue)) continue;
                     const languages = await getSeasonLanguages(animeId, seasonValue);
-                    seasons.push({ number: seasons.length + 1, name: seasonName, value: seasonValue, type: seasonName.toLowerCase().includes('film') ? 'Film' : 'Saison', url: seasonUrl, fullUrl: `https://anime-sama.to/catalogue/${animeId}/${seasonUrl}`, languages, available: true, contentType: 'anime' });
+                    const sv = seasonValue.toLowerCase();
+                    const sn = seasonName.toLowerCase();
+                    const contentType = sv.startsWith('kai') ? 'kai'
+                        : (sv === 'film' || sv === 'films' || sn.includes('film')) ? 'film'
+                        : (sv === 'oav' || sv === 'ova' || sn.includes('oav') || sn.includes('ova')) ? 'oav'
+                        : 'anime';
+                    const type = contentType === 'film' ? 'Film' : contentType === 'oav' ? 'OAV' : contentType === 'kai' ? 'Kai' : 'Saison';
+                    seasons.push({ number: seasons.length + 1, name: seasonName, value: seasonValue, type, url: seasonUrl, fullUrl: `https://anime-sama.to/catalogue/${animeId}/${seasonUrl}`, languages, available: true, contentType });
                 }
             }
         }
@@ -311,8 +318,8 @@ async function getRecentEpisodes() {
             const animeId = urlParts[urlParts.indexOf('catalogue') + 1];
             const episodeMatch = $(button).text().match(/Episode\s*(\d+)/i);
             const seasonMatch = $(button).text().match(/Saison\s*(\d+)/i);
-            const epNum = episodeMatch ? parseInt(episodeMatch[1]) : 1;
-            const sNum = seasonMatch ? parseInt(seasonMatch[1]) : 1;
+            const epNum = episodeMatch ? parseInt(episodeMatch[1]) : null;
+            const sNum = seasonMatch ? parseInt(seasonMatch[1]) : null;
             const lang = href.includes('/vf/') ? 'VF' : 'VOSTFR';
             const key = `${animeId}-s${sNum}-e${epNum}-${lang}`;
             if (seenEpisodes.has(key)) return;

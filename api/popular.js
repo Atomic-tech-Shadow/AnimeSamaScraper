@@ -1,4 +1,3 @@
-const cheerio = require('cheerio');
 const { scrapeAnimesama } = require('../utils/scraper');
 
 module.exports = async (req, res) => {
@@ -13,28 +12,40 @@ module.exports = async (req, res) => {
         const $ = await scrapeAnimesama('https://anime-sama.to/');
         const popularAnime = { classiques: [], pepites: [] };
         const seenIds = new Set();
-        
+
         const extract = (containerId, category) => {
             $(containerId).find('a[href*="/catalogue/"]').each((index, link) => {
                 const href = $(link).attr('href');
                 if (!href || href.includes('/scan/') || href.includes('/manga/')) return;
-                const animeId = href.split('/').filter(Boolean).pop();
+
+                const parts = href.split('/').filter(Boolean);
+                const catalogueIdx = parts.indexOf('catalogue');
+                if (catalogueIdx === -1 || catalogueIdx + 1 >= parts.length) return;
+                const animeId = parts[catalogueIdx + 1];
                 if (!animeId || seenIds.has(animeId)) return;
                 seenIds.add(animeId);
-                let title = $(link).find('h2, h3, .title').first().text().trim() || animeId.replace(/-/g, ' ');
-                title = title.replace(/(VOSTFR|VF|Saison\s*\d+|Episode\s*\d+)/gi, '').trim();
+
+                const title = $(link).find('h2, h3, .title, .card-title').first().text().trim() || null;
+                const image = $(link).find('img').attr('src') || $(link).find('img').attr('data-src') || `https://raw.githubusercontent.com/Anime-Sama/IMG/img/contenu/${animeId}.jpg`;
+
                 popularAnime[category].push({
-                    id: animeId, title, category,
-                    image: `https://raw.githubusercontent.com/Anime-Sama/IMG/img/contenu/${animeId}.jpg`,
-                    url: `https://anime-sama.to${href}`
+                    id: animeId,
+                    title,
+                    category,
+                    image: image.startsWith('http') ? image : `https://anime-sama.to${image}`,
+                    url: `https://anime-sama.to/catalogue/${animeId}`
                 });
             });
         };
 
         extract('#containerPepites', 'pepites');
         extract('#containerClassiques', 'classiques');
-        
-        res.status(200).json({ success: true, categories: popularAnime, allPopular: [...popularAnime.classiques, ...popularAnime.pepites] });
+
+        res.status(200).json({
+            success: true,
+            categories: popularAnime,
+            allPopular: [...popularAnime.classiques, ...popularAnime.pepites]
+        });
     } catch (error) {
         res.status(500).json({ error: 'Failed to fetch popular anime', message: error.message });
     }

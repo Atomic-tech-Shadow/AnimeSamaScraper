@@ -25,30 +25,34 @@ async function refreshRecommendationsCache() {
         const $ = await scrapeAnimesama(`https://anime-sama.to/catalogue/?page=${targetPage}`);
         const recommendations = [];
         const seenAnimes = new Set();
-        
+
         $('a[href*="/catalogue/"]').each((index, element) => {
             const href = $(element).attr('href');
             if (!href || !href.includes('/catalogue/')) return;
             if (href.includes('/scan/') || href.includes('/manga/')) return;
-            
-            const animeIdRaw = href.split('/').filter(Boolean).pop();
-            const animeId = animeIdRaw.toLowerCase().trim();
-            if (seenAnimes.has(animeId)) return;
-            
-            const $card = $(element).closest('.shrink-0') || $(element);
-            const cardText = $card.text().toLowerCase();
-            
+
+            const parts = href.split('/').filter(Boolean);
+            const catalogueIdx = parts.indexOf('catalogue');
+            if (catalogueIdx === -1 || catalogueIdx + 1 >= parts.length) return;
+            const animeId = parts[catalogueIdx + 1];
+            if (!animeId || seenAnimes.has(animeId)) return;
+
+            const $card = $(element).closest('.shrink-0').length ? $(element).closest('.shrink-0') : $(element);
+            const title = $card.find('h1, h2, h3, .title, .name, .card-title').first().text().trim()
+                || $(element).attr('title')
+                || $card.find('img').attr('alt')
+                || null;
+
             seenAnimes.add(animeId);
-            let title = $card.find('h1, .title, .name').first().text().trim() || $(element).attr('title') || $card.find('img').attr('alt');
-            title = title ? title.replace(/(VOSTFR|VF|Saison\s*\d+|Episode\s*\d+|\[FIN\])/gi, '').trim() : animeId.replace(/-/g, ' ');
-            
             recommendations.push({
-                id: animeId, title, image: `https://raw.githubusercontent.com/Anime-Sama/IMG/img/contenu/${animeId}.jpg`,
+                id: animeId,
+                title,
+                image: `https://raw.githubusercontent.com/Anime-Sama/IMG/img/contenu/${animeId}.jpg`,
                 url: href.startsWith('http') ? href : `https://anime-sama.to${href}`,
-                contentType: 'anime', genres: ['Anime'], languages: ['VOSTFR'], category: 'recommendation'
+                category: 'recommendation'
             });
         });
-        
+
         recommendationsCache.data = recommendations;
         recommendationsCache.lastUpdated = new Date();
         recommendationsCache.isUpdating = false;
@@ -58,16 +62,28 @@ async function refreshRecommendationsCache() {
 }
 
 async function getRecommendations(req, res) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+    if (req.method === 'OPTIONS') return res.status(200).end();
+
     try {
         if (recommendationsCache.data.length === 0 || (new Date() - recommendationsCache.lastUpdated) > CACHE_DURATION) {
             await refreshRecommendationsCache();
         }
-        const page = parseInt(req.query.page) || 1, limit = parseInt(req.query.limit) || 50;
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 50;
         const results = recommendationsCache.data.slice((page - 1) * limit, page * limit);
         res.json({
-            success: true, data: results,
-            pagination: { page, limit, total: recommendationsCache.data.length, totalPages: Math.ceil(recommendationsCache.data.length / limit) },
-            metadata: { extractedAt: new Date().toISOString(), filtered: 'Animes only' }
+            success: true,
+            data: results,
+            pagination: {
+                page, limit,
+                total: recommendationsCache.data.length,
+                totalPages: Math.ceil(recommendationsCache.data.length / limit)
+            },
+            metadata: { extractedAt: new Date().toISOString() }
         });
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
