@@ -60,9 +60,9 @@
 
 ```mermaid
 flowchart LR
-    A[📖 /api/anime/one-piece] -->|seasons[].contentType=='scan'| B[📚 /api/episodes/one-piece<br/>?season=scan&language=VF]
-    B -->|chapters[].number| C[🖼️ /api/episodes/one-piece<br/>?season=scan&chapter=N]
-    C -->|images[]| D[(🌸 Manga Reader)]
+    A[GET /api/anime/one-piece] -->|filter scan seasons| B[GET /api/episodes<br/>season=scan]
+    B -->|pick chapter number| C[GET /api/episodes<br/>season=scan chapter=N]
+    C -->|images array| D[(Manga Reader)]
 
     style A fill:#4a90e2,stroke:#2e5c8a,color:#fff
     style B fill:#ff9800,stroke:#c66900,color:#fff
@@ -92,11 +92,11 @@ curl "/api/episodes/one-piece?season=scan&language=VF&chapter=1"
 
 ```mermaid
 flowchart TB
-    Client([👤 Client]) -->|HTTPS| API{🚀 Express API}
-    API -->|cheerio + axios| Scraper[🕸️ utils/scraper.js]
-    Scraper -->|HTML scrape| AS[(🌐 anime-sama.to)]
-    Scraper -->|JSON CDN| CDN[(📦 /s2/scans/...)]
-    API -->|JSON| Client
+    Client([Client App]) -->|HTTPS| API{Express API}
+    API -->|cheerio + axios| Scraper[utils/scraper.js]
+    Scraper -->|HTML scrape| AS[(anime-sama.to)]
+    Scraper -->|JSON CDN| CDN[(s2/scans CDN)]
+    API -->|JSON response| Client
 
     style Client fill:#9c27b0,stroke:#6a1b9a,color:#fff
     style API fill:#2196f3,stroke:#0d47a1,color:#fff
