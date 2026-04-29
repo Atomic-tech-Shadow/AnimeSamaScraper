@@ -16,7 +16,7 @@ module.exports = async (req, res) => {
         const extract = (containerId, category) => {
             $(containerId).find('a[href*="/catalogue/"]').each((index, link) => {
                 const href = $(link).attr('href');
-                if (!href || href.includes('/scan/') || href.includes('/manga/')) return;
+                if (!href) return;
 
                 const parts = href.split('/').filter(Boolean);
                 const catalogueIdx = parts.indexOf('catalogue');
@@ -25,6 +25,10 @@ module.exports = async (req, res) => {
                 if (!animeId || seenIds.has(animeId)) return;
                 seenIds.add(animeId);
 
+                // contentType : 'scan' si l'URL pointe vers un scan, sinon 'anime'
+                const seg = (parts[catalogueIdx + 2] || '').toLowerCase();
+                const contentType = seg.startsWith('scan') ? 'scan' : 'anime';
+
                 const title = $(link).find('h2, h3, .title, .card-title').first().text().trim() || null;
                 const image = $(link).find('img').attr('src') || $(link).find('img').attr('data-src') || `https://raw.githubusercontent.com/Anime-Sama/IMG/img/contenu/${animeId}.jpg`;
 
@@ -32,6 +36,7 @@ module.exports = async (req, res) => {
                     id: animeId,
                     title,
                     category,
+                    contentType,
                     image: image.startsWith('http') ? image : `https://anime-sama.to${image}`,
                     url: `https://anime-sama.to/catalogue/${animeId}`
                 });

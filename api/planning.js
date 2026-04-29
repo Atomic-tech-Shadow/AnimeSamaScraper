@@ -42,6 +42,7 @@ function extractLanguage(href) {
 function resolveContentType(seasonValue) {
     if (!seasonValue) return 'anime';
     const v = seasonValue.toLowerCase();
+    if (v.startsWith('scan')) return 'scan';
     if (v === 'film' || v === 'films') return 'film';
     if (v === 'oav' || v === 'ova') return 'oav';
     if (v.startsWith('kai')) return 'kai';
@@ -78,23 +79,17 @@ module.exports = async (req, res) => {
                     const href = $(link).attr('href') || '';
                     const fullHref = href.startsWith('http') ? href : `https://anime-sama.to${href}`;
 
-                    if (fullHref.includes('/scan') || fullHref.includes('/manga')) return;
-
                     const animeId = extractAnimeId(fullHref);
                     if (!animeId) return;
 
                     const language = extractLanguage(fullHref);
+                    const seasonValue = extractSeasonValue(fullHref);
+                    const contentType = resolveContentType(seasonValue);
 
                     if (filter === 'vf' && !['VF', 'VF1', 'VF2'].includes(language)) return;
                     if (filter === 'vostfr' && language !== 'VOSTFR') return;
-                    if (filter === 'anime') {
-                        const $card = $(link).closest('[class*="planning-card"]');
-                        const cardClass = $card.attr('class') || '';
-                        if (!cardClass.toLowerCase().includes('anime')) return;
-                    }
-
-                    const seasonValue = extractSeasonValue(fullHref);
-                    const contentType = resolveContentType(seasonValue);
+                    if (filter === 'anime' && contentType === 'scan') return;
+                    if (filter === 'scan' && contentType !== 'scan') return;
 
                     const title = $(link).find('h2.card-title').first().text().trim()
                         || $(link).find('.card-title').first().text().trim()

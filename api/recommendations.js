@@ -29,13 +29,16 @@ async function refreshRecommendationsCache() {
         $('a[href*="/catalogue/"]').each((index, element) => {
             const href = $(element).attr('href');
             if (!href || !href.includes('/catalogue/')) return;
-            if (href.includes('/scan/') || href.includes('/manga/')) return;
 
             const parts = href.split('/').filter(Boolean);
             const catalogueIdx = parts.indexOf('catalogue');
             if (catalogueIdx === -1 || catalogueIdx + 1 >= parts.length) return;
             const animeId = parts[catalogueIdx + 1];
             if (!animeId || seenAnimes.has(animeId)) return;
+
+            // contentType : 'scan' si l'URL pointe explicitement vers un scan
+            const seg = (parts[catalogueIdx + 2] || '').toLowerCase();
+            const contentType = seg.startsWith('scan') ? 'scan' : 'anime';
 
             const $card = $(element).closest('.shrink-0').length ? $(element).closest('.shrink-0') : $(element);
             const title = $card.find('h1, h2, h3, .title, .name, .card-title').first().text().trim()
@@ -47,6 +50,7 @@ async function refreshRecommendationsCache() {
             recommendations.push({
                 id: animeId,
                 title,
+                contentType,
                 image: `https://raw.githubusercontent.com/Anime-Sama/IMG/img/contenu/${animeId}.jpg`,
                 url: href.startsWith('http') ? href : `https://anime-sama.to${href}`,
                 category: 'recommendation'

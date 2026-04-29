@@ -19,56 +19,60 @@ app.options('*', cors());
 app.get('/', (req, res) => {
     res.json({
         name: "Anime-Sama API",
-        version: '3.0.0',
-        description: 'Real-time anime scraping API for anime-sama.to — Anime only (no scans/manga)',
+        version: '4.0.0',
+        description: 'Real-time scraping API for anime-sama.to — Anime + Scans (manga) unified',
         author: 'el_cid',
         status: 'running',
         endpoints: {
             search: {
                 path: '/api/search?query=:query',
-                description: 'Search anime by name',
+                description: 'Search any title (anime or scan) by name',
                 returns: 'id, title, image, url'
             },
             recent: {
                 path: '/api/recent',
-                description: 'Latest added/updated anime episodes',
-                returns: 'animeId, title, season, seasonValue, episode, language, contentType, url, image'
+                description: 'Latest added/updated content (episodes AND scan chapters)',
+                returns: 'animeId, title, season, seasonValue, episode, chapter, language, contentType, url, image'
             },
             planning: {
                 path: '/api/planning',
-                params: 'day (lundi|mardi|...|all), filter (vf|vostfr)',
-                description: 'Weekly release schedule',
+                params: 'day (lundi|mardi|...|all), filter (vf|vostfr|anime|scan)',
+                description: 'Weekly release schedule for anime and scans',
                 returns: 'title, season, seasonValue, contentType, releaseTime, language'
             },
             popular: {
                 path: '/api/popular',
-                description: 'Classics and hidden gems from the homepage',
-                returns: 'id, title, image, url, category'
+                description: 'Classics and hidden gems (anime + scans)',
+                returns: 'id, title, image, url, category, contentType'
             },
             recommendations: {
                 path: '/api/recommendations?page=1&limit=50',
-                description: 'Random anime catalogue page for discovery',
-                returns: 'id, title, image, url'
+                description: 'Random catalogue page for discovery (anime + scans)',
+                returns: 'id, title, image, url, contentType'
             },
             animeDetails: {
                 path: '/api/anime/:id',
-                description: 'Full anime details including all seasons',
-                returns: 'title, synopsis, image, genres, details, seasons[]'
+                description: 'Full details including all seasons AND scan variants',
+                returns: 'title, synopsis, image, genres, details, seasons[] (with scans tagged contentType:scan)'
             },
             seasons: {
                 path: '/api/seasons/:animeId',
-                description: 'List all seasons/films/OAV/kai for an anime',
-                returns: 'name, value, type (Saison|Film|OAV|Kai), contentType, languages[]'
+                description: 'List all seasons/films/OAV/kai AND scan variants for a title',
+                returns: 'name, value, type (Saison|Film|OAV|Kai|Scan), contentType, languages[]'
             },
             episodes: {
-                path: '/api/episodes/:animeId?season=:seasonValue&language=VOSTFR',
-                description: 'Episodes for a specific season — seasonValue from /api/seasons (ex: saison1, film, oav, kai, kai2, saison4-3)',
-                contentTypes: 'anime, film, oav, kai',
-                returns: 'number, title, streamingSources[], language'
+                path: '/api/episodes/:animeId?season=:seasonValue&language=:lang[&chapter=:n]',
+                description: 'Episodes (anime) OR chapters (scan) — auto-detected from seasonValue. If seasonValue starts with "scan" → scan mode.',
+                contentTypes: 'anime, film, oav, kai, scan',
+                returns: {
+                    anime: 'episodes[] with number, title, streamingSources[], language',
+                    scan_list: 'chapters[] with number, title, pageCount, language (lightweight)',
+                    scan_single: 'chapter object with number, title, pageCount, images[] (full URLs) — when ?chapter=N is provided'
+                }
             },
             seasonsIndex: {
                 path: '/api/seasons?animeId=:id&season=:seasonValue&language=VOSTFR',
-                description: 'Alternative episodes endpoint via query params',
+                description: 'Alternative episodes endpoint via query params (anime only)',
                 returns: 'episodes[]'
             },
             episodeSources: {
@@ -79,19 +83,22 @@ app.get('/', (req, res) => {
             },
             embed: {
                 path: '/api/embed?url=:episodeUrl',
-                description: 'Extract streaming sources from a full anime-sama episode URL',
+                description: 'Extract streaming sources from a full anime-sama episode URL (anime only)',
                 returns: 'sources[], count'
             }
         },
         notes: {
-            seasonValue: 'Always use the `seasonValue` field from /api/seasons as the `season` param in /api/episodes. Examples: saison1, film, oav, kai, kai2, saison4-3',
-            contentTypes: 'anime | film | oav | kai',
-            languages: 'VOSTFR | VF | VF1 | VF2 | VA | VKR | VCN | VQC | VAR | VJ'
+            seasonValue: 'Always use the `seasonValue` field from /api/seasons as the `season` param in /api/episodes. Anime examples: saison1, film, oav, kai, kai2, saison4-3. Scan examples: scan, scan_noir-et-blanc',
+            contentTypes: 'anime | film | oav | kai | scan',
+            languages: 'VOSTFR | VF | VF1 | VF2 | VA | VKR | VCN | VQC | VAR | VJ',
+            scanFlow: '1) GET /api/anime/:id → look for seasons with contentType:"scan". 2) GET /api/episodes/:id?season=scan&language=VF → get the chapters list (lightweight). 3) GET /api/episodes/:id?season=scan&language=VF&chapter=42 → get the image URLs of chapter 42.',
+            scanImageFormat: 'Image URLs follow https://anime-sama.to/s2/scans/{realName}/{chapter}/{n}.jpg where realName is the title resolved from the scan reader page (returned in the response as `realName`).'
         },
         examples: {
             search: 'GET /api/search?query=one+piece',
             recentEpisodes: 'GET /api/recent',
             planning: 'GET /api/planning?day=all',
+            planningScans: 'GET /api/planning?day=all&filter=scan',
             animeDetails: 'GET /api/anime/dragon-ball-z',
             seasons: 'GET /api/seasons/dragon-ball-z',
             episodesNormal: 'GET /api/episodes/one-piece?season=saison1&language=VOSTFR',
@@ -99,6 +106,9 @@ app.get('/', (req, res) => {
             episodesOAV: 'GET /api/episodes/one-piece?season=oav&language=VOSTFR',
             episodesKai: 'GET /api/episodes/dragon-ball-z?season=kai&language=VOSTFR',
             episodesPartielle: 'GET /api/episodes/dr-stone?season=saison4-3&language=VOSTFR',
+            scanChaptersList: 'GET /api/episodes/one-piece?season=scan&language=VF',
+            scanChaptersListBW: 'GET /api/episodes/one-piece?season=scan_noir-et-blanc&language=VF',
+            scanSingleChapter: 'GET /api/episodes/one-piece?season=scan&language=VF&chapter=1100',
             episodeSource: 'GET /api/episode-by-id/one-piece-s1-e1',
             embed: 'GET /api/embed?url=https%3A%2F%2Fanime-sama.to%2Fcatalogue%2Fone-piece%2Fsaison1%2Fvostfr%2Fepisode-1'
         }

@@ -24,6 +24,7 @@ function extractSeasonValue(href) {
 function resolveContentType(seasonValue) {
     if (!seasonValue) return 'anime';
     const v = seasonValue.toLowerCase();
+    if (v.startsWith('scan')) return 'scan';
     if (v === 'film' || v === 'films') return 'film';
     if (v === 'oav' || v === 'ova') return 'oav';
     if (v.startsWith('kai')) return 'kai';
@@ -48,7 +49,7 @@ module.exports = async (req, res) => {
             const href = $link.attr('href');
 
             if (!href || !href.includes('/catalogue/') || seenLinks.has(href)) return;
-            if (href.includes('/scan/') || href.includes('/manga/')) return;
+            // Note: scans/mangas désormais inclus (taggés contentType: 'scan')
 
             seenLinks.add(href);
 
@@ -64,7 +65,6 @@ module.exports = async (req, res) => {
             if (image && !image.startsWith('http')) image = `https://anime-sama.to${image}`;
 
             const infoText = $link.find('.info-text').text().trim();
-            if (infoText.toLowerCase().includes('scan') || infoText.toLowerCase().includes('manga')) return;
 
             const seasonValue = extractSeasonValue(href);
             const contentType = resolveContentType(seasonValue);
@@ -72,6 +72,7 @@ module.exports = async (req, res) => {
 
             const seasonMatch = infoText.match(/Saison\s*(\d+)/i);
             const epMatch = infoText.match(/Episode\s*(\d+)/i);
+            const chapMatch = infoText.match(/Chapitre\s*(\d+)/i);
 
             const fullUrl = href.startsWith('http') ? href : `https://anime-sama.to${href}`;
 
@@ -81,6 +82,7 @@ module.exports = async (req, res) => {
                 season: seasonMatch ? parseInt(seasonMatch[1]) : null,
                 seasonValue,
                 episode: epMatch ? parseInt(epMatch[1]) : null,
+                chapter: chapMatch ? parseInt(chapMatch[1]) : null,
                 language,
                 contentType,
                 url: fullUrl,

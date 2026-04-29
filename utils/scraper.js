@@ -131,7 +131,7 @@ async function getTrendingAnime() {
             if (catalogueIndex === -1 || catalogueIndex + 1 >= urlParts.length) return;
             const animeId = urlParts[catalogueIndex + 1];
             const seasonPath = urlParts[catalogueIndex + 2];
-            if (seasonPath && (seasonPath.toLowerCase().includes('scan') || seasonPath.toLowerCase().includes('manga'))) return;
+            const isScan = seasonPath && seasonPath.toLowerCase().startsWith('scan');
             const uniqueId = `${animeId}-${urlParts.slice(catalogueIndex + 2).join('-')}`;
             if (seenAnimes.has(uniqueId)) return;
             seenAnimes.add(uniqueId);
@@ -142,7 +142,7 @@ async function getTrendingAnime() {
             const seasonMatch = episodeText.match(/Saison\s*(\d+)/i);
             trending.push({
                 id: uniqueId, animeId, title, image, url: fullUrl,
-                contentType: seasonPath && seasonPath.toLowerCase().includes('film') ? 'film' : 'anime',
+                contentType: isScan ? 'scan' : (seasonPath && seasonPath.toLowerCase().includes('film') ? 'film' : 'anime'),
                 language: LANGUAGE_SYSTEM[urlParts[catalogueIndex + 3]?.toLowerCase()] || LANGUAGE_SYSTEM.vostfr,
                 episodeInfo: episodeText,
                 currentEpisode: episodeMatch ? parseInt(episodeMatch[1]) : null,
@@ -226,8 +226,11 @@ async function getAnimeSeasons(animeId) {
         const $ = await scrapeAnimesama(`https://anime-sama.to/catalogue/${animeId}/`);
         const seasons = [];
         const fullHtml = $.html();
-        const beforeManga = fullHtml.split('<!-- MANGA -->')[0];
-        const panneauMatches = beforeManga.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '').match(/panneauAnime\("([^"]+)",\s*"([^"]+)"\);/g);
+        const cleanedHtml = fullHtml.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+        const beforeManga = cleanedHtml.split('<!-- MANGA -->')[0];
+
+        // ---- Anime / Film / OAV / Kai (panneauAnime) ----
+        const panneauMatches = beforeManga.match(/panneauAnime\("([^"]+)",\s*"([^"]+)"\);/g);
         if (panneauMatches) {
             for (let i = 0; i < panneauMatches.length; i++) {
                 const parts = panneauMatches[i].match(/panneauAnime\("([^"]+)",\s*"([^"]+)"\);/);
@@ -248,9 +251,134 @@ async function getAnimeSeasons(animeId) {
                 }
             }
         }
+
+        // ---- Scans / Manga (panneauScan) — fusion dans la même liste ----
+        const scanMatches = cleanedHtml.match(/panneauScan\("([^"]+)",\s*"([^"]+)"\);/g);
+        if (scanMatches) {
+            for (let i = 0; i < scanMatches.length; i++) {
+                const parts = scanMatches[i].match(/panneauScan\("([^"]+)",\s*"([^"]+)"\);/);
+                if (!parts || parts[1] === 'nom') continue;
+                const scanName = parts[1];
+                const scanUrl = parts[2]; // ex: "scan/vf" ou "scan_noir-et-blanc/vf"
+                const urlSegments = scanUrl.split('/').filter(Boolean);
+                const scanValue = urlSegments[0]; // "scan" ou "scan_noir-et-blanc"
+                const scanLang = (urlSegments[1] || 'vf').toUpperCase();
+                if (seasons.find(s => s.value === scanValue && s.contentType === 'scan')) continue;
+                seasons.push({
+                    number: seasons.length + 1,
+                    name: scanName,
+                    value: scanValue,
+                    type: 'Scan',
+                    url: scanUrl,
+                    fullUrl: `https://anime-sama.to/catalogue/${animeId}/${scanUrl}`,
+                    languages: [scanLang],
+                    available: true,
+                    contentType: 'scan'
+                });
+            }
+        }
+
         seasons.sort((a, b) => a.number - b.number).forEach((s, i) => s.apiIndex = i + 1);
         return seasons;
     } catch (error) { return []; }
+}
+
+// =====================================================================
+// SCANS — Récupération chapitres et images
+// =====================================================================
+
+// Récupère le titre exact de l'œuvre tel qu'enregistré côté CDN /s2/scans/
+// IMPORTANT : on ne trim PAS la fin — certains titres conservent intentionnellement
+// des espaces de fin (ex: "One Piece  " avec 2 espaces pour la version noir-et-blanc).
+async function getScanRealName(animeId, scanValue = 'scan', language = 'vf') {
+    const url = `https://anime-sama.to/catalogue/${animeId}/${scanValue}/${language.toLowerCase()}/`;
+    const $ = await scrapeAnimesama(url);
+    const raw = $('#titreOeuvre').first().text();
+    if (!raw) throw new Error(`Scan title not found at ${url}`);
+    return raw.replace(/^\s+/, '');
+}
+
+// Appelle l'endpoint interne du site qui renvoie { "1": nbImages, "2": nbImages, ... }
+// Fallback intelligent : si le nom exact échoue, on tente la version trimmée
+// (cas inverse de "One Piece  " — certains titres ont effectivement été trimmés en base).
+async function fetchScanChapterMap(realName) {
+    const callApi = async (name) => {
+        const r = await axios.get('https://anime-sama.to/s2/scans/get_nb_chap_et_img.php', {
+            params: { oeuvre: name },
+            timeout: 6000,
+            headers: {
+                'User-Agent': getRandomUserAgent(),
+                'Accept': 'application/json, text/plain, */*',
+                'Referer': 'https://anime-sama.to/'
+            }
+        });
+        return r.data;
+    };
+    let data = await callApi(realName);
+    if (!data || typeof data !== 'object' || data.error) {
+        const trimmed = realName.trim();
+        if (trimmed && trimmed !== realName) {
+            data = await callApi(trimmed);
+        }
+    }
+    if (!data || typeof data !== 'object' || data.error) {
+        throw new Error(data?.error || 'Invalid scan map response');
+    }
+    return data;
+}
+
+// Construit les URLs des images d'un chapitre donné
+function buildScanImageUrls(realName, chapterNum, pageCount) {
+    const encodedName = encodeURIComponent(realName);
+    const urls = [];
+    for (let i = 1; i <= pageCount; i++) {
+        urls.push(`https://anime-sama.to/s2/scans/${encodedName}/${chapterNum}/${i}.jpg`);
+    }
+    return urls;
+}
+
+// Pipeline complet : retourne soit la liste légère des chapitres,
+// soit (si chapterNum fourni) un seul chapitre avec ses images.
+async function getScanChapters(animeId, scanValue = 'scan', language = 'VF', chapterNum = null) {
+    const lang = (language || 'VF').toUpperCase();
+    const realName = await getScanRealName(animeId, scanValue, lang);
+    const chapterMap = await fetchScanChapterMap(realName);
+    const sortedKeys = Object.keys(chapterMap).sort((a, b) => parseInt(a) - parseInt(b));
+
+    if (chapterNum != null) {
+        const key = String(chapterNum);
+        if (!(key in chapterMap)) {
+            throw new Error(`Chapter ${chapterNum} not found for "${realName}"`);
+        }
+        const pageCount = chapterMap[key];
+        return {
+            realName,
+            language: lang,
+            scanValue,
+            chapter: {
+                number: parseInt(key),
+                title: `Chapitre ${key}`,
+                pageCount,
+                images: buildScanImageUrls(realName, key, pageCount),
+                language: lang,
+                contentType: 'scan'
+            }
+        };
+    }
+
+    return {
+        realName,
+        language: lang,
+        scanValue,
+        totalChapters: sortedKeys.length,
+        chapters: sortedKeys.map(k => ({
+            number: parseInt(k),
+            title: `Chapitre ${k}`,
+            pageCount: chapterMap[k],
+            language: lang,
+            contentType: 'scan'
+        }))
+    };
 }
 
 async function getAnimeEpisodes(animeId, season = 1, language = 'VOSTFR') {
@@ -313,18 +441,35 @@ async function getRecentEpisodes() {
         $('.bg-cyan-600').each((index, button) => {
             const $animeLink = $(button).closest('a[href*="/catalogue/"]');
             const href = $animeLink.attr('href');
-            if (!href || href.includes('/scan/')) return;
+            if (!href) return;
             const urlParts = href.split('/');
-            const animeId = urlParts[urlParts.indexOf('catalogue') + 1];
-            const episodeMatch = $(button).text().match(/Episode\s*(\d+)/i);
-            const seasonMatch = $(button).text().match(/Saison\s*(\d+)/i);
+            const catalogueIdx = urlParts.indexOf('catalogue');
+            const animeId = urlParts[catalogueIdx + 1];
+            const seg = (urlParts[catalogueIdx + 2] || '').toLowerCase();
+            const isScan = seg.startsWith('scan');
+            const txt = $(button).text();
+            const episodeMatch = txt.match(/Episode\s*(\d+)/i);
+            const seasonMatch = txt.match(/Saison\s*(\d+)/i);
+            const chapterMatch = txt.match(/Chapitre\s*(\d+)/i);
             const epNum = episodeMatch ? parseInt(episodeMatch[1]) : null;
             const sNum = seasonMatch ? parseInt(seasonMatch[1]) : null;
+            const cNum = chapterMatch ? parseInt(chapterMatch[1]) : null;
             const lang = href.includes('/vf/') ? 'VF' : 'VOSTFR';
-            const key = `${animeId}-s${sNum}-e${epNum}-${lang}`;
+            const key = `${animeId}-s${sNum}-e${epNum}-c${cNum}-${lang}`;
             if (seenEpisodes.has(key)) return;
             seenEpisodes.add(key);
-            recentEpisodes.push({ animeId, animeTitle: cleanTitleWithFallback($animeLink.text(), animeId), season: sNum, episode: epNum, language: lang, url: href.startsWith('http') ? href : `https://anime-sama.to${href}`, image: `https://raw.githubusercontent.com/Anime-Sama/IMG/img/contenu/${animeId}.jpg`, addedAt: new Date().toISOString() });
+            recentEpisodes.push({
+                animeId,
+                animeTitle: cleanTitleWithFallback($animeLink.text(), animeId),
+                season: sNum,
+                episode: epNum,
+                chapter: cNum,
+                language: lang,
+                contentType: isScan ? 'scan' : 'anime',
+                url: href.startsWith('http') ? href : `https://anime-sama.to${href}`,
+                image: `https://raw.githubusercontent.com/Anime-Sama/IMG/img/contenu/${animeId}.jpg`,
+                addedAt: new Date().toISOString()
+            });
         });
         return recentEpisodes;
     } catch (error) { return []; }
@@ -380,4 +525,18 @@ async function getEpisodeSources(episodeUrl) {
     } catch (error) { return []; }
 }
 
-module.exports = { searchAnime, getTrendingAnime, getAnimeDetails, getAnimeSeasons, getAnimeEpisodes, getRecentEpisodes, getEpisodeSources, scrapeAnimesama };
+module.exports = {
+    searchAnime,
+    getTrendingAnime,
+    getAnimeDetails,
+    getAnimeSeasons,
+    getAnimeEpisodes,
+    getRecentEpisodes,
+    getEpisodeSources,
+    scrapeAnimesama,
+    // Scans
+    getScanRealName,
+    fetchScanChapterMap,
+    buildScanImageUrls,
+    getScanChapters
+};
